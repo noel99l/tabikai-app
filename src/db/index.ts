@@ -1,10 +1,10 @@
-import type { PgDatabase } from "drizzle-orm/pg-core";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
 // DATABASE_URL があれば Postgres(Neon 等)、なければローカル埋め込みの PGlite。
 // Neon 移行時は .env に DATABASE_URL を設定するだけでよい。
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Db = PgDatabase<any, typeof schema>;
+// (PGlite の drizzle も構造的に互換なので PostgresJsDatabase の型に寄せる)
+export type Db = PostgresJsDatabase<typeof schema>;
 
 const globalForDb = globalThis as unknown as { __db?: Promise<Db> };
 

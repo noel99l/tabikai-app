@@ -1,6 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconBell } from "./icons";
+import { avatarColor } from "@/lib/format";
 
 export function Card({
   children,
@@ -38,23 +37,27 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">{children}</h3>;
 }
 
-export function AppHeader({ title, unread = 2 }: { title: string; unread?: number }) {
+export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   return (
-    <header className="flex items-center justify-between px-1 pt-3 pb-2.5">
-      <h1 className="text-[19px] font-bold">{title}</h1>
-      <div className="flex items-center gap-3">
-        <Link href="/notifications" aria-label="お知らせ" className="relative p-0.5">
-          <IconBell className="h-5 w-5" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-accent px-1 text-[9.5px] font-extrabold text-white">
-              {unread}
-            </span>
-          )}
-        </Link>
-        <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-          ゆ
-        </span>
-      </div>
-    </header>
+    <span
+      className="flex items-center justify-center rounded-full font-bold text-white"
+      style={{
+        width: size,
+        height: size,
+        fontSize: size * 0.4,
+        background: avatarColor(name),
+      }}
+      title={name}
+    >
+      {name.slice(0, 1)}
+    </span>
   );
 }
+
+export const inputCls =
+  "w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm";
+export const labelCls = "mt-3 mb-1.5 block text-xs font-bold text-muted";
+export const btnCls =
+  "rounded-lg bg-primary px-4 py-2.5 text-[13px] font-bold text-white disabled:opacity-50";
+export const btnGhostCls =
+  "rounded-lg bg-primary-soft px-4 py-2.5 text-[13px] font-bold text-primary";

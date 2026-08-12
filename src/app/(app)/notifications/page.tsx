@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { and, desc, eq } from "drizzle-orm";
+import { schema } from "@/db";
+import { AppHeader } from "@/components/app-header";
 import {
   IconCheck,
   IconClock,
@@ -5,28 +9,66 @@ import {
   IconMegaphone,
   IconMoney,
 } from "@/components/icons";
-import { AppHeader, Card, Pill } from "@/components/ui";
-import { sampleNotifications } from "@/lib/sample-data";
+import { MarkRead } from "@/components/mark-read";
+import { Card, Pill, btnCls, inputCls } from "@/components/ui";
+import { sendAnnouncement } from "@/lib/actions/notifications";
+import { fmtDateTime } from "@/lib/format";
+import { requireTripContext } from "@/lib/session";
 
 const typeMeta = {
-  announce: { icon: IconMegaphone, cls: "bg-accent-soft text-accent", pill: <Pill tone="info">全体</Pill> },
-  reminder: { icon: IconClock, cls: "bg-pend-soft text-pend", pill: <Pill tone="pend">リマインド</Pill> },
-  invite: { icon: IconMail, cls: "bg-violet-soft text-violet", pill: <Pill tone="violet">イベント招待</Pill> },
-  expense: { icon: IconMoney, cls: "bg-primary-soft text-primary", pill: <Pill tone="pend">費用</Pill> },
-  nudge: { icon: IconClock, cls: "bg-pend-soft text-pend", pill: <Pill tone="pend">承認催促</Pill> },
-  done: { icon: IconCheck, cls: "bg-ok-soft text-ok", pill: <Pill tone="ok">確定</Pill> },
-} as const;
+  announce: { icon: IconMegaphone, cls: "bg-accent-soft text-accent", label: "全体", tone: "info" as const },
+  event_invite: { icon: IconMail, cls: "bg-violet-soft text-violet", label: "イベント", tone: "violet" as const },
+  event_reminder: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "リマインド", tone: "pend" as const },
+  expense_assigned: { icon: IconMoney, cls: "bg-primary-soft text-primary", label: "費用", tone: "pend" as const },
+  expense_confirmed: { icon: IconCheck, cls: "bg-ok-soft text-ok", label: "確定", tone: "ok" as const },
+  approval_nudge: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
+  approval_escalation: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
+  settlement: { icon: IconMoney, cls: "bg-ok-soft text-ok", label: "精算", tone: "ok" as const },
+};
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const { user, trip, db } = await requireTripContext();
+  const rows = await db.query.notifications.findMany({
+    where: and(
+      eq(schema.notifications.tripId, trip.id),
+      eq(schema.notifications.userId, user.id),
+    ),
+    orderBy: [desc(schema.notifications.createdAt)],
+    limit: 50,
+  });
+
   return (
     <>
       <AppHeader title="お知らせ" />
-      {sampleNotifications.map((n) => {
-        const meta = typeMeta[n.type as keyof typeof typeMeta] ?? typeMeta.done;
+      <MarkRead />
+
+      <Card className="mb-3">
+        <h3 className="text-sm font-bold">全体アナウンスを送る</h3>
+        <p className="mt-0.5 mb-2 text-[11.5px] text-muted">
+          全メンバーへお知らせ+通知を送信します(誰でも送信できます)。
+        </p>
+        <form action={sendAnnouncement} className="flex gap-2">
+          <input
+            className={inputCls}
+            name="body"
+            required
+            placeholder="夕食が完成しました!大広間へどうぞ"
+          />
+          <button className={`${btnCls} shrink-0`}>送信</button>
+        </form>
+      </Card>
+
+      {rows.length === 0 && (
+        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+          お知らせはまだありません。
+        </p>
+      )}
+      {rows.map((n) => {
+        const meta = typeMeta[n.type] ?? typeMeta.announce;
         const Icon = meta.icon;
-        return (
-          <Card key={n.id} className="relative mb-2.5 flex items-start gap-3">
-            {n.unread && (
+        const inner = (
+          <Card className="relative mb-2.5 flex items-start gap-3">
+            {!n.readAt && (
               <span className="absolute top-1/2 -left-2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-accent" />
             )}
             <span
@@ -34,18 +76,24 @@ export default function NotificationsPage() {
             >
               <Icon className="h-5 w-5" />
             </span>
-            <div className="min-w-0 flex-1">
-              {meta.pill}
-              <p className="mt-0.5 text-[13.5px] font-bold">{n.title}</p>
-              <p className="text-xs text-muted">{n.body}</p>
-            </div>
-            <time className="shrink-0 text-[11px] text-muted">{n.time}</time>
+            <span className="min-w-0 flex-1">
+              <Pill tone={meta.tone}>{meta.label}</Pill>
+              <span className="mt-0.5 block text-[13.5px] font-bold">{n.title}</span>
+              {n.body && <span className="block text-xs text-muted">{n.body}</span>}
+              <span className="mt-0.5 block text-[10.5px] text-muted">
+                {fmtDateTime(n.createdAt)}
+              </span>
+            </span>
           </Card>
         );
+        return n.link ? (
+          <Link key={n.id} href={n.link} className="block">
+            {inner}
+          </Link>
+        ) : (
+          <div key={n.id}>{inner}</div>
+        );
       })}
-      <p className="mx-0.5 mt-1 text-center text-[11px] text-muted">
-        全体アナウンスは誰でも送信できます(送信UIはフェーズ2で実装)
-      </p>
     </>
   );
 }

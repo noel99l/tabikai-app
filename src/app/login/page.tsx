@@ -19,12 +19,13 @@ export default async function LoginPage() {
         <p className="text-[13px] text-muted">招待メンバー専用アプリ</p>
       </div>
 
-      {hasGoogle ? (
+      {hasGoogle && (
         <form
           action={async () => {
             "use server";
             await signIn("google", { redirectTo: "/" });
           }}
+          className="mb-4"
         >
           <button className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[14.5px] font-bold">
             <span className="text-[17px] font-extrabold text-[#4285F4]">G</span>
@@ -34,11 +35,12 @@ export default async function LoginPage() {
             Googleアカウントで本人確認を行います
           </p>
         </form>
-      ) : (
+      )}
+      {process.env.NODE_ENV !== "production" && (
         <Card>
           <h2 className="mb-1 text-sm font-bold">開発用ログイン</h2>
           <p className="mb-3 text-[11.5px] text-muted">
-            Google OAuth未設定のため、開発用の簡易ログインを表示しています(本番では無効)。
+            開発環境専用の簡易ログインです(本番では表示されません)。
           </p>
           <form
             action={async (formData: FormData) => {

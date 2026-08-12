@@ -1,0 +1,43 @@
+"use server";
+
+import { and, eq, isNull } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { schema } from "@/db";
+import { notify } from "@/lib/notify";
+import { getApprovedMembers, requireTripContext } from "@/lib/session";
+
+export async function markAllRead() {
+  const { user, trip, db } = await requireTripContext();
+  await db
+    .update(schema.notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(schema.notifications.tripId, trip.id),
+        eq(schema.notifications.userId, user.id),
+        isNull(schema.notifications.readAt),
+      ),
+    );
+  revalidatePath("/", "layout");
+}
+
+// 全体アナウンス(一般メンバーも送信可能)
+export async function sendAnnouncement(formData: FormData) {
+  const { user, trip, db } = await requireTripContext();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) throw new Error("メッセージを入力してください");
+  const members = await getApprovedMembers();
+  await notify(
+    db,
+    trip.id,
+    members.map((m) => m.userId).filter((id) => id !== user.id),
+    {
+      type: "announce",
+      title: body.length > 40 ? `${body.slice(0, 40)}…` : body,
+      body: `${user.name} さんより`,
+      link: "/notifications",
+      senderId: user.id,
+    },
+  );
+  revalidatePath("/notifications");
+}

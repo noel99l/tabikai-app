@@ -29,9 +29,11 @@ const devProvider = Credentials({
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? "dev-secret-change-me",
   session: { strategy: "jwt" },
-  providers: hasGoogle
-    ? [Google({ clientId: googleId, clientSecret: googleSecret })]
-    : [devProvider],
+  // 開発環境ではGoogleと開発用ログインを併用できる(本番はGoogleのみ)
+  providers: [
+    ...(hasGoogle ? [Google({ clientId: googleId, clientSecret: googleSecret })] : []),
+    ...(process.env.NODE_ENV !== "production" ? [devProvider] : []),
+  ],
   pages: { signIn: "/login" },
   callbacks: {
     // 初回ログイン時に users テーブルへ upsert し、DB 上の userId を JWT に載せる

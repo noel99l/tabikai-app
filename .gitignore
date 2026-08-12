@@ -37,3 +37,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# 手元のメモ用envファイル(秘密情報を含むため除外)
+env

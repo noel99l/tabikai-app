@@ -1,10 +1,49 @@
+import Link from "next/link";
+import { eq, inArray } from "drizzle-orm";
+import { schema } from "@/db";
+import { AppHeader } from "@/components/app-header";
 import { IconPlus } from "@/components/icons";
-import { AppHeader, Card, Pill, SectionTitle } from "@/components/ui";
-import { sampleExpenses, yen } from "@/lib/sample-data";
+import { Card, Pill, SectionTitle } from "@/components/ui";
+import { yen } from "@/lib/format";
+import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
-// 費用一覧(Walicaベース)
-export default function ExpensesPage() {
-  const total = sampleExpenses.reduce((s, x) => s + x.amount, 0);
+export default async function ExpensesPage() {
+  const { user, trip, db } = await requireTripContext();
+  const [expenses, members] = await Promise.all([
+    db.query.expenses.findMany({
+      where: eq(schema.expenses.tripId, trip.id),
+      orderBy: (e, { desc }) => [desc(e.createdAt)],
+    }),
+    getApprovedMembers(),
+  ]);
+  const shares = expenses.length
+    ? await db.query.expenseShares.findMany({
+        where: inArray(
+          schema.expenseShares.expenseId,
+          expenses.map((e) => e.id),
+        ),
+      })
+    : [];
+  const nameOf = (id: string) =>
+    members.find((m) => m.userId === id)?.name ?? "退会メンバー";
+
+  const groupTotal = expenses.reduce((s, e) => s + e.amount, 0);
+  const myConfirmed = shares
+    .filter(
+      (s) =>
+        s.userId === user.id && (s.status === "approved" || s.status === "forced"),
+    )
+    .reduce((s, x) => s + x.amount, 0);
+
+  const settlements = trip.expensesClosedAt
+    ? await db.query.settlements.findMany({
+        where: eq(schema.settlements.tripId, trip.id),
+      })
+    : [];
+  const mySettlements = settlements.filter(
+    (s) => s.fromUserId === user.id || s.toUserId === user.id,
+  );
+
   return (
     <>
       <AppHeader title="費用" />
@@ -12,61 +51,94 @@ export default function ExpensesPage() {
       <div className="mb-3 grid grid-cols-2 gap-2">
         <Card className="p-3">
           <div className="text-[11px] text-muted">グループ合計</div>
-          <div className="text-xl font-extrabold tabular-nums">{yen(total)}</div>
+          <div className="text-xl font-extrabold tabular-nums">{yen(groupTotal)}</div>
         </Card>
         <Card className="p-3">
           <div className="text-[11px] text-muted">あなたの負担(確定分)</div>
-          <div className="text-xl font-extrabold tabular-nums">{yen(3850)}</div>
+          <div className="text-xl font-extrabold tabular-nums">{yen(myConfirmed)}</div>
         </Card>
       </div>
 
-      {sampleExpenses.map((x) => (
-        <Card key={x.id} className="mb-2.5 flex items-center justify-between gap-2.5">
-          <div className="min-w-0">
-            <div className="text-sm font-bold">
-              {x.title}{" "}
-              {x.splitAll ? (
-                <>
-                  <Pill tone="violet">全員</Pill> <Pill tone="ok">確定</Pill>
-                </>
-              ) : (
-                <Pill tone="pend">
-                  承認 {x.approved}/{x.total}
-                </Pill>
-              )}
+      {expenses.length === 0 && (
+        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+          まだ費用がありません。右下の＋から追加してください。
+        </p>
+      )}
+
+      {expenses.map((x) => {
+        const xs = shares.filter((s) => s.expenseId === x.id);
+        const active = xs.filter((s) => s.status !== "excluded");
+        const done = active.filter(
+          (s) => s.status === "approved" || s.status === "forced",
+        );
+        const confirmed = x.splitAll || done.length === active.length;
+        return (
+          <Card key={x.id} className="mb-2.5 flex items-center justify-between gap-2.5">
+            <div className="min-w-0">
+              <div className="text-sm font-bold">
+                {x.title}{" "}
+                {x.splitAll && <Pill tone="violet">全員</Pill>}{" "}
+                {confirmed ? (
+                  <Pill tone="ok">確定</Pill>
+                ) : (
+                  <Pill tone="pend">承認 {done.length}/{active.length}</Pill>
+                )}
+              </div>
+              <div className="text-[11.5px] text-muted">
+                立替: {nameOf(x.paidBy)} · 対象{active.length}人 · 1人あたり{" "}
+                {yen(Math.round(x.amount / Math.max(1, active.length)))}
+                {x.splitAll && " · 承認不要"}
+              </div>
             </div>
-            <div className="text-[11.5px] text-muted">
-              立替: {x.paidBy}
-              {x.splitAll
-                ? ` · 1人あたり ${yen(Math.round(x.amount / 25))} · 承認不要`
-                : ` · ${x.event} · 対象${x.total}人`}
+            <div className="shrink-0 text-base font-extrabold tabular-nums">
+              {yen(x.amount)}
             </div>
-          </div>
-          <div className="shrink-0 text-base font-extrabold tabular-nums">
-            {yen(x.amount)}
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
 
       <SectionTitle>精算</SectionTitle>
-      <Card className="border-dashed">
-        <div className="text-sm font-bold">
-          精算 <Pill tone="info">締め後に表示</Pill>
-        </div>
-        <p className="mt-1 mb-2 text-xs text-muted">
-          管理者が経費入力を締め切ると、あなたの支払い先と金額がここに表示されます。
-        </p>
-        <div className="rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
-          表示例: <b className="tabular-nums">ゆうすけ さんへ ¥2,150 を支払う</b>
-        </div>
-      </Card>
+      {trip.expensesClosedAt ? (
+        <Card>
+          <div className="text-sm font-bold">
+            精算リスト <Pill tone="ok">締め済み</Pill>
+          </div>
+          {mySettlements.length === 0 ? (
+            <p className="mt-1.5 text-xs text-muted">あなたの精算はありません。</p>
+          ) : (
+            mySettlements.map((s) => (
+              <div key={s.id} className="mt-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
+                {s.fromUserId === user.id ? (
+                  <>
+                    <b>{nameOf(s.toUserId)} さんへ {yen(s.amount)} を支払う</b>
+                  </>
+                ) : (
+                  <>
+                    <b>{nameOf(s.fromUserId)} さんから {yen(s.amount)} を受け取る</b>
+                  </>
+                )}
+              </div>
+            ))
+          )}
+        </Card>
+      ) : (
+        <Card className="border-dashed">
+          <div className="text-sm font-bold">
+            精算 <Pill tone="info">締め後に表示</Pill>
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            管理者が経費入力を締め切ると、あなたの支払い先と金額がここに表示されます。
+          </p>
+        </Card>
+      )}
 
-      <button
+      <Link
+        href="/expenses/new"
         aria-label="費用を追加"
         className="fixed right-4 bottom-24 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
       >
         <IconPlus className="h-6 w-6" strokeWidth={2.4} />
-      </button>
+      </Link>
     </>
   );
 }

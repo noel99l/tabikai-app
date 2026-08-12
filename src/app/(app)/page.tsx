@@ -1,26 +1,85 @@
 import Link from "next/link";
-import { IconSuitcase } from "@/components/icons";
-import { AppHeader, Card, Pill, SectionTitle } from "@/components/ui";
-import {
-  samplePendingShares,
-  sampleTrip,
-  yen,
-} from "@/lib/sample-data";
+import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
+import { schema } from "@/db";
+import { AppHeader } from "@/components/app-header";
+import { IconSuitcase, IconUsers } from "@/components/icons";
+import { Card, Pill, SectionTitle } from "@/components/ui";
+import { fmtDateTime, fmtTime, untilLabel, yen } from "@/lib/format";
+import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 // ダッシュボード: イベントロゴ / 次の予定 / 未承認のコスト
-export default function DashboardPage() {
-  const pendingTotal = samplePendingShares.reduce((s, x) => s + x.yourShare, 0);
+export default async function DashboardPage() {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  const members = await getApprovedMembers();
+
+  // 次の予定: 自分が参加登録/招待されている今後のイベント
+  const upcoming = await db
+    .select({
+      id: schema.events.id,
+      title: schema.events.title,
+      startsAt: schema.events.startsAt,
+      endsAt: schema.events.endsAt,
+      status: schema.eventParticipants.status,
+      venueName: schema.venues.name,
+    })
+    .from(schema.eventParticipants)
+    .innerJoin(schema.events, eq(schema.events.id, schema.eventParticipants.eventId))
+    .innerJoin(schema.venues, eq(schema.venues.id, schema.events.venueId))
+    .where(
+      and(
+        eq(schema.events.tripId, trip.id),
+        eq(schema.eventParticipants.userId, user.id),
+        gte(schema.events.endsAt, new Date()),
+      ),
+    )
+    .orderBy(asc(schema.events.startsAt))
+    .limit(3);
+
+  // 未承認のコスト
+  const tripExpenses = await db.query.expenses.findMany({
+    where: eq(schema.expenses.tripId, trip.id),
+  });
+  const myPending = tripExpenses.length
+    ? await db.query.expenseShares.findMany({
+        where: and(
+          inArray(
+            schema.expenseShares.expenseId,
+            tripExpenses.map((e) => e.id),
+          ),
+          eq(schema.expenseShares.userId, user.id),
+          eq(schema.expenseShares.status, "pending"),
+        ),
+      })
+    : [];
+  const pendingTotal = myPending.reduce((s, x) => s + x.amount, 0);
+  const titleOf = (id: string) =>
+    tripExpenses.find((e) => e.id === id)?.title ?? "";
+
+  // 管理者向け: 参加承認待ちの人数
+  const [pendingMembers] = isAdmin
+    ? await db
+        .select({ value: count() })
+        .from(schema.tripMembers)
+        .where(
+          and(
+            eq(schema.tripMembers.tripId, trip.id),
+            eq(schema.tripMembers.status, "pending"),
+          ),
+        )
+    : [{ value: 0 }];
+
   return (
     <>
       <AppHeader title="ホーム" />
 
       <Card className="flex flex-col items-center py-5 text-center">
         <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] border-2 border-primary bg-primary-soft">
+          {/* ロゴ未登録時は標準アイコン(登録はフェーズ4の管理画面) */}
           <IconSuitcase className="h-9 w-9 text-primary" strokeWidth={1.7} />
         </span>
-        <div className="mt-2.5 text-lg font-extrabold">{sampleTrip.name}</div>
+        <div className="mt-2.5 text-lg font-extrabold">{trip.name}</div>
         <div className="text-xs text-muted">
-          2026/10/10 15:00 – 10/11 12:00 · 参加{sampleTrip.memberCount}人
+          {fmtDateTime(trip.startsAt)} – {fmtDateTime(trip.endsAt)} · 参加{members.length}人
         </div>
         <Link
           href="/trips"
@@ -30,62 +89,101 @@ export default function DashboardPage() {
         </Link>
       </Card>
 
+      {isAdmin && pendingMembers.value > 0 && (
+        <Link href="/manage/members" className="mt-2.5 block">
+          <Card className="flex items-center gap-3 border-pend bg-pend-soft">
+            <IconUsers className="h-5 w-5 text-pend" />
+            <span className="flex-1 text-[13px] font-bold text-pend">
+              参加承認待ちが {pendingMembers.value} 人います
+            </span>
+          </Card>
+        </Link>
+      )}
+      {isAdmin && (
+        <p className="mt-2 text-center text-[11.5px]">
+          <Link href="/manage/members" className="font-bold text-primary">
+            メンバー管理・招待リンクはこちら
+          </Link>
+        </p>
+      )}
+
       <SectionTitle>次の予定</SectionTitle>
-      <Card className="border-l-4 border-l-violet">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-sm font-bold">集合写真</div>
-            <div className="text-[11.5px] text-muted">
-              19:30 – 20:00 · ロビー · 参加登録済み
+      {upcoming.length === 0 && (
+        <Card>
+          <p className="text-center text-[12.5px] text-muted">
+            今後の予定はありません。
+            <Link href="/schedule/new" className="font-bold text-primary">
+              イベントを作成
+            </Link>
+            しましょう。
+          </p>
+        </Card>
+      )}
+      {upcoming.map((e, i) => {
+        const until = untilLabel(e.startsAt);
+        return (
+          <Card
+            key={e.id}
+            className={`mb-2.5 ${i === 0 ? "border-l-4 border-l-violet" : "opacity-80"}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-bold">{e.title}</div>
+                <div className="text-[11.5px] text-muted">
+                  {fmtDateTime(e.startsAt)} – {fmtTime(e.endsAt)} · {e.venueName}
+                  {e.status === "joined" ? " · 参加登録済み" : ""}
+                </div>
+              </div>
+              {until && e.status === "joined" ? (
+                <Pill tone="pend">{until}</Pill>
+              ) : e.status === "invited" ? (
+                <Pill tone="info">招待あり</Pill>
+              ) : null}
             </div>
-          </div>
-          <Pill tone="pend">あと5分</Pill>
-        </div>
-        <div className="mt-2.5 flex gap-2">
-          <Link
-            href="/schedule"
-            className="flex-1 rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-white"
-          >
-            詳細を見る
-          </Link>
-          <Link
-            href="/schedule"
-            className="flex-1 rounded-lg bg-primary-soft px-3 py-2 text-center text-xs font-bold text-primary"
-          >
-            予定表へ
-          </Link>
-        </div>
-      </Card>
-      <Card className="mt-2.5 opacity-75">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-sm font-bold">ボードゲーム大会</div>
-            <div className="text-[11.5px] text-muted">21:00 – 22:30 · 大広間</div>
-          </div>
-          <Pill tone="info">招待あり</Pill>
-        </div>
-      </Card>
+            {i === 0 && (
+              <div className="mt-2.5 flex gap-2">
+                <Link
+                  href={`/events/${e.id}`}
+                  className="flex-1 rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-white"
+                >
+                  詳細を見る
+                </Link>
+                <Link
+                  href="/schedule"
+                  className="flex-1 rounded-lg bg-primary-soft px-3 py-2 text-center text-xs font-bold text-primary"
+                >
+                  予定表へ
+                </Link>
+              </div>
+            )}
+          </Card>
+        );
+      })}
 
       <SectionTitle>未承認のコスト</SectionTitle>
-      <Card>
-        {samplePendingShares.map((s) => (
-          <div key={s.id} className="mb-2.5 flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[13.5px] font-bold">{s.expense}</div>
-              <div className="text-[11.5px] text-muted">
-                あなたの負担 {yen(s.yourShare)}
+      {myPending.length === 0 ? (
+        <Card>
+          <p className="text-center text-[12.5px] text-muted">未承認のコストはありません。</p>
+        </Card>
+      ) : (
+        <Card>
+          {myPending.map((s) => (
+            <div key={s.expenseId} className="mb-2.5 flex items-center justify-between gap-2">
+              <div>
+                <div className="text-[13.5px] font-bold">{titleOf(s.expenseId)}</div>
+                <div className="text-[11.5px] text-muted">あなたの負担 {yen(s.amount)}</div>
               </div>
+              <Pill tone="pend">承認待ち</Pill>
             </div>
-            <Pill tone="pend">承認待ち</Pill>
-          </div>
-        ))}
-        <Link
-          href="/approvals"
-          className="block w-full rounded-lg bg-primary px-3 py-2.5 text-center text-[13px] font-bold text-white"
-        >
-          承認画面へ({samplePendingShares.length}件 · 合計 {yen(pendingTotal)})
-        </Link>
-      </Card>
+          ))}
+          <Link
+            href="/approvals"
+            className="block w-full rounded-lg bg-primary px-3 py-2.5 text-center text-[13px] font-bold text-white"
+          >
+            承認画面へ({myPending.length}件 · 合計 {yen(pendingTotal)})
+          </Link>
+        </Card>
+      )}
     </>
   );
 }

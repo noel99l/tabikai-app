@@ -1,0 +1,183 @@
+"use server";
+
+import { and, eq, gt, lt, ne } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { schema } from "@/db";
+import { fmtDateTime, jstDate } from "@/lib/format";
+import { notify } from "@/lib/notify";
+import { getApprovedMembers, requireTripContext } from "@/lib/session";
+
+export async function createEvent(formData: FormData) {
+  const { user, trip, db } = await requireTripContext();
+  const title = String(formData.get("title") ?? "").trim();
+  const venueId = String(formData.get("venueId") ?? "");
+  const date = String(formData.get("date") ?? "");
+  const start = String(formData.get("start") ?? "");
+  const end = String(formData.get("end") ?? "");
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const inviteAll = formData.get("inviteAll") === "on";
+  const memberIds = formData.getAll("memberIds").map(String);
+  if (!title || !venueId || !date || !start || !end) {
+    return { error: "入力が不足しています" };
+  }
+  const startsAt = jstDate(date, start);
+  const endsAt = jstDate(date, end);
+  if (endsAt <= startsAt) {
+    return { error: "終了時刻は開始より後にしてください" };
+  }
+
+  // 同一会場・同一時間帯は早い者勝ちで不可
+  const conflict = await db.query.events.findFirst({
+    where: and(
+      eq(schema.events.venueId, venueId),
+      lt(schema.events.startsAt, endsAt),
+      gt(schema.events.endsAt, startsAt),
+    ),
+  });
+  if (conflict) {
+    return { error: `この時間帯は「${conflict.title}」が予約済みです` };
+  }
+
+  const [event] = await db
+    .insert(schema.events)
+    .values({
+      tripId: trip.id,
+      venueId,
+      title,
+      description,
+      startsAt,
+      endsAt,
+      hostId: user.id,
+      inviteAll,
+    })
+    .returning();
+
+  // 主催者は参加済みとして登録
+  await db.insert(schema.eventParticipants).values({
+    eventId: event.id,
+    userId: user.id,
+    status: "joined",
+  });
+
+  const members = await getApprovedMembers();
+  const inviteeIds = (
+    inviteAll ? members.map((m) => m.userId) : memberIds
+  ).filter((id) => id !== user.id);
+  if (!inviteAll && inviteeIds.length > 0) {
+    await db
+      .insert(schema.eventParticipants)
+      .values(
+        inviteeIds.map((userId) => ({
+          eventId: event.id,
+          userId,
+          status: "invited" as const,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+  await notify(db, trip.id, inviteeIds, {
+    type: "event_invite",
+    title: `「${title}」に招待されました`,
+    body: `${user.name} さんから · ${fmtDateTime(startsAt)}`,
+    link: `/events/${event.id}`,
+    senderId: user.id,
+  });
+
+  redirect(`/events/${event.id}`);
+}
+
+export async function joinEvent(eventId: string) {
+  const { user, db } = await requireTripContext();
+  await db
+    .insert(schema.eventParticipants)
+    .values({ eventId, userId: user.id, status: "joined" })
+    .onConflictDoUpdate({
+      target: [schema.eventParticipants.eventId, schema.eventParticipants.userId],
+      set: { status: "joined" },
+    });
+  revalidatePath(`/events/${eventId}`);
+}
+
+// 主催者・管理者がメンバーを参加者として追加
+export async function addParticipants(formData: FormData) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  const eventId = String(formData.get("eventId"));
+  const memberIds = formData.getAll("memberIds").map(String);
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) throw new Error("イベントが見つかりません");
+  if (event.hostId !== user.id && !isAdmin) {
+    throw new Error("主催者または管理者のみ操作できます");
+  }
+  if (memberIds.length === 0) return;
+  await db
+    .insert(schema.eventParticipants)
+    .values(
+      memberIds.map((userId) => ({
+        eventId,
+        userId,
+        status: "joined" as const,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: [schema.eventParticipants.eventId, schema.eventParticipants.userId],
+      set: { status: "joined" },
+    });
+  await notify(db, trip.id, memberIds, {
+    type: "event_invite",
+    title: `「${event.title}」の参加者に追加されました`,
+    body: `${user.name} さんが追加 · ${fmtDateTime(event.startsAt)}`,
+    link: `/events/${eventId}`,
+    senderId: user.id,
+  });
+  revalidatePath(`/events/${eventId}`);
+}
+
+// リマインド通知(開始5分前・デフォルトオン)の個人オン/オフ
+export async function toggleReminder(eventId: string, optOut: boolean) {
+  const { user, db } = await requireTripContext();
+  await db
+    .update(schema.eventParticipants)
+    .set({ remindOptOut: optOut })
+    .where(
+      and(
+        eq(schema.eventParticipants.eventId, eventId),
+        eq(schema.eventParticipants.userId, user.id),
+      ),
+    );
+  revalidatePath(`/events/${eventId}`);
+}
+
+export async function deleteEvent(eventId: string) {
+  const { user, db, isAdmin } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) redirect("/schedule");
+  if (event.hostId !== user.id && !isAdmin) {
+    throw new Error("主催者または管理者のみ削除できます");
+  }
+  // 参加登録者(主催者以外)へお知らせ
+  const participants = await db.query.eventParticipants.findMany({
+    where: and(
+      eq(schema.eventParticipants.eventId, eventId),
+      ne(schema.eventParticipants.userId, user.id),
+    ),
+  });
+  await db.delete(schema.events).where(eq(schema.events.id, eventId));
+  await notify(
+    db,
+    event.tripId,
+    participants.map((p) => p.userId),
+    {
+      type: "announce",
+      title: `「${event.title}」は中止になりました`,
+      body: `${fmtDateTime(event.startsAt)} の予定が削除されました。`,
+      link: "/schedule",
+      senderId: user.id,
+    },
+  );
+  redirect("/schedule");
+}
