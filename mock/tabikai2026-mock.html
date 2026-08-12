@@ -270,6 +270,7 @@
   <p class="sub">スマホ版(参加者向け)と PC 版(管理者向け)の画面案です。下のボタンで画面を切り替えられます。スマホ画面は下部タブでも遷移できます。イベントブロックをタップすると詳細画面に移動します。</p>
 
   <div class="switcher" role="tablist" aria-label="画面切替">
+    <button class="chip" data-v="login" onclick="go('login',this)">ログイン</button>
     <button class="chip on" data-v="notif" onclick="go('notif',this)">お知らせ</button>
     <button class="chip" data-v="sched" onclick="go('sched',this)">予定表</button>
     <button class="chip" data-v="detail" onclick="go('detail',this)">イベント詳細</button>
@@ -283,6 +284,27 @@
     <!-- ================= スマホ ================= -->
     <div class="phone" id="phone">
       <div class="statusbar"><span>19:42</span><span>🛜 ▮▮▮</span></div>
+
+      <!-- ===== ログイン ===== -->
+      <section class="screen" id="s-login" aria-label="ログイン">
+        <div style="text-align:center;padding:52px 10px 24px">
+          <div style="font-size:44px">🧳</div>
+          <h2 style="font-size:22px;color:var(--ink);margin:10px 0 4px">突然の旅会2026</h2>
+          <p class="muted" style="font-size:13px;margin:0">招待メンバー専用アプリ</p>
+        </div>
+        <button style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;font-family:inherit;font-size:14.5px;font-weight:700;color:var(--ink);cursor:pointer">
+          <span style="font-weight:800;color:#4285F4;font-size:17px">G</span> Google でログイン
+        </button>
+        <p class="muted" style="font-size:11.5px;text-align:center">Googleアカウントで本人確認を行います</p>
+        <div class="card" style="margin-top:22px">
+          <h3>ログイン後(参加承認待ちの場合)</h3>
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+            <span class="av" style="background:#B35C00;width:34px;height:34px;margin:0">た</span>
+            <div style="font-size:12.5px;color:var(--muted)">tabikai.taro@gmail.com でログイン中</div>
+          </div>
+          <div class="yourshare" style="margin:0">⏳ 管理者の参加承認待ちです。承認されるとアプリを利用できます。</div>
+        </div>
+      </section>
 
       <!-- ===== お知らせ ===== -->
       <section class="screen on" id="s-notif" aria-label="お知らせ">
@@ -460,6 +482,11 @@
           </div>
           <div class="amt money">¥4,000</div>
         </div>
+        <div class="card" style="border-style:dashed">
+          <h3>精算 <span class="pill info">締め後に表示</span></h3>
+          <p class="muted" style="font-size:12px;margin:4px 0 8px">管理者が経費入力を締め切ると、あなたの支払い先と金額がここに表示されます。</p>
+          <div class="yourshare" style="margin:0">表示例: <b class="money">ゆうすけ さんへ ¥2,150 を支払う</b></div>
+        </div>
         <button class="fab" aria-label="費用を追加" onclick="go('costform')">＋</button>
       </section>
 
@@ -593,6 +620,36 @@
             </table>
           </div>
 
+          <h3>メンバー参加承認</h3>
+          <p class="ds">Googleでログインしたメンバーの参加リクエストを承認します。承認までアプリは利用できません。</p>
+          <div class="tblwrap" style="max-width:560px">
+            <table>
+              <thead><tr><th>名前</th><th>Googleアカウント</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>たろう</td><td>tabikai.taro@gmail.com</td><td><button class="lnk e">承認</button><button class="lnk d">拒否</button></td></tr>
+                <tr><td>はなこ</td><td>hanako.trip@gmail.com</td><td><button class="lnk e">承認</button><button class="lnk d">拒否</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>精算(経費入力の締め)</h3>
+          <p class="ds">経費入力を締め切ると割り勘が確定し、送金回数が最少になる精算リストを全員に公開します。</p>
+          <div class="card" style="max-width:560px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px">
+              <div style="font-size:13px;color:var(--muted)">未承認の費用が <b style="color:var(--pend)">2件</b> あります</div>
+              <button class="btn">経費入力を締める</button>
+            </div>
+            <table>
+              <thead><tr><th>支払う人</th><th>受け取る人</th><th>金額</th></tr></thead>
+              <tbody>
+                <tr><td>みさき</td><td>ゆうすけ</td><td class="money">¥12,400</td></tr>
+                <tr><td>けんた</td><td>ゆうすけ</td><td class="money">¥9,800</td></tr>
+                <tr><td>あやか</td><td>けんた</td><td class="money">¥3,150</td></tr>
+              </tbody>
+            </table>
+            <p class="muted" style="font-size:11.5px;margin:8px 0 0">締め後に表示される精算結果のイメージ(自動計算)</p>
+          </div>
+
           <h3>通知を送る</h3>
           <p class="ds">全員(または選択メンバー)へ任意のタイミングでプッシュ通知+お知らせを配信します。</p>
           <div class="card composer" style="max-width:560px">
@@ -612,15 +669,16 @@
 
 <script>
   const captions = {
+    login:  "<b>ログイン</b> — Googleアカウントで本人を識別。初回ログイン時は「参加承認待ち」となり、管理者が承認すると利用開始できる。",
     notif:  "<b>お知らせ</b> — プッシュ通知の内容(全体アナウンス/リマインド)に加え、イベント招待・割り勘対象への追加もここに集約。未読は左端の赤点で表示。",
     sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋から会場と時間を指定して予約(=イベント作成)。",
     detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。参加者にはイベント開始前にリマインド通知(仮: 10分前、個別にオン/オフ可)。",
-    cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。",
+    cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。管理者が締めると自分の精算(支払い先と金額)が表示される。",
     costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。",
     appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。承認が揃うと費用が確定ステータスに。",
-    admin:  "<b>管理者(PC)</b> — 会場(部屋)の作成・編集、全イベントの編集削除、任意タイミングの全体通知送信。PCレイアウトは管理画面のみ。"
+    admin:  "<b>管理者(PC)</b> — 会場(部屋)の作成・編集、全イベントの編集削除、メンバーの参加承認、経費入力の締めと精算リスト公開、任意タイミングの全体通知送信。PCレイアウトは管理画面のみ。"
   };
-  const phoneScreens = ["notif","sched","detail","cost","costform","appr"];
+  const phoneScreens = ["login","notif","sched","detail","cost","costform","appr"];
   function go(v, chipEl){
     document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===v));
     const isPhone = phoneScreens.includes(v);
