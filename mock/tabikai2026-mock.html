@@ -91,6 +91,20 @@
   .bottomnav button.on{color:var(--primary);font-weight:700}
   .bottomnav button:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;border-radius:8px}
 
+  /* ============ SVGアイコン ============ */
+  .ico{
+    width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;display:block;flex:none;
+  }
+  .abr{display:flex;align-items:center;gap:12px}
+  .bellbtn{position:relative;background:none;border:0;cursor:pointer;color:var(--ink);padding:2px}
+  .bellbtn .badge{
+    position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:999px;
+    background:var(--food);color:#fff;font-size:9.5px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;padding:0 3px;
+  }
+  .bellbtn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+
   /* ============ 共通部品 ============ */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
   .card h3{margin:0 0 8px;font-size:14px;color:var(--ink)}
@@ -171,7 +185,7 @@
   }
 
   /* ============ イベント詳細 ============ */
-  .back{background:none;border:0;color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:6px 0}
+  .back{background:none;border:0;color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:4px}
   .detail-hero{border-left:4px solid var(--play);padding-left:12px;margin:4px 0 14px}
   .detail-hero h3{font-size:20px;margin:0 0 4px;color:var(--ink)}
   .detail-hero p{margin:0;font-size:13px;color:var(--muted)}
@@ -239,7 +253,7 @@
   .d-side{background:var(--surface);border-right:1px solid var(--line);padding:16px 10px}
   .d-side .logo{font-weight:800;font-size:14px;color:var(--ink);padding:0 10px 14px}
   .d-side nav button{
-    display:block;width:100%;text-align:left;border:0;background:none;font-family:inherit;
+    display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;font-family:inherit;
     font-size:13px;color:var(--muted);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:600;
   }
   .d-side nav button.on{background:var(--primary-soft);color:var(--primary)}
@@ -264,6 +278,26 @@
   }
 </style>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 16v-5.5a6 6 0 1 0-12 0V16l-2 2.5h16z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><rect x="3" y="4" width="3.6" height="3.6" rx="0.9"/><rect x="3" y="10.2" width="3.6" height="3.6" rx="0.9"/><rect x="3" y="16.4" width="3.6" height="3.6" rx="0.9"/><path d="M10.5 5.8H21M10.5 12H21M10.5 18.2H21"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 9.5L18 4v16L4 14.5v-5z"/><path d="M8 15.5V20"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7.5l9 6 9-6"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M17.5 15.5a5 5 0 0 1 3.5 4"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7.5L20 11"/><path d="M6 9.5V20h12V9.5"/></symbol>
+    <symbol id="i-case" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="13" rx="2.5"/><path d="M9 7V5.5A2.5 2.5 0 0 1 11.5 3h1A2.5 2.5 0 0 1 15 5.5V7M8.5 7v13M15.5 7v13"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M4.5 10.5a11 11 0 0 1 15 0M7.5 13.8a7 7 0 0 1 9 0"/><circle cx="12" cy="17.5" r="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-batt" viewBox="0 0 24 24"><rect x="2.5" y="8.5" width="17" height="8" rx="2"/><rect x="4.5" y="10.5" width="10" height="4" rx="1" fill="currentColor" stroke="none"/><path d="M21.5 11v3"/></symbol>
+  </defs>
+</svg>
+
 <div class="wrap">
   <p class="eyebrow">UI MOCK · v0.1 · 2026-08-12</p>
   <h1>突然の旅会2026 — アプリUIモック</h1>
@@ -271,9 +305,11 @@
 
   <div class="switcher" role="tablist" aria-label="画面切替">
     <button class="chip" data-v="login" onclick="go('login',this)">ログイン</button>
-    <button class="chip on" data-v="notif" onclick="go('notif',this)">お知らせ</button>
-    <button class="chip" data-v="sched" onclick="go('sched',this)">予定表</button>
+    <button class="chip" data-v="notif" onclick="go('notif',this)">お知らせ</button>
+    <button class="chip on" data-v="sched" onclick="go('sched',this)">予定表</button>
+    <button class="chip" data-v="create" onclick="go('create',this)">イベント作成</button>
     <button class="chip" data-v="detail" onclick="go('detail',this)">イベント詳細</button>
+    <button class="chip" data-v="items" onclick="go('items',this)">持ち物</button>
     <button class="chip" data-v="cost" onclick="go('cost',this)">費用</button>
     <button class="chip" data-v="costform" onclick="go('costform',this)">費用入力</button>
     <button class="chip" data-v="appr" onclick="go('appr',this)">費用承認</button>
@@ -283,12 +319,12 @@
   <div class="stage">
     <!-- ================= スマホ ================= -->
     <div class="phone" id="phone">
-      <div class="statusbar"><span>19:42</span><span>🛜 ▮▮▮</span></div>
+      <div class="statusbar"><span>19:42</span><span style="display:flex;gap:5px;align-items:center"><svg class="ico" style="width:15px;height:15px"><use href="#i-wifi"/></svg><svg class="ico" style="width:17px;height:17px"><use href="#i-batt"/></svg></span></div>
 
       <!-- ===== ログイン ===== -->
       <section class="screen" id="s-login" aria-label="ログイン">
         <div style="text-align:center;padding:52px 10px 24px">
-          <div style="font-size:44px">🧳</div>
+          <svg class="ico" style="width:48px;height:48px;margin:0 auto;color:var(--primary);stroke-width:1.6"><use href="#i-case"/></svg>
           <h2 style="font-size:22px;color:var(--ink);margin:10px 0 4px">突然の旅会2026</h2>
           <p class="muted" style="font-size:13px;margin:0">招待メンバー専用アプリ</p>
         </div>
@@ -302,15 +338,15 @@
             <span class="av" style="background:#B35C00;width:34px;height:34px;margin:0">た</span>
             <div style="font-size:12.5px;color:var(--muted)">tabikai.taro@gmail.com でログイン中</div>
           </div>
-          <div class="yourshare" style="margin:0">⏳ 管理者の参加承認待ちです。承認されるとアプリを利用できます。</div>
+          <div class="yourshare" style="margin:0;display:flex;gap:8px;align-items:center"><svg class="ico" style="width:16px;height:16px;color:var(--pend)"><use href="#i-clock"/></svg>管理者の参加承認待ちです。承認されるとアプリを利用できます。</div>
         </div>
       </section>
 
       <!-- ===== お知らせ ===== -->
-      <section class="screen on" id="s-notif" aria-label="お知らせ">
-        <div class="appbar"><h2>お知らせ</h2><span class="me">ゆ</span></div>
+      <section class="screen" id="s-notif" aria-label="お知らせ">
+        <div class="appbar"><h2>お知らせ</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
         <div class="card ntc unread">
-          <div class="ic" style="background:var(--food-soft)">🍖</div>
+          <div class="ic" style="background:var(--food-soft);color:var(--food)"><svg class="ico"><use href="#i-mega"/></svg></div>
           <div class="bd">
             <span class="pill info">全体</span>
             <p class="ttl">夕食が完成しました!</p>
@@ -318,7 +354,7 @@
           </div><time>18:02</time>
         </div>
         <div class="card ntc unread">
-          <div class="ic" style="background:var(--play-soft)">⏰</div>
+          <div class="ic" style="background:var(--pend-soft);color:var(--pend)"><svg class="ico"><use href="#i-clock"/></svg></div>
           <div class="bd">
             <span class="pill pend">リマインド</span>
             <p class="ttl">まもなく「集合写真」</p>
@@ -326,7 +362,7 @@
           </div><time>19:20</time>
         </div>
         <div class="card ntc">
-          <div class="ic" style="background:var(--misc-soft)">✉️</div>
+          <div class="ic" style="background:var(--misc-soft);color:var(--misc)"><svg class="ico"><use href="#i-mail"/></svg></div>
           <div class="bd">
             <span class="pill all">イベント招待</span>
             <p class="ttl">「ボードゲーム大会」に招待されました</p>
@@ -335,7 +371,7 @@
           </div><time>17:45</time>
         </div>
         <div class="card ntc">
-          <div class="ic" style="background:var(--pend-soft)">💴</div>
+          <div class="ic" style="background:var(--primary-soft);color:var(--primary)"><svg class="ico"><use href="#i-money"/></svg></div>
           <div class="bd">
             <span class="pill pend">費用</span>
             <p class="ttl">「カラオケ延長」の割り勘対象になりました</p>
@@ -344,7 +380,7 @@
           </div><time>22:10</time>
         </div>
         <div class="card ntc">
-          <div class="ic" style="background:var(--ok-soft)">✅</div>
+          <div class="ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ico"><use href="#i-check"/></svg></div>
           <div class="bd">
             <span class="pill ok">確定</span>
             <p class="ttl">「BBQ食材」が全員負担で計上されました</p>
@@ -354,8 +390,8 @@
       </section>
 
       <!-- ===== 予定表 ===== -->
-      <section class="screen" id="s-sched" aria-label="予定表">
-        <div class="appbar"><h2>予定表</h2><span class="me">ゆ</span></div>
+      <section class="screen on" id="s-sched" aria-label="予定表">
+        <div class="appbar"><h2>予定表</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
         <div class="daytabs">
           <button class="on" id="d1btn" onclick="day(1)">10/10(土)</button>
           <button id="d2btn" onclick="day(2)">10/11(日)</button>
@@ -381,7 +417,7 @@
             <div class="cell" style="grid-column:5;grid-row:1/15"></div>
             <!-- イベント -->
             <button class="ev misc" style="grid-column:4;grid-row:1/3" onclick="go('detail')">火起こし隊<small>17:00–18:00 · 4人</small></button>
-            <button class="ev food" style="grid-column:2;grid-row:3/6" onclick="go('detail')">夕食 🍖<small>18:00–19:30 · 全員</small></button>
+            <button class="ev food" style="grid-column:2;grid-row:3/6" onclick="go('detail')">夕食<small>18:00–19:30 · 全員</small></button>
             <button class="ev misc" style="grid-column:5;grid-row:6/7" onclick="go('detail')">集合写真<small>19:30</small></button>
             <button class="ev play" style="grid-column:3;grid-row:7/11" onclick="go('detail')">カラオケ自由枠<small>20:00–22:00 · 9人</small></button>
             <button class="ev play" style="grid-column:2;grid-row:9/12" onclick="go('detail')">ボードゲーム大会<small>21:00–22:30 · 8人</small></button>
@@ -406,18 +442,18 @@
             <div class="cell" style="grid-column:5;grid-row:1/11"></div>
             <button class="ev food" style="grid-column:2;grid-row:1/3" onclick="go('detail')">朝食<small>8:00–9:00 · 全員</small></button>
             <button class="ev misc" style="grid-column:5;grid-row:5/6" onclick="go('detail')">チェックアウト<small>10:00 · 全員</small></button>
-            <button class="ev misc" style="grid-column:5;grid-row:6/8" onclick="go('detail')">精算タイム 💴<small>10:30–11:30</small></button>
+            <button class="ev misc" style="grid-column:5;grid-row:6/8" onclick="go('detail')">精算タイム<small>10:30–11:30</small></button>
           </div>
         </div>
         </div>
 
-        <button class="fab" aria-label="会場を予約してイベントを作成">＋</button>
+        <button class="fab" aria-label="会場を予約してイベントを作成" onclick="go('create')"><svg class="ico" style="width:24px;height:24px;stroke-width:2.4"><use href="#i-plus"/></svg></button>
         <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">＋ボタンから「会場 × 時間帯」を指定して予約(=イベント作成)</p>
       </section>
 
       <!-- ===== イベント詳細 ===== -->
       <section class="screen" id="s-detail" aria-label="イベント詳細">
-        <button class="back" onclick="go('sched')">‹ 予定表へ戻る</button>
+        <button class="back" onclick="go('sched')"><svg class="ico" style="width:15px;height:15px"><use href="#i-back"/></svg>予定表へ戻る</button>
         <div class="detail-hero">
           <h3>ボードゲーム大会</h3>
           <p>10/10(土) 21:00 – 22:30</p>
@@ -441,15 +477,91 @@
             <span class="av" style="background:#C92A2A">し</span>
             <span class="av" style="background:#495C70">は</span>
             <span class="av" style="background:#8D6708">な</span>
+            <button class="av" style="background:var(--surface);border:1.5px dashed var(--muted);color:var(--muted);cursor:pointer;margin-left:2px" aria-label="参加者を追加"><svg class="ico" style="width:13px;height:13px;stroke-width:2.4"><use href="#i-plus"/></svg></button>
           </div>
+          <p class="muted" style="font-size:11px;margin:8px 0 0">主催者は＋からメンバーを選んで参加者に追加できます(追加された人にはお知らせ+通知)。</p>
         </div>
         <button class="btn" style="width:100%;padding:14px">このイベントに参加登録する</button>
         <p class="muted" style="font-size:11px;text-align:center">参加登録すると開始前にプッシュ通知でリマインドされます</p>
       </section>
 
+      <!-- ===== イベント作成 ===== -->
+      <section class="screen" id="s-create" aria-label="イベント作成">
+        <button class="back" onclick="go('sched')"><svg class="ico" style="width:15px;height:15px"><use href="#i-back"/></svg>予定表へ戻る</button>
+        <h2 style="font-size:19px;color:var(--ink);margin:2px 0 4px">イベントを作成</h2>
+        <label class="fl" for="e1">イベント名</label>
+        <input class="input" id="e1" value="花火大会" />
+        <label class="fl" for="e2">会場</label>
+        <select class="input" id="e2"><option>BBQガーデン</option><option>大広間</option><option>カラオケルーム</option><option>ロビー</option></select>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div><label class="fl" for="e3">日付</label><select class="input" id="e3"><option>10/10(土)</option><option>10/11(日)</option></select></div>
+          <div><label class="fl" for="e4">開始</label><select class="input" id="e4"><option>19:30</option></select></div>
+          <div><label class="fl" for="e5">終了</label><select class="input" id="e5"><option>20:30</option></select></div>
+        </div>
+        <div class="yourshare" style="display:flex;gap:8px;align-items:center;margin:12px 0 0"><svg class="ico" style="width:15px;height:15px;color:var(--ok)"><use href="#i-check"/></svg>この時間帯のBBQガーデンは空いています(重複時は作成不可)</div>
+        <label class="fl" for="e6">説明(任意)</label>
+        <input class="input" id="e6" value="手持ち花火をやります。ライター持参歓迎" />
+        <div class="checkrow">
+          <input type="checkbox" id="allinv" checked onchange="document.getElementById('echips').classList.toggle('off',this.checked)">
+          <label for="allinv">
+            <div class="t">全員を招待する</div>
+            <div class="s">オフにすると招待するメンバーを個別に選べます。</div>
+          </label>
+        </div>
+        <div class="memchips off" id="echips" style="margin-top:10px">
+          <button class="sel">みさき</button><button class="sel">けんた</button><button>あやか</button>
+          <button>たくみ</button><button class="sel">りな</button><button>しょう</button><button class="muted">…他18人</button>
+        </div>
+        <label class="fl" for="e7">リマインド通知</label>
+        <select class="input" id="e7"><option>10分前</option><option>30分前</option><option>通知しない</option></select>
+        <button class="btn" style="width:100%;padding:14px;margin-top:16px">会場を予約してイベントを作成</button>
+      </section>
+
+      <!-- ===== 持ち物リスト ===== -->
+      <section class="screen" id="s-items" aria-label="持ち物リスト">
+        <div class="appbar"><h2>持ち物リスト</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
+        <p class="muted" style="font-size:12.5px;margin:0 2px 10px">旅行に必要なものを全員で共有。「担当する」を押すと自分が持っていく宣言になります。</p>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">炭(3kg)</div>
+            <div class="sb">追加: けんた · BBQ用</div>
+          </div>
+          <span class="pill ok">担当: けんた</span>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">トランプ・UNO</div>
+            <div class="sb">追加: みさき · ボードゲーム大会用</div>
+          </div>
+          <button class="btn small ghost">担当する</button>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">救急セット</div>
+            <div class="sb">追加: あやか</div>
+          </div>
+          <span class="pill ok">担当: みさき</span>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">Bluetoothスピーカー</div>
+            <div class="sb">追加: ゆうすけ · 宴会用</div>
+          </div>
+          <button class="btn small ghost">担当する</button>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">モバイルバッテリー(2〜3個)</div>
+            <div class="sb">追加: たくみ</div>
+          </div>
+          <span class="pill pend">担当: 未定</span>
+        </div>
+        <button class="fab" aria-label="必要なものを追加"><svg class="ico" style="width:24px;height:24px;stroke-width:2.4"><use href="#i-plus"/></svg></button>
+      </section>
+
       <!-- ===== 費用 ===== -->
       <section class="screen" id="s-cost" aria-label="費用">
-        <div class="appbar"><h2>費用</h2><span class="me">ゆ</span></div>
+        <div class="appbar"><h2>費用</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
         <div class="sumgrid">
           <div class="sum"><div class="lb">グループ合計</div><div class="v money">¥86,400</div></div>
           <div class="sum"><div class="lb">あなたの負担(確定分)</div><div class="v money">¥3,850</div></div>
@@ -487,12 +599,12 @@
           <p class="muted" style="font-size:12px;margin:4px 0 8px">管理者が経費入力を締め切ると、あなたの支払い先と金額がここに表示されます。</p>
           <div class="yourshare" style="margin:0">表示例: <b class="money">ゆうすけ さんへ ¥2,150 を支払う</b></div>
         </div>
-        <button class="fab" aria-label="費用を追加" onclick="go('costform')">＋</button>
+        <button class="fab" aria-label="費用を追加" onclick="go('costform')"><svg class="ico" style="width:24px;height:24px;stroke-width:2.4"><use href="#i-plus"/></svg></button>
       </section>
 
       <!-- ===== 費用入力 ===== -->
       <section class="screen" id="s-costform" aria-label="費用入力">
-        <button class="back" onclick="go('cost')">‹ 費用一覧へ戻る</button>
+        <button class="back" onclick="go('cost')"><svg class="ico" style="width:15px;height:15px"><use href="#i-back"/></svg>費用一覧へ戻る</button>
         <h2 style="font-size:19px;color:var(--ink);margin:2px 0 4px">費用を追加</h2>
         <label class="fl" for="f1">内容</label>
         <input class="input" id="f1" value="花火セット" />
@@ -521,7 +633,7 @@
 
       <!-- ===== 承認 ===== -->
       <section class="screen" id="s-appr" aria-label="費用承認">
-        <div class="appbar"><h2>承認</h2><span class="me">ゆ</span></div>
+        <div class="appbar"><h2>承認</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
         <p class="muted" style="font-size:12.5px;margin:0 2px 10px">あなたが割り勘対象になっている費用です。内容を確認して承認してください。</p>
         <div class="card appr">
           <div class="row">
@@ -565,10 +677,10 @@
 
       <!-- 下タブ -->
       <nav class="bottomnav" aria-label="メインナビゲーション">
-        <button data-v="notif" class="on" onclick="go('notif')"><span class="ic">🔔</span>お知らせ</button>
-        <button data-v="sched" onclick="go('sched')"><span class="ic">🗓️</span>予定表</button>
-        <button data-v="cost" onclick="go('cost')"><span class="ic">💴</span>費用</button>
-        <button data-v="appr" onclick="go('appr')"><span class="ic">✅</span>承認</button>
+        <button data-v="sched" class="on" onclick="go('sched')"><svg class="ico"><use href="#i-cal"/></svg>予定表</button>
+        <button data-v="items" onclick="go('items')"><svg class="ico"><use href="#i-list"/></svg>持ち物</button>
+        <button data-v="cost" onclick="go('cost')"><svg class="ico"><use href="#i-money"/></svg>費用</button>
+        <button data-v="appr" onclick="go('appr')"><svg class="ico"><use href="#i-check"/></svg>承認</button>
       </nav>
     </div>
 
@@ -584,11 +696,11 @@
         <aside class="d-side">
           <div class="logo">突然の旅会2026<br><span style="font-size:11px;color:var(--muted);font-weight:600">管理コンソール</span></div>
           <nav>
-            <button class="on">🏠 会場(部屋)管理</button>
-            <button>🗓️ イベント管理</button>
-            <button>💴 費用の状況</button>
-            <button>👥 メンバー管理</button>
-            <button>📣 通知を送る</button>
+            <button class="on"><svg class="ico" style="width:16px;height:16px"><use href="#i-home"/></svg>会場(部屋)管理</button>
+            <button><svg class="ico" style="width:16px;height:16px"><use href="#i-cal"/></svg>イベント管理</button>
+            <button><svg class="ico" style="width:16px;height:16px"><use href="#i-money"/></svg>費用の状況</button>
+            <button><svg class="ico" style="width:16px;height:16px"><use href="#i-users"/></svg>メンバー管理</button>
+            <button><svg class="ico" style="width:16px;height:16px"><use href="#i-mega"/></svg>通知を送る</button>
           </nav>
         </aside>
         <main class="d-main">
@@ -613,7 +725,7 @@
             <table>
               <thead><tr><th>イベント</th><th>日時</th><th>会場</th><th>主催</th><th>参加</th><th></th></tr></thead>
               <tbody>
-                <tr><td>夕食 🍖</td><td>10/10 18:00–19:30</td><td>大広間</td><td>運営</td><td>25人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>夕食</td><td>10/10 18:00–19:30</td><td>大広間</td><td>運営</td><td>25人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
                 <tr><td>カラオケ自由枠</td><td>10/10 20:00–22:00</td><td>カラオケ</td><td>けんた</td><td>9人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
                 <tr><td>ボードゲーム大会</td><td>10/10 21:00–22:30</td><td>大広間</td><td>みさき</td><td>8人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
               </tbody>
@@ -670,15 +782,17 @@
 <script>
   const captions = {
     login:  "<b>ログイン</b> — Googleアカウントで本人を識別。初回ログイン時は「参加承認待ち」となり、管理者が承認すると利用開始できる。",
-    notif:  "<b>お知らせ</b> — プッシュ通知の内容(全体アナウンス/リマインド)に加え、イベント招待・割り勘対象への追加もここに集約。未読は左端の赤点で表示。",
-    sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋から会場と時間を指定して予約(=イベント作成)。",
-    detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。参加者にはイベント開始前にリマインド通知(仮: 10分前、個別にオン/オフ可)。",
+    notif:  "<b>お知らせ</b> — 各画面のヘッダー右上のベルアイコン(未読バッジつき)から常時アクセス。プッシュ通知の内容に加え、イベント招待・割り勘対象への追加もここに集約。",
+    sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋からイベント作成画面へ。",
+    create: "<b>イベント作成</b> — 会場×日時を指定して予約(=イベント作成)。重複チェックつき。「全員を招待」か個別選択で招待し、リマインド時間も設定。",
+    detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。主催者は参加者アイコン末尾の＋からメンバーを追加できる。参加者には開始前にリマインド通知。",
+    items:  "<b>持ち物リスト</b> — 必要なものを全体で共有。誰でも追加でき、「担当する」で持っていく人を宣言。担当未定が一目でわかる。",
     cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。管理者が締めると自分の精算(支払い先と金額)が表示される。",
     costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。",
     appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。承認が揃うと費用が確定ステータスに。",
     admin:  "<b>管理者(PC)</b> — 会場(部屋)の作成・編集、全イベントの編集削除、メンバーの参加承認、経費入力の締めと精算リスト公開、任意タイミングの全体通知送信。PCレイアウトは管理画面のみ。"
   };
-  const phoneScreens = ["login","notif","sched","detail","cost","costform","appr"];
+  const phoneScreens = ["login","notif","sched","create","detail","items","cost","costform","appr"];
   function go(v, chipEl){
     document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===v));
     const isPhone = phoneScreens.includes(v);
@@ -686,7 +800,7 @@
     document.getElementById("desktop").classList.toggle("on", v==="admin");
     if(isPhone){
       document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+v));
-      const navMap = {notif:"notif",sched:"sched",detail:"sched",cost:"cost",costform:"cost",appr:"appr"};
+      const navMap = {sched:"sched",create:"sched",detail:"sched",items:"items",cost:"cost",costform:"cost",appr:"appr"};
       document.querySelectorAll(".bottomnav button").forEach(b=>b.classList.toggle("on", b.dataset.v===navMap[v]));
     }
     document.getElementById("caption").innerHTML = captions[v];
@@ -703,5 +817,5 @@
       ? "全員割り勘がオンのため個別選択は不要です。"
       : "負担するメンバーを選択してください。個別指定の場合、各メンバーの承認後に確定します。";
   }
-  document.getElementById("caption").innerHTML = captions.notif;
+  document.getElementById("caption").innerHTML = captions.sched;
 </script>
