@@ -1,0 +1,649 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>突然の旅会2026 UIモック</title>
+<style>
+  /* ============ 単一テーマ(スタジオ背景 + ライトUI)を明示的に塗る ============ */
+  :root{
+    --backdrop:#252A33;
+    --backdrop-2:#2C323D;
+    --page-ink:#E9EBEE;
+    --page-muted:#9AA4B0;
+    --screen-bg:#F4F6F8;
+    --surface:#FFFFFF;
+    --ink:#1E2530;
+    --muted:#68727F;
+    --line:#E3E7EC;
+    --primary:#0B7285;
+    --primary-soft:#E0F1F4;
+    --food:#D9480F;
+    --food-soft:#FDEBE2;
+    --play:#0B7285;
+    --play-soft:#DFF0F3;
+    --misc:#6741D9;
+    --misc-soft:#EDE7FB;
+    --ok:#2B8A3E;
+    --ok-soft:#E3F3E7;
+    --pend:#B35C00;
+    --pend-soft:#FCF0DF;
+    --danger:#C92A2A;
+    --r:12px;
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--backdrop);color:var(--page-ink);
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+
+  /* ============ ページヘッダ ============ */
+  .eyebrow{font-size:11px;letter-spacing:.18em;color:var(--page-muted);text-transform:uppercase}
+  h1{font-size:26px;margin:6px 0 4px;font-weight:700;text-wrap:balance}
+  .sub{color:var(--page-muted);font-size:13px;margin:0 0 24px;max-width:40em}
+
+  /* 画面切替チップ */
+  .switcher{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+  .chip{
+    border:1px solid #3A414D;background:var(--backdrop-2);color:var(--page-ink);
+    border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  .chip:hover{border-color:#4A5361}
+  .chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .chip:focus-visible{outline:2px solid #7FC8D6;outline-offset:2px}
+  .chip .tag{font-size:10px;opacity:.7;margin-left:4px}
+
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .note{color:var(--page-muted);font-size:12.5px;max-width:44em;text-align:center}
+  .note b{color:var(--page-ink);font-weight:600}
+
+  /* ============ スマホフレーム ============ */
+  .phone{
+    width:390px;max-width:100%;height:760px;background:var(--screen-bg);
+    border-radius:38px;border:8px solid #10141A;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.45);
+  }
+  .statusbar{
+    flex:none;display:flex;justify-content:space-between;align-items:center;
+    padding:10px 22px 4px;font-size:12px;font-weight:600;color:var(--ink);background:var(--screen-bg);
+  }
+  .appbar{
+    flex:none;display:flex;align-items:center;justify-content:space-between;
+    padding:8px 18px 10px;background:var(--screen-bg);
+  }
+  .appbar h2{font-size:19px;margin:0;color:var(--ink)}
+  .appbar .me{
+    width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+  }
+  .screen{flex:1;overflow-y:auto;padding:4px 14px 16px;display:none}
+  .screen.on{display:block}
+
+  /* 下タブ */
+  .bottomnav{
+    flex:none;display:flex;border-top:1px solid var(--line);background:var(--surface);
+    padding:6px 4px 14px;
+  }
+  .bottomnav button{
+    flex:1;background:none;border:0;font-family:inherit;font-size:10px;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;
+  }
+  .bottomnav button .ic{font-size:19px;line-height:1}
+  .bottomnav button.on{color:var(--primary);font-weight:700}
+  .bottomnav button:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;border-radius:8px}
+
+  /* ============ 共通部品 ============ */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+  .card h3{margin:0 0 8px;font-size:14px;color:var(--ink)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 9px;vertical-align:middle}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.pend{background:var(--pend-soft);color:var(--pend)}
+  .pill.info{background:var(--primary-soft);color:var(--primary)}
+  .pill.all{background:var(--misc-soft);color:var(--misc)}
+  .money{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .btn{
+    display:inline-block;border:0;border-radius:10px;padding:10px 16px;font-family:inherit;
+    font-size:13.5px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;
+  }
+  .btn.ghost{background:var(--primary-soft);color:var(--primary)}
+  .btn.small{padding:6px 12px;font-size:12px;border-radius:8px}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .avatars{display:flex}
+  .av{
+    width:28px;height:28px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;border:2px solid var(--surface);
+    margin-left:-6px;
+  }
+  .av:first-child{margin-left:0}
+  .muted{color:var(--muted)}
+
+  /* ============ お知らせ ============ */
+  .ntc{display:flex;gap:11px;align-items:flex-start}
+  .ntc .ic{
+    flex:none;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+    justify-content:center;font-size:18px;
+  }
+  .ntc .bd{flex:1;min-width:0}
+  .ntc .ttl{font-size:13.5px;font-weight:700;color:var(--ink);margin:2px 0}
+  .ntc .tx{font-size:12.5px;color:var(--muted);margin:0}
+  .ntc time{font-size:11px;color:var(--muted);flex:none}
+  .unread{position:relative}
+  .unread::before{
+    content:"";position:absolute;left:-8px;top:50%;width:6px;height:6px;border-radius:50%;
+    background:var(--food);transform:translateY(-50%);
+  }
+
+  /* ============ 予定表(Teams風) ============ */
+  .daytabs{display:flex;gap:6px;margin:6px 0 10px}
+  .daytabs button{
+    flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;
+    padding:8px 4px;font-family:inherit;font-size:12.5px;color:var(--muted);cursor:pointer;font-weight:600;
+  }
+  .daytabs button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .sched{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .sched-head{
+    display:grid;grid-template-columns:38px repeat(4,1fr);border-bottom:1px solid var(--line);
+    font-size:10px;font-weight:700;color:var(--muted);text-align:center;
+  }
+  .sched-head div{padding:8px 2px;border-left:1px solid var(--line);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .sched-head div:first-child{border-left:0}
+  .sched-grid{
+    display:grid;grid-template-columns:38px repeat(4,1fr);grid-auto-rows:26px;position:relative;
+  }
+  .tlabel{
+    grid-column:1;font-size:9.5px;color:var(--muted);text-align:right;padding-right:5px;
+    transform:translateY(-7px);font-variant-numeric:tabular-nums;
+  }
+  .cell{border-left:1px solid var(--line);border-top:1px solid #EEF1F4}
+  .ev{
+    margin:1px 2px;border-radius:7px;padding:4px 6px;font-size:10px;line-height:1.25;
+    font-weight:700;overflow:hidden;cursor:pointer;border:0;text-align:left;font-family:inherit;
+    display:block;width:calc(100% - 4px);
+  }
+  .ev small{display:block;font-weight:500;opacity:.75;font-size:9px}
+  .ev.food{background:var(--food-soft);color:var(--food);border-left:3px solid var(--food)}
+  .ev.play{background:var(--play-soft);color:var(--play);border-left:3px solid var(--play)}
+  .ev.misc{background:var(--misc-soft);color:var(--misc);border-left:3px solid var(--misc)}
+  .ev:focus-visible{outline:2px solid var(--ink)}
+  .fab{
+    position:sticky;bottom:8px;margin-left:auto;display:flex;width:52px;height:52px;border-radius:50%;
+    background:var(--primary);color:#fff;font-size:26px;border:0;cursor:pointer;
+    align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(11,114,133,.4);
+  }
+
+  /* ============ イベント詳細 ============ */
+  .back{background:none;border:0;color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:6px 0}
+  .detail-hero{border-left:4px solid var(--play);padding-left:12px;margin:4px 0 14px}
+  .detail-hero h3{font-size:20px;margin:0 0 4px;color:var(--ink)}
+  .detail-hero p{margin:0;font-size:13px;color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv dt{color:var(--muted);margin:0}
+  .kv dd{margin:0;color:var(--ink);font-weight:600}
+  .toggle{
+    width:44px;height:26px;border-radius:999px;background:var(--ok);position:relative;border:0;cursor:pointer;
+  }
+  .toggle::after{
+    content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;
+  }
+
+  /* ============ 費用 ============ */
+  .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .sum{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+  .sum .lb{font-size:11px;color:var(--muted)}
+  .sum .v{font-size:20px;font-weight:800;color:var(--ink)}
+  .exp{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .exp .bd{min-width:0}
+  .exp .ttl{font-size:14px;font-weight:700;color:var(--ink)}
+  .exp .sb{font-size:11.5px;color:var(--muted)}
+  .exp .amt{font-size:16px;font-weight:800;color:var(--ink);text-align:right;flex:none}
+
+  /* ============ フォーム ============ */
+  label.fl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 5px}
+  .input,select.input{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;
+    font-family:inherit;background:var(--surface);color:var(--ink);
+  }
+  .checkrow{
+    display:flex;gap:10px;align-items:flex-start;background:var(--primary-soft);
+    border-radius:10px;padding:12px;margin-top:14px;
+  }
+  .checkrow input{width:20px;height:20px;accent-color:var(--primary);margin-top:1px}
+  .checkrow .t{font-size:13px;font-weight:700;color:var(--ink)}
+  .checkrow .s{font-size:11.5px;color:var(--primary);margin-top:2px}
+  .memchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .memchips button{
+    border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;
+    font-size:12.5px;font-family:inherit;color:var(--ink);cursor:pointer;
+  }
+  .memchips button.sel{background:var(--primary);border-color:var(--primary);color:#fff}
+  .memchips.off{opacity:.35;pointer-events:none}
+
+  /* ============ 承認 ============ */
+  .appr .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .appr .who{font-size:11.5px;color:var(--muted)}
+  .yourshare{font-size:12.5px;color:var(--ink);background:var(--screen-bg);border-radius:8px;padding:7px 10px;margin:9px 0}
+
+  /* ============ 管理者(PC) ============ */
+  .desktop{
+    width:100%;max-width:1040px;background:var(--screen-bg);border-radius:14px;overflow:hidden;
+    border:1px solid #10141A;box-shadow:0 24px 60px rgba(0,0,0,.45);display:none;
+  }
+  .desktop.on{display:block}
+  .d-titlebar{background:#E8ECF0;padding:9px 14px;display:flex;gap:6px;align-items:center}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .d-url{
+    flex:1;background:#fff;border-radius:6px;font-size:11.5px;color:var(--muted);
+    padding:4px 12px;margin-left:8px;
+  }
+  .d-body{display:grid;grid-template-columns:200px 1fr;min-height:560px}
+  .d-side{background:var(--surface);border-right:1px solid var(--line);padding:16px 10px}
+  .d-side .logo{font-weight:800;font-size:14px;color:var(--ink);padding:0 10px 14px}
+  .d-side nav button{
+    display:block;width:100%;text-align:left;border:0;background:none;font-family:inherit;
+    font-size:13px;color:var(--muted);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:600;
+  }
+  .d-side nav button.on{background:var(--primary-soft);color:var(--primary)}
+  .d-main{padding:20px 24px;overflow-x:auto}
+  .d-main h3{margin:0 0 4px;font-size:17px;color:var(--ink)}
+  .d-main .ds{font-size:12.5px;color:var(--muted);margin:0 0 16px}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;font-size:13px}
+  th{font-size:11px;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFBFC}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  .tblwrap{overflow-x:auto;margin-bottom:20px}
+  .lnk{background:none;border:0;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 6px}
+  .lnk.e{color:var(--primary)} .lnk.d{color:var(--danger)}
+  .composer textarea{
+    width:100%;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:13.5px;
+    padding:11px;min-height:74px;resize:vertical;background:var(--surface);color:var(--ink);
+  }
+  @media (max-width:760px){.d-body{grid-template-columns:1fr}.d-side{display:none}}
+  @media (prefers-reduced-motion:no-preference){
+    .screen.on{animation:fadein .18s ease}
+    @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">UI MOCK · v0.1 · 2026-08-12</p>
+  <h1>突然の旅会2026 — アプリUIモック</h1>
+  <p class="sub">スマホ版(参加者向け)と PC 版(管理者向け)の画面案です。下のボタンで画面を切り替えられます。スマホ画面は下部タブでも遷移できます。イベントブロックをタップすると詳細画面に移動します。</p>
+
+  <div class="switcher" role="tablist" aria-label="画面切替">
+    <button class="chip on" data-v="notif" onclick="go('notif',this)">お知らせ</button>
+    <button class="chip" data-v="sched" onclick="go('sched',this)">予定表</button>
+    <button class="chip" data-v="detail" onclick="go('detail',this)">イベント詳細</button>
+    <button class="chip" data-v="cost" onclick="go('cost',this)">費用</button>
+    <button class="chip" data-v="costform" onclick="go('costform',this)">費用入力</button>
+    <button class="chip" data-v="appr" onclick="go('appr',this)">費用承認</button>
+    <button class="chip" data-v="admin" onclick="go('admin',this)">管理者 <span class="tag">PC</span></button>
+  </div>
+
+  <div class="stage">
+    <!-- ================= スマホ ================= -->
+    <div class="phone" id="phone">
+      <div class="statusbar"><span>19:42</span><span>🛜 ▮▮▮</span></div>
+
+      <!-- ===== お知らせ ===== -->
+      <section class="screen on" id="s-notif" aria-label="お知らせ">
+        <div class="appbar"><h2>お知らせ</h2><span class="me">ゆ</span></div>
+        <div class="card ntc unread">
+          <div class="ic" style="background:var(--food-soft)">🍖</div>
+          <div class="bd">
+            <span class="pill info">全体</span>
+            <p class="ttl">夕食が完成しました!</p>
+            <p class="tx">大広間にお集まりください。飲み物は各自持参で。</p>
+          </div><time>18:02</time>
+        </div>
+        <div class="card ntc unread">
+          <div class="ic" style="background:var(--play-soft)">⏰</div>
+          <div class="bd">
+            <span class="pill pend">リマインド</span>
+            <p class="ttl">まもなく「集合写真」</p>
+            <p class="tx">10分後(19:30)にロビーで開始します。</p>
+          </div><time>19:20</time>
+        </div>
+        <div class="card ntc">
+          <div class="ic" style="background:var(--misc-soft)">✉️</div>
+          <div class="bd">
+            <span class="pill all">イベント招待</span>
+            <p class="ttl">「ボードゲーム大会」に招待されました</p>
+            <p class="tx">みさき さんから · 21:00〜 大広間</p>
+            <p style="margin:8px 0 0"><button class="btn small" onclick="go('detail')">内容を見る</button></p>
+          </div><time>17:45</time>
+        </div>
+        <div class="card ntc">
+          <div class="ic" style="background:var(--pend-soft)">💴</div>
+          <div class="bd">
+            <span class="pill pend">費用</span>
+            <p class="ttl">「カラオケ延長」の割り勘対象になりました</p>
+            <p class="tx">みさき さんが立替 · あなたの負担 ¥1,000</p>
+            <p style="margin:8px 0 0"><button class="btn small ghost" onclick="go('appr')">確認して承認する</button></p>
+          </div><time>22:10</time>
+        </div>
+        <div class="card ntc">
+          <div class="ic" style="background:var(--ok-soft)">✅</div>
+          <div class="bd">
+            <span class="pill ok">確定</span>
+            <p class="ttl">「BBQ食材」が全員負担で計上されました</p>
+            <p class="tx">けんた さんが立替 · ¥18,400(1人 ¥800)</p>
+          </div><time>16:30</time>
+        </div>
+      </section>
+
+      <!-- ===== 予定表 ===== -->
+      <section class="screen" id="s-sched" aria-label="予定表">
+        <div class="appbar"><h2>予定表</h2><span class="me">ゆ</span></div>
+        <div class="daytabs">
+          <button class="on" id="d1btn" onclick="day(1)">10/10(土)</button>
+          <button id="d2btn" onclick="day(2)">10/11(日)</button>
+        </div>
+
+        <div id="day1">
+        <div class="sched">
+          <div class="sched-head">
+            <div></div><div>大広間</div><div>カラオケ</div><div>BBQ場</div><div>ロビー</div>
+          </div>
+          <div class="sched-grid">
+            <div class="tlabel" style="grid-row:1">17:00</div>
+            <div class="tlabel" style="grid-row:3">18:00</div>
+            <div class="tlabel" style="grid-row:5">19:00</div>
+            <div class="tlabel" style="grid-row:7">20:00</div>
+            <div class="tlabel" style="grid-row:9">21:00</div>
+            <div class="tlabel" style="grid-row:11">22:00</div>
+            <div class="tlabel" style="grid-row:13">23:00</div>
+            <!-- 罫線セル -->
+            <div class="cell" style="grid-column:2;grid-row:1/15"></div>
+            <div class="cell" style="grid-column:3;grid-row:1/15"></div>
+            <div class="cell" style="grid-column:4;grid-row:1/15"></div>
+            <div class="cell" style="grid-column:5;grid-row:1/15"></div>
+            <!-- イベント -->
+            <button class="ev misc" style="grid-column:4;grid-row:1/3" onclick="go('detail')">火起こし隊<small>17:00–18:00 · 4人</small></button>
+            <button class="ev food" style="grid-column:2;grid-row:3/6" onclick="go('detail')">夕食 🍖<small>18:00–19:30 · 全員</small></button>
+            <button class="ev misc" style="grid-column:5;grid-row:6/7" onclick="go('detail')">集合写真<small>19:30</small></button>
+            <button class="ev play" style="grid-column:3;grid-row:7/11" onclick="go('detail')">カラオケ自由枠<small>20:00–22:00 · 9人</small></button>
+            <button class="ev play" style="grid-column:2;grid-row:9/12" onclick="go('detail')">ボードゲーム大会<small>21:00–22:30 · 8人</small></button>
+          </div>
+        </div>
+        </div>
+
+        <div id="day2" style="display:none">
+        <div class="sched">
+          <div class="sched-head">
+            <div></div><div>大広間</div><div>カラオケ</div><div>BBQ場</div><div>ロビー</div>
+          </div>
+          <div class="sched-grid">
+            <div class="tlabel" style="grid-row:1">8:00</div>
+            <div class="tlabel" style="grid-row:3">9:00</div>
+            <div class="tlabel" style="grid-row:5">10:00</div>
+            <div class="tlabel" style="grid-row:7">11:00</div>
+            <div class="tlabel" style="grid-row:9">12:00</div>
+            <div class="cell" style="grid-column:2;grid-row:1/11"></div>
+            <div class="cell" style="grid-column:3;grid-row:1/11"></div>
+            <div class="cell" style="grid-column:4;grid-row:1/11"></div>
+            <div class="cell" style="grid-column:5;grid-row:1/11"></div>
+            <button class="ev food" style="grid-column:2;grid-row:1/3" onclick="go('detail')">朝食<small>8:00–9:00 · 全員</small></button>
+            <button class="ev misc" style="grid-column:5;grid-row:5/6" onclick="go('detail')">チェックアウト<small>10:00 · 全員</small></button>
+            <button class="ev misc" style="grid-column:5;grid-row:6/8" onclick="go('detail')">精算タイム 💴<small>10:30–11:30</small></button>
+          </div>
+        </div>
+        </div>
+
+        <button class="fab" aria-label="会場を予約してイベントを作成">＋</button>
+        <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">＋ボタンから「会場 × 時間帯」を指定して予約(=イベント作成)</p>
+      </section>
+
+      <!-- ===== イベント詳細 ===== -->
+      <section class="screen" id="s-detail" aria-label="イベント詳細">
+        <button class="back" onclick="go('sched')">‹ 予定表へ戻る</button>
+        <div class="detail-hero">
+          <h3>ボードゲーム大会</h3>
+          <p>10/10(土) 21:00 – 22:30</p>
+        </div>
+        <div class="card">
+          <dl style="margin:0">
+            <div class="kv"><dt>会場</dt><dd>大広間</dd></div>
+            <div class="kv"><dt>主催</dt><dd>みさき</dd></div>
+            <div class="kv"><dt>持ち物</dt><dd>特になし(ボドゲは主催が持参)</dd></div>
+            <div class="kv"><dt>リマインド通知</dt><dd style="display:flex;align-items:center;gap:8px">10分前 <button class="toggle" aria-label="リマインド通知オン"></button></dd></div>
+          </dl>
+        </div>
+        <div class="card">
+          <h3>参加者 <span class="muted" style="font-weight:500">8 / 25人</span></h3>
+          <div class="avatars">
+            <span class="av" style="background:#0B7285">み</span>
+            <span class="av" style="background:#D9480F">け</span>
+            <span class="av" style="background:#6741D9">あ</span>
+            <span class="av" style="background:#B35C00">た</span>
+            <span class="av" style="background:#2B8A3E">り</span>
+            <span class="av" style="background:#C92A2A">し</span>
+            <span class="av" style="background:#495C70">は</span>
+            <span class="av" style="background:#8D6708">な</span>
+          </div>
+        </div>
+        <button class="btn" style="width:100%;padding:14px">このイベントに参加登録する</button>
+        <p class="muted" style="font-size:11px;text-align:center">参加登録すると開始前にプッシュ通知でリマインドされます</p>
+      </section>
+
+      <!-- ===== 費用 ===== -->
+      <section class="screen" id="s-cost" aria-label="費用">
+        <div class="appbar"><h2>費用</h2><span class="me">ゆ</span></div>
+        <div class="sumgrid">
+          <div class="sum"><div class="lb">グループ合計</div><div class="v money">¥86,400</div></div>
+          <div class="sum"><div class="lb">あなたの負担(確定分)</div><div class="v money">¥3,850</div></div>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">宿泊費 <span class="pill all">全員</span> <span class="pill ok">確定</span></div>
+            <div class="sb">立替: ゆうすけ · 1人あたり ¥2,400 · 承認不要</div>
+          </div>
+          <div class="amt money">¥60,000</div>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">BBQ食材 <span class="pill all">全員</span> <span class="pill ok">確定</span></div>
+            <div class="sb">立替: けんた · 1人あたり ¥800 · 承認不要</div>
+          </div>
+          <div class="amt money">¥18,400</div>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">カラオケ延長 <span class="pill pend">承認 2/4</span></div>
+            <div class="sb">立替: みさき · 対象4人 · 1人 ¥1,000</div>
+          </div>
+          <div class="amt money">¥4,000</div>
+        </div>
+        <div class="card exp">
+          <div class="bd">
+            <div class="ttl">タクシー(駅→宿) <span class="pill pend">承認 1/3</span></div>
+            <div class="sb">立替: あやか · 対象3人 · 1人 ¥1,334</div>
+          </div>
+          <div class="amt money">¥4,000</div>
+        </div>
+        <button class="fab" aria-label="費用を追加" onclick="go('costform')">＋</button>
+      </section>
+
+      <!-- ===== 費用入力 ===== -->
+      <section class="screen" id="s-costform" aria-label="費用入力">
+        <button class="back" onclick="go('cost')">‹ 費用一覧へ戻る</button>
+        <h2 style="font-size:19px;color:var(--ink);margin:2px 0 4px">費用を追加</h2>
+        <label class="fl" for="f1">内容</label>
+        <input class="input" id="f1" value="花火セット" />
+        <label class="fl" for="f2">金額</label>
+        <input class="input money" id="f2" inputmode="numeric" value="¥3,200" />
+        <label class="fl" for="f3">立て替えた人</label>
+        <select class="input" id="f3"><option>ゆうすけ(自分)</option><option>みさき</option><option>けんた</option></select>
+
+        <div class="checkrow">
+          <input type="checkbox" id="allpay" checked onchange="allToggle(this)">
+          <label for="allpay">
+            <div class="t">全員で割り勘にする</div>
+            <div class="s">✓ 参加者全員に均等割り。各メンバーの承認なしでそのまま計上されます。</div>
+          </label>
+        </div>
+
+        <label class="fl">負担するメンバーを選ぶ(全員割り勘をオフにした場合)</label>
+        <div class="memchips off" id="chips">
+          <button class="sel">ゆうすけ</button><button class="sel">みさき</button><button>けんた</button>
+          <button class="sel">あやか</button><button>たくみ</button><button>りな</button>
+          <button>しょう</button><button>はるか</button><button class="muted">…他17人</button>
+        </div>
+        <p class="muted" style="font-size:11.5px" id="chipnote">全員割り勘がオンのため個別選択は不要です。</p>
+        <button class="btn" style="width:100%;padding:14px;margin-top:10px">登録する</button>
+      </section>
+
+      <!-- ===== 承認 ===== -->
+      <section class="screen" id="s-appr" aria-label="費用承認">
+        <div class="appbar"><h2>承認</h2><span class="me">ゆ</span></div>
+        <p class="muted" style="font-size:12.5px;margin:0 2px 10px">あなたが割り勘対象になっている費用です。内容を確認して承認してください。</p>
+        <div class="card appr">
+          <div class="row">
+            <div>
+              <div class="exp"><span class="ttl" style="font-size:14px;font-weight:700;color:var(--ink)">カラオケ延長</span></div>
+              <div class="who">立替: みさき · 合計 <span class="money">¥4,000</span> · 対象4人</div>
+            </div>
+            <span class="pill pend">承認待ち</span>
+          </div>
+          <div class="yourshare">あなたの負担: <b class="money">¥1,000</b></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" style="flex:1">承認する</button>
+            <button class="btn ghost" style="flex:1">内容について質問</button>
+          </div>
+        </div>
+        <div class="card appr">
+          <div class="row">
+            <div>
+              <div class="exp"><span class="ttl" style="font-size:14px;font-weight:700;color:var(--ink)">タクシー(駅→宿)</span></div>
+              <div class="who">立替: あやか · 合計 <span class="money">¥4,000</span> · 対象3人</div>
+            </div>
+            <span class="pill pend">承認待ち</span>
+          </div>
+          <div class="yourshare">あなたの負担: <b class="money">¥1,334</b></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" style="flex:1">承認する</button>
+            <button class="btn ghost" style="flex:1">内容について質問</button>
+          </div>
+        </div>
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">承認済み</h3>
+        <div class="card appr" style="opacity:.65">
+          <div class="row">
+            <div>
+              <div class="exp"><span class="ttl" style="font-size:14px;font-weight:700;color:var(--ink)">レンタカー代</span></div>
+              <div class="who">立替: たくみ · あなたの負担 <span class="money">¥650</span></div>
+            </div>
+            <span class="pill ok">承認済み</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 下タブ -->
+      <nav class="bottomnav" aria-label="メインナビゲーション">
+        <button data-v="notif" class="on" onclick="go('notif')"><span class="ic">🔔</span>お知らせ</button>
+        <button data-v="sched" onclick="go('sched')"><span class="ic">🗓️</span>予定表</button>
+        <button data-v="cost" onclick="go('cost')"><span class="ic">💴</span>費用</button>
+        <button data-v="appr" onclick="go('appr')"><span class="ic">✅</span>承認</button>
+      </nav>
+    </div>
+
+    <!-- ================= 管理者 PC ================= -->
+    <div class="desktop" id="desktop">
+      <div class="d-titlebar">
+        <span class="dot" style="background:#E5766B"></span>
+        <span class="dot" style="background:#E9BE5F"></span>
+        <span class="dot" style="background:#77C27B"></span>
+        <span class="d-url">tabikai2026.example.app/admin</span>
+      </div>
+      <div class="d-body">
+        <aside class="d-side">
+          <div class="logo">突然の旅会2026<br><span style="font-size:11px;color:var(--muted);font-weight:600">管理コンソール</span></div>
+          <nav>
+            <button class="on">🏠 会場(部屋)管理</button>
+            <button>🗓️ イベント管理</button>
+            <button>💴 費用の状況</button>
+            <button>👥 メンバー管理</button>
+            <button>📣 通知を送る</button>
+          </nav>
+        </aside>
+        <main class="d-main">
+          <h3>会場(部屋)管理</h3>
+          <p class="ds">予約可能な会場の登録・編集。ここで作成した会場が予定表の列になります。</p>
+          <div class="tblwrap">
+            <table>
+              <thead><tr><th>会場名</th><th>定員</th><th>利用可能時間</th><th>本日の予約</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>大広間</td><td>30人</td><td>7:00 – 23:00</td><td>3件</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>カラオケルーム</td><td>12人</td><td>10:00 – 24:00</td><td>1件</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>BBQガーデン</td><td>25人</td><td>10:00 – 21:00</td><td>1件</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>ロビー</td><td>—</td><td>終日</td><td>2件</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin:-8px 0 24px"><button class="btn small ghost">＋ 会場を追加</button></div>
+
+          <h3>全イベント(管理者は全件を編集・削除できます)</h3>
+          <p class="ds">主催者以外のイベントも含め、すべて操作可能です。</p>
+          <div class="tblwrap">
+            <table>
+              <thead><tr><th>イベント</th><th>日時</th><th>会場</th><th>主催</th><th>参加</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>夕食 🍖</td><td>10/10 18:00–19:30</td><td>大広間</td><td>運営</td><td>25人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>カラオケ自由枠</td><td>10/10 20:00–22:00</td><td>カラオケ</td><td>けんた</td><td>9人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+                <tr><td>ボードゲーム大会</td><td>10/10 21:00–22:30</td><td>大広間</td><td>みさき</td><td>8人</td><td><button class="lnk e">編集</button><button class="lnk d">削除</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>通知を送る</h3>
+          <p class="ds">全員(または選択メンバー)へ任意のタイミングでプッシュ通知+お知らせを配信します。</p>
+          <div class="card composer" style="max-width:560px">
+            <textarea>夕食が完成しました!大広間にお集まりください🍖</textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+              <label style="font-size:12.5px;color:var(--muted)"><input type="checkbox" checked style="accent-color:var(--primary)"> 全員に送る</label>
+              <button class="btn">今すぐ送信</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <p class="note" id="caption"></p>
+  </div>
+</div>
+
+<script>
+  const captions = {
+    notif:  "<b>お知らせ</b> — プッシュ通知の内容(全体アナウンス/リマインド)に加え、イベント招待・割り勘対象への追加もここに集約。未読は左端の赤点で表示。",
+    sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋から会場と時間を指定して予約(=イベント作成)。",
+    detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。参加者にはイベント開始前にリマインド通知(仮: 10分前、個別にオン/オフ可)。",
+    cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。",
+    costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。",
+    appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。承認が揃うと費用が確定ステータスに。",
+    admin:  "<b>管理者(PC)</b> — 会場(部屋)の作成・編集、全イベントの編集削除、任意タイミングの全体通知送信。PCレイアウトは管理画面のみ。"
+  };
+  const phoneScreens = ["notif","sched","detail","cost","costform","appr"];
+  function go(v, chipEl){
+    document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===v));
+    const isPhone = phoneScreens.includes(v);
+    document.getElementById("phone").style.display = isPhone ? "flex" : "none";
+    document.getElementById("desktop").classList.toggle("on", v==="admin");
+    if(isPhone){
+      document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+v));
+      const navMap = {notif:"notif",sched:"sched",detail:"sched",cost:"cost",costform:"cost",appr:"appr"};
+      document.querySelectorAll(".bottomnav button").forEach(b=>b.classList.toggle("on", b.dataset.v===navMap[v]));
+    }
+    document.getElementById("caption").innerHTML = captions[v];
+  }
+  function day(n){
+    document.getElementById("day1").style.display = n===1 ? "" : "none";
+    document.getElementById("day2").style.display = n===2 ? "" : "none";
+    document.getElementById("d1btn").classList.toggle("on", n===1);
+    document.getElementById("d2btn").classList.toggle("on", n===2);
+  }
+  function allToggle(cb){
+    document.getElementById("chips").classList.toggle("off", cb.checked);
+    document.getElementById("chipnote").textContent = cb.checked
+      ? "全員割り勘がオンのため個別選択は不要です。"
+      : "負担するメンバーを選択してください。個別指定の場合、各メンバーの承認後に確定します。";
+  }
+  document.getElementById("caption").innerHTML = captions.notif;
+</script>
