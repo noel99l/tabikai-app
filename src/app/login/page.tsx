@@ -1,0 +1,72 @@
+import { redirect } from "next/navigation";
+import { auth, signIn } from "@/auth";
+import { IconSuitcase } from "@/components/icons";
+import { Card } from "@/components/ui";
+
+const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
+
+export default async function LoginPage() {
+  const session = await auth();
+  if (session?.user) redirect("/");
+
+  return (
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pb-20">
+      <div className="mb-6 text-center">
+        <IconSuitcase className="mx-auto h-12 w-12 text-primary" strokeWidth={1.6} />
+        <h1 className="mt-2.5 text-[22px] font-bold">突然の旅会2026</h1>
+        <p className="text-[13px] text-muted">招待メンバー専用アプリ</p>
+      </div>
+
+      {hasGoogle ? (
+        <form
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo: "/" });
+          }}
+        >
+          <button className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[14.5px] font-bold">
+            <span className="text-[17px] font-extrabold text-[#4285F4]">G</span>
+            Google でログイン
+          </button>
+          <p className="mt-2 text-center text-[11.5px] text-muted">
+            Googleアカウントで本人確認を行います
+          </p>
+        </form>
+      ) : (
+        <Card>
+          <h2 className="mb-1 text-sm font-bold">開発用ログイン</h2>
+          <p className="mb-3 text-[11.5px] text-muted">
+            Google OAuth未設定のため、開発用の簡易ログインを表示しています(本番では無効)。
+          </p>
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await signIn("dev", {
+                name: formData.get("name"),
+                email: formData.get("email"),
+                redirectTo: "/",
+              });
+            }}
+            className="flex flex-col gap-2.5"
+          >
+            <input
+              name="name"
+              placeholder="名前(例: ゆうすけ)"
+              className="rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm"
+            />
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="メールアドレス"
+              className="rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm"
+            />
+            <button className="rounded-[10px] bg-primary px-4 py-3 text-[13.5px] font-bold text-white">
+              ログイン
+            </button>
+          </form>
+        </Card>
+      )}
+    </div>
+  );
+}

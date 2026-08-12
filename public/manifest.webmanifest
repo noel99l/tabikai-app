@@ -1,0 +1,18 @@
+{
+  "name": "突然の旅会2026",
+  "short_name": "旅会2026",
+  "description": "団体旅行企画「突然の旅会2026」のイベント・費用管理アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F6F8",
+  "theme_color": "#0B7285",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
