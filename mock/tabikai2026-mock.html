@@ -299,7 +299,7 @@
 </svg>
 
 <div class="wrap">
-  <p class="eyebrow">UI MOCK · v0.1 · 2026-08-12</p>
+  <p class="eyebrow">UI MOCK · v0.4 · 2026-08-12</p>
   <h1>突然の旅会2026 — アプリUIモック</h1>
   <p class="sub">スマホ版(参加者向け)と PC 版(管理者向け)の画面案です。下のボタンで画面を切り替えられます。スマホ画面は下部タブでも遷移できます。イベントブロックをタップすると詳細画面に移動します。</p>
 
@@ -358,8 +358,8 @@
           <div class="bd">
             <span class="pill pend">リマインド</span>
             <p class="ttl">まもなく「集合写真」</p>
-            <p class="tx">10分後(19:30)にロビーで開始します。</p>
-          </div><time>19:20</time>
+            <p class="tx">5分後(19:30)にロビーで開始します。</p>
+          </div><time>19:25</time>
         </div>
         <div class="card ntc">
           <div class="ic" style="background:var(--misc-soft);color:var(--misc)"><svg class="ico"><use href="#i-mail"/></svg></div>
@@ -380,6 +380,15 @@
           </div><time>22:10</time>
         </div>
         <div class="card ntc">
+          <div class="ic" style="background:var(--pend-soft);color:var(--pend)"><svg class="ico"><use href="#i-clock"/></svg></div>
+          <div class="bd">
+            <span class="pill pend">承認催促</span>
+            <p class="ttl">「タクシー(駅→宿)」が24時間未承認です</p>
+            <p class="tx">未承認: しょう · 本人へ催促通知を送信済み。主催者・管理者は承認状況を操作できます。</p>
+            <p style="margin:8px 0 0"><button class="btn small ghost" onclick="go('appr')">承認状況を確認</button></p>
+          </div><time>昨日</time>
+        </div>
+        <div class="card ntc">
           <div class="ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ico"><use href="#i-check"/></svg></div>
           <div class="bd">
             <span class="pill ok">確定</span>
@@ -387,6 +396,8 @@
             <p class="tx">けんた さんが立替 · ¥18,400(1人 ¥800)</p>
           </div><time>16:30</time>
         </div>
+        <button class="fab" aria-label="全体アナウンスを送る"><svg class="ico" style="width:22px;height:22px"><use href="#i-mega"/></svg></button>
+        <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">メガホンボタンから誰でも全体アナウンスを送信できます</p>
       </section>
 
       <!-- ===== 予定表 ===== -->
@@ -463,7 +474,7 @@
             <div class="kv"><dt>会場</dt><dd>大広間</dd></div>
             <div class="kv"><dt>主催</dt><dd>みさき</dd></div>
             <div class="kv"><dt>持ち物</dt><dd>特になし(ボドゲは主催が持参)</dd></div>
-            <div class="kv"><dt>リマインド通知</dt><dd style="display:flex;align-items:center;gap:8px">10分前 <button class="toggle" aria-label="リマインド通知オン"></button></dd></div>
+            <div class="kv"><dt>リマインド通知</dt><dd style="display:flex;align-items:center;gap:8px">5分前 <button class="toggle" aria-label="リマインド通知オン(デフォルト)"></button></dd></div>
           </dl>
         </div>
         <div class="card">
@@ -512,9 +523,8 @@
           <button class="sel">みさき</button><button class="sel">けんた</button><button>あやか</button>
           <button>たくみ</button><button class="sel">りな</button><button>しょう</button><button class="muted">…他18人</button>
         </div>
-        <label class="fl" for="e7">リマインド通知</label>
-        <select class="input" id="e7"><option>10分前</option><option>30分前</option><option>通知しない</option></select>
-        <button class="btn" style="width:100%;padding:14px;margin-top:16px">会場を予約してイベントを作成</button>
+        <p class="muted" style="font-size:11.5px;margin:14px 2px 0">参加者には開始5分前に自動でリマインド通知が届きます(各自がイベント詳細でオフにできます)。</p>
+        <button class="btn" style="width:100%;padding:14px;margin-top:12px">会場を予約してイベントを作成</button>
       </section>
 
       <!-- ===== 持ち物リスト ===== -->
@@ -612,6 +622,9 @@
         <input class="input money" id="f2" inputmode="numeric" value="¥3,200" />
         <label class="fl" for="f3">立て替えた人</label>
         <select class="input" id="f3"><option>ゆうすけ(自分)</option><option>みさき</option><option>けんた</option></select>
+        <label class="fl" for="f4">関連イベント(任意)</label>
+        <select class="input" id="f4"><option>なし</option><option>夕食</option><option>カラオケ自由枠</option><option>ボードゲーム大会</option></select>
+        <p class="muted" style="font-size:11px;margin:6px 2px 0">紐付けると、未承認のまま24時間経過した際にイベント主催者にも通知され、主催者が承認状況を操作できます。</p>
 
         <div class="checkrow">
           <input type="checkbox" id="allpay" checked onchange="allToggle(this)">
@@ -663,6 +676,21 @@
             <button class="btn ghost" style="flex:1">内容について質問</button>
           </div>
         </div>
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">主催者・管理者の操作(24時間以上未承認)</h3>
+        <div class="card appr">
+          <div class="row">
+            <div>
+              <div class="exp"><span class="ttl" style="font-size:14px;font-weight:700;color:var(--ink)">タクシー(駅→宿)</span></div>
+              <div class="who">未承認: しょう · 催促通知 送信済み(昨日 22:10)</div>
+            </div>
+            <span class="pill pend">放置 26時間</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn small" style="flex:1">承認として確定</button>
+            <button class="btn small ghost" style="flex:1">割り勘対象から外す</button>
+          </div>
+          <p class="muted" style="font-size:11px;margin:8px 0 0">この操作はイベント主催者(関連イベントあり)と管理者のみ表示されます。</p>
+        </div>
         <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">承認済み</h3>
         <div class="card appr" style="opacity:.65">
           <div class="row">
@@ -704,6 +732,16 @@
           </nav>
         </aside>
         <main class="d-main">
+          <h3>旅行日程</h3>
+          <p class="ds">開始・終了日時を設定すると、予定表の日付タブがこの範囲で自動生成されます。</p>
+          <div class="card" style="max-width:560px;margin-bottom:20px">
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+              <div style="flex:1;min-width:160px"><label class="fl" style="margin-top:0">開始日時</label><input class="input" value="2026-10-10 15:00" /></div>
+              <div style="flex:1;min-width:160px"><label class="fl" style="margin-top:0">終了日時</label><input class="input" value="2026-10-11 12:00" /></div>
+              <button class="btn">保存</button>
+            </div>
+          </div>
+
           <h3>会場(部屋)管理</h3>
           <p class="ds">予約可能な会場の登録・編集。ここで作成した会場が予定表の列になります。</p>
           <div class="tblwrap">
@@ -744,6 +782,15 @@
             </table>
           </div>
 
+          <div class="card" style="max-width:560px;margin-bottom:20px">
+            <h3>管理者を追加</h3>
+            <p class="muted" style="font-size:12px;margin:0 0 10px">招待URLを発行し、開いたメンバーが承諾すると管理者権限が付与されます(複数人可)。</p>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="input" readonly value="https://tabikai2026.example.app/admin-invite/a8x2k9" style="flex:1;font-size:12px" />
+              <button class="btn small" style="flex:none">URLを発行</button>
+            </div>
+          </div>
+
           <h3>精算(経費入力の締め)</h3>
           <p class="ds">経費入力を締め切ると割り勘が確定し、送金回数が最少になる精算リストを全員に公開します。</p>
           <div class="card" style="max-width:560px">
@@ -782,15 +829,15 @@
 <script>
   const captions = {
     login:  "<b>ログイン</b> — Googleアカウントで本人を識別。初回ログイン時は「参加承認待ち」となり、管理者が承認すると利用開始できる。",
-    notif:  "<b>お知らせ</b> — 各画面のヘッダー右上のベルアイコン(未読バッジつき)から常時アクセス。プッシュ通知の内容に加え、イベント招待・割り勘対象への追加もここに集約。",
+    notif:  "<b>お知らせ</b> — 各画面のヘッダー右上のベルアイコン(未読バッジつき)から常時アクセス。イベント招待・割り勘対象・承認催促もここに集約。右下のメガホンから誰でも全体アナウンスを送信できる。",
     sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋からイベント作成画面へ。",
-    create: "<b>イベント作成</b> — 会場×日時を指定して予約(=イベント作成)。重複チェックつき。「全員を招待」か個別選択で招待し、リマインド時間も設定。",
-    detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。主催者は参加者アイコン末尾の＋からメンバーを追加できる。参加者には開始前にリマインド通知。",
+    create: "<b>イベント作成</b> — 会場×日時を指定して予約(=イベント作成)。同一会場・同時間帯は早い者勝ちで重複不可。「全員を招待」か個別選択で招待。リマインドは開始5分前で自動。",
+    detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。主催者は参加者アイコン末尾の＋からメンバーを追加できる。リマインド通知は開始5分前・デフォルトオンで、ここから各自オフにできる。",
     items:  "<b>持ち物リスト</b> — 必要なものを全体で共有。誰でも追加でき、「担当する」で持っていく人を宣言。担当未定が一目でわかる。",
     cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。管理者が締めると自分の精算(支払い先と金額)が表示される。",
-    costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。",
-    appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。承認が揃うと費用が確定ステータスに。",
-    admin:  "<b>管理者(PC)</b> — 会場(部屋)の作成・編集、全イベントの編集削除、メンバーの参加承認、経費入力の締めと精算リスト公開、任意タイミングの全体通知送信。PCレイアウトは管理画面のみ。"
+    costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。関連イベントを紐付けると未承認時に主催者へエスカレーションされる。",
+    appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。24時間未承認は本人へ催促通知+主催者・管理者へお知らせが届き、主催者・管理者が「承認として確定/対象から外す」を操作できる。",
+    admin:  "<b>管理者(PC)</b> — 旅行日程(開始/終了日時)の設定、会場の作成編集、全イベントの編集削除、メンバーの参加承認、招待URLによる管理者追加(複数可)、経費入力の締めと精算リスト公開、全体通知送信。"
   };
   const phoneScreens = ["login","notif","sched","create","detail","items","cost","costform","appr"];
   function go(v, chipEl){
