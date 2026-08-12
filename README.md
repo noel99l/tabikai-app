@@ -1,4 +1,4 @@
-# tabikai_app
+# tabikai-app
 
 団体旅行企画「突然の旅会2026」用アプリ(参加者20〜25名向け)。
 Next.js + PWA(Webプッシュ通知)で構築。
