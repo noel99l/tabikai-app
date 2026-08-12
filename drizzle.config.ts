@@ -1,4 +1,11 @@
+import { setDefaultResultOrder } from "node:dns";
+import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
+
+// IPv6が塞がれたネットワークでNeonへの接続がタイムアウトするのを防ぐ
+setDefaultResultOrder("ipv4first");
+config({ path: ".env.local" });
+config();
 
 const url = process.env.DATABASE_URL;
 
