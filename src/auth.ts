@@ -4,7 +4,10 @@ import Credentials from "next-auth/providers/credentials";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 
-const hasGoogle = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
+// AUTH_GOOGLE_* (Auth.js標準) と GOOGLE_CLIENT_* のどちらの変数名でも受け付ける
+const googleId = process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID;
+const googleSecret = process.env.AUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT_SECRET;
+const hasGoogle = !!googleId && !!googleSecret;
 
 // Google OAuth 未設定のローカル開発時のみ、名前+メールだけの開発用ログインを有効化
 const devProvider = Credentials({
@@ -26,7 +29,9 @@ const devProvider = Credentials({
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? "dev-secret-change-me",
   session: { strategy: "jwt" },
-  providers: hasGoogle ? [Google] : [devProvider],
+  providers: hasGoogle
+    ? [Google({ clientId: googleId, clientSecret: googleSecret })]
+    : [devProvider],
   pages: { signIn: "/login" },
   callbacks: {
     // 初回ログイン時に users テーブルへ upsert し、DB 上の userId を JWT に載せる
