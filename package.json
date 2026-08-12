@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/oxide-darwin-x64": "^4.3.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -31,8 +30,11 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "15.5.23",
-    "lightningcss-darwin-x64": "^1.33.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-darwin-x64": "^4.3.3",
+    "lightningcss-darwin-x64": "^1.33.0"
   }
 }
