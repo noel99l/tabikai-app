@@ -231,6 +231,7 @@
   }
   .memchips button.sel{background:var(--primary);border-color:var(--primary);color:#fff}
   .memchips.off{opacity:.35;pointer-events:none}
+  .dim{opacity:.35;pointer-events:none}
 
   /* ============ 承認 ============ */
   .appr .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -299,7 +300,7 @@
 </svg>
 
 <div class="wrap">
-  <p class="eyebrow">UI MOCK · v0.5 · 2026-08-12</p>
+  <p class="eyebrow">UI MOCK · v0.6 · 2026-08-12</p>
   <h1>突然の旅会2026 — アプリUIモック</h1>
   <p class="sub">スマホ版(参加者向け)と PC 版(管理者向け)の画面案です。下のボタンで画面を切り替えられます。スマホ画面は下部タブでも遷移できます。イベントブロックをタップすると詳細画面に移動します。</p>
 
@@ -605,43 +606,88 @@
       <!-- ===== 持ち物リスト ===== -->
       <section class="screen" id="s-items" aria-label="持ち物リスト">
         <div class="appbar"><h2>持ち物リスト</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
-        <p class="muted" style="font-size:12.5px;margin:0 2px 10px">旅行に必要なものを全員で共有。「担当する」を押すと自分が持っていく宣言になります。</p>
+        <p class="muted" style="font-size:12.5px;margin:0 2px 10px">イベントに必要なものを全員で共有。足りないものは「買ってくる」で買い出しのついでに調達できます。</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+          <div class="sum"><div class="lb">足りない</div><div class="v" style="color:var(--pend)">3</div></div>
+          <div class="sum"><div class="lb">調達予定</div><div class="v">2</div></div>
+          <div class="sum"><div class="lb">準備OK</div><div class="v" style="color:var(--ok)">2</div></div>
+        </div>
+
+        <h3 style="font-size:13px;color:var(--pend);margin:14px 2px 8px">足りないもの</h3>
+        <div class="card">
+          <div class="exp" style="margin-bottom:9px">
+            <div class="bd">
+              <div class="ttl">炭(3kg) <span class="pill info">夕食(BBQ)</span></div>
+              <div class="sb">追加: けんた</div>
+            </div>
+            <span class="pill pend">未調達</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn small ghost" style="flex:1">持っていく</button>
+            <button class="btn small" style="flex:1">買ってくる</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="exp" style="margin-bottom:9px">
+            <div class="bd">
+              <div class="ttl">紙皿・紙コップ <span class="pill info">夕食(BBQ)</span></div>
+              <div class="sb">追加: みさき · 30人分</div>
+            </div>
+            <span class="pill pend">未調達</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn small ghost" style="flex:1">持っていく</button>
+            <button class="btn small" style="flex:1">買ってくる</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="exp" style="margin-bottom:9px">
+            <div class="bd">
+              <div class="ttl">単3電池(×4) <span class="pill all">ボードゲーム大会</span></div>
+              <div class="sb">追加: みさき</div>
+            </div>
+            <span class="pill pend">未調達</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn small ghost" style="flex:1">持っていく</button>
+            <button class="btn small" style="flex:1">買ってくる</button>
+          </div>
+        </div>
+        <p class="muted" style="font-size:11px;margin:4px 2px 0">「買ってくる」で引き受けたものは自分の買い物リストにまとまり、購入後は費用入力からそのまま精算できます。</p>
+
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">調達予定</h3>
         <div class="card exp">
           <div class="bd">
-            <div class="ttl">炭(3kg)</div>
-            <div class="sb">追加: けんた · BBQ用</div>
+            <div class="ttl">トランプ・UNO <span class="pill all">ボードゲーム大会</span></div>
+            <div class="sb">追加: みさき</div>
           </div>
-          <span class="pill ok">担当: けんた</span>
+          <span class="pill info">みさき が持参</span>
         </div>
         <div class="card exp">
           <div class="bd">
-            <div class="ttl">トランプ・UNO</div>
-            <div class="sb">追加: みさき · ボードゲーム大会用</div>
+            <div class="ttl">飲み物(2L×6) <span class="pill info">夕食(BBQ)</span></div>
+            <div class="sb">追加: ゆうすけ</div>
           </div>
-          <button class="btn small ghost">担当する</button>
+          <span class="pill info">けんた が買い出し</span>
         </div>
-        <div class="card exp">
+
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">準備OK</h3>
+        <div class="card exp" style="opacity:.6">
           <div class="bd">
-            <div class="ttl">救急セット</div>
-            <div class="sb">追加: あやか</div>
+            <div class="ttl">救急セット <span class="pill all">全体</span></div>
+            <div class="sb">みさき が持参済み</div>
           </div>
-          <span class="pill ok">担当: みさき</span>
+          <span class="pill ok">準備OK</span>
         </div>
-        <div class="card exp">
+        <div class="card exp" style="opacity:.6">
           <div class="bd">
-            <div class="ttl">Bluetoothスピーカー</div>
-            <div class="sb">追加: ゆうすけ · 宴会用</div>
+            <div class="ttl">Bluetoothスピーカー <span class="pill all">全体</span></div>
+            <div class="sb">ゆうすけ が持参済み</div>
           </div>
-          <button class="btn small ghost">担当する</button>
-        </div>
-        <div class="card exp">
-          <div class="bd">
-            <div class="ttl">モバイルバッテリー(2〜3個)</div>
-            <div class="sb">追加: たくみ</div>
-          </div>
-          <span class="pill pend">担当: 未定</span>
+          <span class="pill ok">準備OK</span>
         </div>
         <button class="fab" aria-label="必要なものを追加"><svg class="ico" style="width:24px;height:24px;stroke-width:2.4"><use href="#i-plus"/></svg></button>
+        <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">＋から品名・数量・関連イベントを指定して追加</p>
       </section>
 
       <!-- ===== 費用 ===== -->
@@ -697,9 +743,11 @@
         <input class="input money" id="f2" inputmode="numeric" value="¥3,200" />
         <label class="fl" for="f3">立て替えた人</label>
         <select class="input" id="f3"><option>ゆうすけ(自分)</option><option>みさき</option><option>けんた</option></select>
-        <label class="fl" for="f4">関連イベント(任意)</label>
-        <select class="input" id="f4"><option>なし</option><option>夕食</option><option>カラオケ自由枠</option><option>ボードゲーム大会</option></select>
-        <p class="muted" style="font-size:11px;margin:6px 2px 0">紐付けると、未承認のまま24時間経過した際にイベント主催者にも通知され、主催者が承認状況を操作できます。</p>
+        <div id="evlink" class="dim">
+          <label class="fl" for="f4">関連イベント(個別割り勘では必須)</label>
+          <select class="input" id="f4"><option>カラオケ自由枠</option><option>夕食</option><option>ボードゲーム大会</option></select>
+          <p class="muted" style="font-size:11px;margin:6px 2px 0">未承認のまま24時間経過するとイベント主催者と管理者に通知され、承認状況を操作できます。</p>
+        </div>
 
         <div class="checkrow">
           <input type="checkbox" id="allpay" checked onchange="allToggle(this)">
@@ -927,9 +975,9 @@
     sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋からイベント作成画面へ。",
     create: "<b>イベント作成</b> — 会場×日時を指定して予約(=イベント作成)。同一会場・同時間帯は早い者勝ちで重複不可。「全員を招待」か個別選択で招待。リマインドは開始5分前で自動。",
     detail: "<b>イベント詳細</b> — 招待から遷移して参加登録。主催者は参加者アイコン末尾の＋からメンバーを追加できる。リマインド通知は開始5分前・デフォルトオンで、ここから各自オフにできる。",
-    items:  "<b>持ち物リスト</b> — 必要なものを全体で共有。誰でも追加でき、「担当する」で持っていく人を宣言。担当未定が一目でわかる。",
+    items:  "<b>持ち物リスト</b> — 各項目はイベントに紐付き、「足りない/調達予定/準備OK」で今何が足りないかが一目でわかる。足りないものは「持っていく」or「買ってくる」で引き受け、買い出しのついで買いを促す。購入分は費用入力へ連携。",
     cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。管理者が締めると自分の精算(支払い先と金額)が表示される。",
-    costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。関連イベントを紐付けると未承認時に主催者へエスカレーションされる。",
+    costform:"<b>費用入力</b> — 「全員で割り勘」オンなら承認スキップ+イベント紐付けなし。オフ(個別割り勘)ではメンバー選択と関連イベントの紐付けが必須になり、未承認時に主催者へエスカレーションされる。",
     appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。24時間未承認は本人へ催促通知+主催者・管理者へお知らせが届き、主催者・管理者が「承認として確定/対象から外す」を操作できる。",
     admin:  "<b>管理者(PC)</b> — イベントロゴ登録・旅行日程の設定・会場の作成編集・全イベントの編集削除・メンバー参加承認・招待URLによる管理者追加・経費の締めと精算公開・全体通知送信。左上のセレクタで複数イベントを切替。"
   };
@@ -954,9 +1002,10 @@
   }
   function allToggle(cb){
     document.getElementById("chips").classList.toggle("off", cb.checked);
+    document.getElementById("evlink").classList.toggle("dim", cb.checked);
     document.getElementById("chipnote").textContent = cb.checked
-      ? "全員割り勘がオンのため個別選択は不要です。"
-      : "負担するメンバーを選択してください。個別指定の場合、各メンバーの承認後に確定します。";
+      ? "全員割り勘がオンのため個別選択・イベント紐付けは不要です。"
+      : "負担するメンバーを選択してください。個別指定の場合は関連イベントの紐付けが必須で、各メンバーの承認後に確定します。";
   }
   document.getElementById("caption").innerHTML = captions.dash;
 </script>
