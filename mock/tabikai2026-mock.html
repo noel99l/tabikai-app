@@ -305,8 +305,10 @@
 
   <div class="switcher" role="tablist" aria-label="画面切替">
     <button class="chip" data-v="login" onclick="go('login',this)">ログイン</button>
+    <button class="chip" data-v="trips" onclick="go('trips',this)">イベント選択</button>
+    <button class="chip on" data-v="dash" onclick="go('dash',this)">ダッシュボード</button>
     <button class="chip" data-v="notif" onclick="go('notif',this)">お知らせ</button>
-    <button class="chip on" data-v="sched" onclick="go('sched',this)">予定表</button>
+    <button class="chip" data-v="sched" onclick="go('sched',this)">予定表</button>
     <button class="chip" data-v="create" onclick="go('create',this)">イベント作成</button>
     <button class="chip" data-v="detail" onclick="go('detail',this)">イベント詳細</button>
     <button class="chip" data-v="items" onclick="go('items',this)">持ち物</button>
@@ -339,6 +341,79 @@
             <div style="font-size:12.5px;color:var(--muted)">tabikai.taro@gmail.com でログイン中</div>
           </div>
           <div class="yourshare" style="margin:0;display:flex;gap:8px;align-items:center"><svg class="ico" style="width:16px;height:16px;color:var(--pend)"><use href="#i-clock"/></svg>管理者の参加承認待ちです。承認されるとアプリを利用できます。</div>
+        </div>
+      </section>
+
+      <!-- ===== イベント選択 ===== -->
+      <section class="screen" id="s-trips" aria-label="イベント選択">
+        <div style="text-align:center;padding:28px 10px 16px">
+          <h2 style="font-size:20px;color:var(--ink);margin:0 0 4px">イベントを選択</h2>
+          <p class="muted" style="font-size:12.5px;margin:0">yusuke@gmail.com で参加中のイベント</p>
+        </div>
+        <button class="card" style="display:flex;gap:13px;align-items:center;width:100%;text-align:left;cursor:pointer;font-family:inherit" onclick="go('dash')">
+          <span style="flex:none;width:52px;height:52px;border-radius:14px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center"><svg class="ico" style="width:28px;height:28px;color:var(--primary)"><use href="#i-case"/></svg></span>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-size:15px;font-weight:800;color:var(--ink)">突然の旅会2026</span>
+            <span class="muted" style="display:block;font-size:11.5px">2026/10/10 – 10/11 · 参加25人</span>
+          </span>
+          <span class="pill info">開催予定</span>
+        </button>
+        <button class="card" style="display:flex;gap:13px;align-items:center;width:100%;text-align:left;cursor:pointer;font-family:inherit;opacity:.6">
+          <span style="flex:none;width:52px;height:52px;border-radius:14px;background:var(--line);display:flex;align-items:center;justify-content:center"><svg class="ico" style="width:28px;height:28px;color:var(--muted)"><use href="#i-case"/></svg></span>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-size:15px;font-weight:800;color:var(--ink)">突然の旅会2025</span>
+            <span class="muted" style="display:block;font-size:11.5px">2025/11/8 – 11/9 · 参加22人</span>
+          </span>
+          <span class="pill ok">終了</span>
+        </button>
+        <button class="card" style="display:flex;gap:10px;align-items:center;justify-content:center;width:100%;cursor:pointer;font-family:inherit;border-style:dashed;color:var(--primary);font-size:13.5px;font-weight:700;background:none">
+          <svg class="ico" style="width:16px;height:16px"><use href="#i-plus"/></svg>新しいイベントを作成(管理者)
+        </button>
+      </section>
+
+      <!-- ===== ダッシュボード ===== -->
+      <section class="screen on" id="s-dash" aria-label="ダッシュボード">
+        <div class="appbar"><h2>ホーム</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
+        <div class="card" style="text-align:center;padding:22px 14px 16px">
+          <span style="display:inline-flex;width:72px;height:72px;border-radius:20px;background:var(--primary-soft);align-items:center;justify-content:center;border:2px solid var(--primary)"><svg class="ico" style="width:38px;height:38px;color:var(--primary);stroke-width:1.7"><use href="#i-case"/></svg></span>
+          <div style="font-size:18px;font-weight:800;color:var(--ink);margin:10px 0 2px">突然の旅会2026</div>
+          <div class="muted" style="font-size:12px">2026/10/10 15:00 – 10/11 12:00 · 参加25人</div>
+          <button class="btn small ghost" style="margin-top:10px" onclick="go('trips')">イベントを切り替え</button>
+        </div>
+
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">次の予定</h3>
+        <div class="card" style="border-left:4px solid var(--misc)">
+          <div class="exp">
+            <div class="bd">
+              <div class="ttl">集合写真</div>
+              <div class="sb">19:30 – 20:00 · ロビー · 参加登録済み</div>
+            </div>
+            <span class="pill pend">あと5分</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn small" style="flex:1" onclick="go('detail')">詳細を見る</button>
+            <button class="btn small ghost" style="flex:1" onclick="go('sched')">予定表へ</button>
+          </div>
+        </div>
+        <div class="card exp" style="opacity:.75">
+          <div class="bd">
+            <div class="ttl">ボードゲーム大会</div>
+            <div class="sb">21:00 – 22:30 · 大広間</div>
+          </div>
+          <span class="pill info">招待あり</span>
+        </div>
+
+        <h3 style="font-size:13px;color:var(--muted);margin:16px 2px 8px">未承認のコスト</h3>
+        <div class="card">
+          <div class="exp" style="margin-bottom:8px">
+            <div class="bd"><div class="ttl" style="font-size:13.5px">カラオケ延長</div><div class="sb">あなたの負担 ¥1,000</div></div>
+            <span class="pill pend">承認待ち</span>
+          </div>
+          <div class="exp" style="margin-bottom:10px">
+            <div class="bd"><div class="ttl" style="font-size:13.5px">タクシー(駅→宿)</div><div class="sb">あなたの負担 ¥1,334</div></div>
+            <span class="pill pend">承認待ち</span>
+          </div>
+          <button class="btn" style="width:100%" onclick="go('appr')">承認画面へ(2件 · 合計 ¥2,334)</button>
         </div>
       </section>
 
@@ -401,7 +476,7 @@
       </section>
 
       <!-- ===== 予定表 ===== -->
-      <section class="screen on" id="s-sched" aria-label="予定表">
+      <section class="screen" id="s-sched" aria-label="予定表">
         <div class="appbar"><h2>予定表</h2><div class="abr"><button class="bellbtn" onclick="go('notif')" aria-label="お知らせ"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">2</span></button><span class="me">ゆ</span></div></div>
         <div class="daytabs">
           <button class="on" id="d1btn" onclick="day(1)">10/10(土)</button>
@@ -705,7 +780,8 @@
 
       <!-- 下タブ -->
       <nav class="bottomnav" aria-label="メインナビゲーション">
-        <button data-v="sched" class="on" onclick="go('sched')"><svg class="ico"><use href="#i-cal"/></svg>予定表</button>
+        <button data-v="dash" class="on" onclick="go('dash')"><svg class="ico"><use href="#i-home"/></svg>ホーム</button>
+        <button data-v="sched" onclick="go('sched')"><svg class="ico"><use href="#i-cal"/></svg>予定表</button>
         <button data-v="items" onclick="go('items')"><svg class="ico"><use href="#i-list"/></svg>持ち物</button>
         <button data-v="cost" onclick="go('cost')"><svg class="ico"><use href="#i-money"/></svg>費用</button>
         <button data-v="appr" onclick="go('appr')"><svg class="ico"><use href="#i-check"/></svg>承認</button>
@@ -722,7 +798,12 @@
       </div>
       <div class="d-body">
         <aside class="d-side">
-          <div class="logo">突然の旅会2026<br><span style="font-size:11px;color:var(--muted);font-weight:600">管理コンソール</span></div>
+          <div class="logo">管理コンソール</div>
+          <select class="input" style="font-size:12px;padding:7px 10px;margin:0 0 14px" aria-label="イベントを選択">
+            <option>突然の旅会2026</option>
+            <option>突然の旅会2025(終了)</option>
+            <option>＋ 新しいイベントを作成</option>
+          </select>
           <nav>
             <button class="on"><svg class="ico" style="width:16px;height:16px"><use href="#i-home"/></svg>会場(部屋)管理</button>
             <button><svg class="ico" style="width:16px;height:16px"><use href="#i-cal"/></svg>イベント管理</button>
@@ -732,6 +813,17 @@
           </nav>
         </aside>
         <main class="d-main">
+          <h3>イベント基本設定</h3>
+          <p class="ds">ロゴはダッシュボードとイベント選択画面に表示されます。管理者は複数のイベントを作成できます(左のセレクタで切替)。</p>
+          <div class="card" style="max-width:560px;margin-bottom:20px;display:flex;gap:16px;align-items:center">
+            <span style="flex:none;width:64px;height:64px;border-radius:18px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;border:2px solid var(--primary)"><svg class="ico" style="width:34px;height:34px;color:var(--primary);stroke-width:1.7"><use href="#i-case"/></svg></span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">イベントロゴ</div>
+              <p class="muted" style="font-size:11.5px;margin:0 0 8px">PNG / JPG / SVG · 推奨 512×512px · 未登録時は標準アイコンを表示</p>
+              <button class="btn small">画像をアップロード</button>
+            </div>
+          </div>
+
           <h3>旅行日程</h3>
           <p class="ds">開始・終了日時を設定すると、予定表の日付タブがこの範囲で自動生成されます。</p>
           <div class="card" style="max-width:560px;margin-bottom:20px">
@@ -829,6 +921,8 @@
 <script>
   const captions = {
     login:  "<b>ログイン</b> — Googleアカウントで本人を識別。初回ログイン時は「参加承認待ち」となり、管理者が承認すると利用開始できる。",
+    trips:  "<b>イベント選択</b> — ログイン後のアプリトップ。自分が参加するイベント(企画)を選んでダッシュボードへ。管理者は複数イベントを作成できる。",
+    dash:   "<b>ダッシュボード</b> — イベント選択後のホーム画面。イベントロゴ・次の予定(参加登録済み+招待中)・自分の未承認コストを集約。ここから各画面へ遷移。",
     notif:  "<b>お知らせ</b> — 各画面のヘッダー右上のベルアイコン(未読バッジつき)から常時アクセス。イベント招待・割り勘対象・承認催促もここに集約。右下のメガホンから誰でも全体アナウンスを送信できる。",
     sched:  "<b>予定表</b> — Teams風に「列=会場 × 行=時間帯」。日付タブで切替。ブロックをタップで詳細へ。右下の＋からイベント作成画面へ。",
     create: "<b>イベント作成</b> — 会場×日時を指定して予約(=イベント作成)。同一会場・同時間帯は早い者勝ちで重複不可。「全員を招待」か個別選択で招待。リマインドは開始5分前で自動。",
@@ -837,9 +931,9 @@
     cost:   "<b>費用</b> — Walicaベース。「全員」バッジ付きは承認不要で即確定。個別指定の費用は対象者の承認状況(2/4 など)を表示。管理者が締めると自分の精算(支払い先と金額)が表示される。",
     costform:"<b>費用入力</b> — 「全員で割り勘」チェックで名前入力を省略+承認スキップ。オフにするとメンバー選択チップが有効化。関連イベントを紐付けると未承認時に主催者へエスカレーションされる。",
     appr:   "<b>費用承認</b> — 自分が割り勘対象の費用を確認して承認。24時間未承認は本人へ催促通知+主催者・管理者へお知らせが届き、主催者・管理者が「承認として確定/対象から外す」を操作できる。",
-    admin:  "<b>管理者(PC)</b> — 旅行日程(開始/終了日時)の設定、会場の作成編集、全イベントの編集削除、メンバーの参加承認、招待URLによる管理者追加(複数可)、経費入力の締めと精算リスト公開、全体通知送信。"
+    admin:  "<b>管理者(PC)</b> — イベントロゴ登録・旅行日程の設定・会場の作成編集・全イベントの編集削除・メンバー参加承認・招待URLによる管理者追加・経費の締めと精算公開・全体通知送信。左上のセレクタで複数イベントを切替。"
   };
-  const phoneScreens = ["login","notif","sched","create","detail","items","cost","costform","appr"];
+  const phoneScreens = ["login","trips","dash","notif","sched","create","detail","items","cost","costform","appr"];
   function go(v, chipEl){
     document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.v===v));
     const isPhone = phoneScreens.includes(v);
@@ -847,7 +941,7 @@
     document.getElementById("desktop").classList.toggle("on", v==="admin");
     if(isPhone){
       document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+v));
-      const navMap = {sched:"sched",create:"sched",detail:"sched",items:"items",cost:"cost",costform:"cost",appr:"appr"};
+      const navMap = {dash:"dash",sched:"sched",create:"sched",detail:"sched",items:"items",cost:"cost",costform:"cost",appr:"appr"};
       document.querySelectorAll(".bottomnav button").forEach(b=>b.classList.toggle("on", b.dataset.v===navMap[v]));
     }
     document.getElementById("caption").innerHTML = captions[v];
@@ -864,5 +958,5 @@
       ? "全員割り勘がオンのため個別選択は不要です。"
       : "負担するメンバーを選択してください。個別指定の場合、各メンバーの承認後に確定します。";
   }
-  document.getElementById("caption").innerHTML = captions.sched;
+  document.getElementById("caption").innerHTML = captions.dash;
 </script>
