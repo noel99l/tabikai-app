@@ -8,6 +8,7 @@ import {
   IconCalendar,
   IconHome,
   IconMegaphone,
+  IconMoney,
   IconSuitcase,
   IconUsers,
 } from "@/components/icons";
@@ -50,8 +51,16 @@ export default async function ManagePage() {
       href: "/manage/members",
       icon: IconUsers,
       title: "メンバー管理・招待",
-      desc: "参加承認と招待リンクの共有",
+      desc: "参加承認・招待リンク・管理者の追加",
       badge: pending.value > 0 ? `承認待ち${pending.value}` : undefined,
+    },
+    {
+      href: "/manage/expenses",
+      icon: IconMoney,
+      title: "精算(経費の締め)",
+      desc: trip.expensesClosedAt
+        ? "締め済み・精算リスト公開中"
+        : "経費を締めて精算リストを公開",
     },
     {
       href: "/notifications",
@@ -100,10 +109,6 @@ export default async function ManagePage() {
           </Card>
         </Link>
       ))}
-
-      <p className="mx-0.5 mt-2 text-[11px] text-muted">
-        費用の締め・精算リストの公開はフェーズ4で追加予定です。
-      </p>
     </>
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -136,6 +137,24 @@ export async function updateTripName(formData: FormData) {
   revalidatePath("/");
 }
 
+// イベントロゴの登録・削除。クライアントで128px正方形にリサイズ済みの data URL を受け取る。
+export async function updateTripLogo(dataUrl: string | null) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  // data URL の画像のみ許可。サイズ上限(~200KB)で肥大化を防ぐ
+  if (dataUrl !== null) {
+    if (!dataUrl.startsWith("data:image/")) return { error: "画像を選択してください" };
+    if (dataUrl.length > 200_000) return { error: "画像が大きすぎます" };
+  }
+  await db
+    .update(schema.trips)
+    .set({ logoUrl: dataUrl })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/trip");
+  revalidatePath("/");
+  revalidatePath("/trips");
+}
+
 // リマインドのデフォルト分数(イベント開始の何分前に通知するか)
 export async function updateReminderMinutes(formData: FormData) {
   const { trip, db, isAdmin } = await requireTripContext();
@@ -194,4 +213,60 @@ export async function approveMember(formData: FormData) {
     });
   }
   revalidatePath("/manage/members");
+}
+
+// 管理者招待URLのトークンを発行する(既存の未使用トークンがあれば再利用)
+export async function createAdminInvite(): Promise<string> {
+  const { trip, db, isAdmin, user } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const existing = await db.query.adminInvites.findFirst({
+    where: and(
+      eq(schema.adminInvites.tripId, trip.id),
+      isNull(schema.adminInvites.usedBy),
+    ),
+  });
+  if (existing) return existing.token;
+  const token = randomBytes(16).toString("hex");
+  await db.insert(schema.adminInvites).values({
+    tripId: trip.id,
+    token,
+    createdBy: user.id,
+  });
+  revalidatePath("/manage/members");
+  return token;
+}
+
+// 管理者招待トークンを承諾して管理者権限を得る(承認済みメンバーのみ)
+export async function acceptAdminInvite(token: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const invite = await db.query.adminInvites.findFirst({
+    where: eq(schema.adminInvites.token, token),
+  });
+  if (!invite || invite.usedBy) redirect("/trips");
+  const member = await db.query.tripMembers.findFirst({
+    where: and(
+      eq(schema.tripMembers.tripId, invite.tripId),
+      eq(schema.tripMembers.userId, user.id),
+    ),
+  });
+  if (!member || member.status !== "approved") {
+    // まだ参加していない場合は参加リンクへ誘導
+    redirect(`/join/${invite.tripId}`);
+  }
+  await db
+    .update(schema.tripMembers)
+    .set({ role: "admin" })
+    .where(
+      and(
+        eq(schema.tripMembers.tripId, invite.tripId),
+        eq(schema.tripMembers.userId, user.id),
+      ),
+    );
+  await db
+    .update(schema.adminInvites)
+    .set({ usedBy: user.id })
+    .where(eq(schema.adminInvites.id, invite.id));
+  await setTripCookie(invite.tripId);
+  redirect("/manage");
 }

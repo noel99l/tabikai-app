@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
-import { IconPlus, IconSuitcase } from "@/components/icons";
+import { IconPlus } from "@/components/icons";
+import { TripLogo } from "@/components/trip-logo";
 import { Pill } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { selectTrip } from "@/lib/actions/trips";
@@ -17,6 +18,7 @@ export default async function TripsPage() {
       status: schema.tripMembers.status,
       role: schema.tripMembers.role,
       name: schema.trips.name,
+      logoUrl: schema.trips.logoUrl,
       startsAt: schema.trips.startsAt,
       endsAt: schema.trips.endsAt,
     })
@@ -50,13 +52,7 @@ export default async function TripsPage() {
               spinner={false}
               className={`flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3.5 text-left ${ended ? "opacity-60" : ""}`}
             >
-              <span
-                className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[14px] ${ended ? "bg-line" : "bg-primary-soft"}`}
-              >
-                <IconSuitcase
-                  className={`h-7 w-7 ${ended ? "text-muted" : "text-primary"}`}
-                />
-              </span>
+              <TripLogo logoUrl={m.logoUrl} size={52} radius={14} muted={ended} />
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-extrabold">{m.name}</span>
                 <span className="block text-[11.5px] text-muted">

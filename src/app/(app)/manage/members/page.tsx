@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { schema } from "@/db";
+import { AdminInvite } from "@/components/admin-invite";
 import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
@@ -34,7 +35,8 @@ export default async function MembersPage() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? "http";
-  const inviteUrl = `${proto}://${host}/join/${trip.id}`;
+  const origin = `${proto}://${host}`;
+  const inviteUrl = `${origin}/join/${trip.id}`;
 
   return (
     <>
@@ -55,6 +57,10 @@ export default async function MembersPage() {
         <p className="rounded-lg bg-screen px-2.5 py-2 text-[11.5px] break-all select-all">
           {inviteUrl}
         </p>
+      </Card>
+
+      <Card className="mt-2.5">
+        <AdminInvite origin={origin} />
       </Card>
 
       <SectionTitle>参加承認待ち({pending.length})</SectionTitle>

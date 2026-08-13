@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
+import { LogoUpload } from "@/components/logo-upload";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, SectionTitle, btnCls, inputCls, labelCls } from "@/components/ui";
 import {
@@ -26,6 +27,11 @@ export default async function TripSettingsPage() {
         <IconBack className="h-4 w-4" />
         管理者コンソールへ戻る
       </Link>
+
+      <SectionTitle>イベントロゴ</SectionTitle>
+      <Card>
+        <LogoUpload logoUrl={trip.logoUrl} />
+      </Card>
 
       <SectionTitle>企画名</SectionTitle>
       <Card>

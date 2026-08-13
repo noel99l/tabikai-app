@@ -2,7 +2,8 @@ import Link from "next/link";
 import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
-import { IconSettings, IconSuitcase, IconUsers } from "@/components/icons";
+import { IconSettings, IconUsers } from "@/components/icons";
+import { TripLogo } from "@/components/trip-logo";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fmtDateTime, fmtTime, untilLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
@@ -73,10 +74,7 @@ export default async function DashboardPage() {
       <AppHeader title="ホーム" />
 
       <Card className="flex flex-col items-center py-5 text-center">
-        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] border-2 border-primary bg-primary-soft">
-          {/* ロゴ未登録時は標準アイコン(登録はフェーズ4の管理画面) */}
-          <IconSuitcase className="h-9 w-9 text-primary" strokeWidth={1.7} />
-        </span>
+        <TripLogo logoUrl={trip.logoUrl} size={72} radius={20} />
         <div className="mt-2.5 text-lg font-extrabold">{trip.name}</div>
         <div className="text-xs text-muted">
           {fmtDateTime(trip.startsAt)} – {fmtDateTime(trip.endsAt)} · 参加{members.length}人

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { yen } from "@/lib/format";
@@ -243,5 +243,109 @@ export async function deleteExpense(expenseId: string) {
   await db.delete(schema.expenses).where(eq(schema.expenses.id, expenseId));
   revalidatePath("/expenses");
   revalidatePath("/approvals");
+  revalidatePath("/");
+}
+
+// 送金回数が最少になる精算リストを算出(貪欲法)
+function computeSettlements(
+  net: Map<string, number>,
+): { from: string; to: string; amount: number }[] {
+  const debtors: { id: string; amt: number }[] = []; // 支払う(net<0)
+  const creditors: { id: string; amt: number }[] = []; // 受け取る(net>0)
+  for (const [id, v] of net) {
+    if (v < 0) debtors.push({ id, amt: -v });
+    else if (v > 0) creditors.push({ id, amt: v });
+  }
+  debtors.sort((a, b) => b.amt - a.amt);
+  creditors.sort((a, b) => b.amt - a.amt);
+  const result: { from: string; to: string; amount: number }[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const pay = Math.min(debtors[i].amt, creditors[j].amt);
+    if (pay > 0) {
+      result.push({ from: debtors[i].id, to: creditors[j].id, amount: pay });
+    }
+    debtors[i].amt -= pay;
+    creditors[j].amt -= pay;
+    if (debtors[i].amt === 0) i++;
+    if (creditors[j].amt === 0) j++;
+  }
+  return result;
+}
+
+// 経費入力を締めて精算リストを公開する(管理者のみ)
+export async function closeExpenses() {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+
+  const expenses = await db.query.expenses.findMany({
+    where: eq(schema.expenses.tripId, trip.id),
+  });
+  const net = new Map<string, number>();
+  const add = (id: string, v: number) => net.set(id, (net.get(id) ?? 0) + v);
+  if (expenses.length > 0) {
+    const shares = await db.query.expenseShares.findMany({
+      where: inArray(
+        schema.expenseShares.expenseId,
+        expenses.map((e) => e.id),
+      ),
+    });
+    const payerOf = new Map(expenses.map((e) => [e.id, e.paidBy]));
+    for (const s of shares) {
+      if (s.status === "excluded") continue; // 対象外は精算に含めない
+      const payer = payerOf.get(s.expenseId);
+      if (!payer) continue;
+      add(payer, s.amount); // 立替者は受け取る
+      add(s.userId, -s.amount); // 対象者は支払う
+    }
+  }
+  const settlements = computeSettlements(net);
+
+  // 既存の精算を洗い替え
+  await db.delete(schema.settlements).where(eq(schema.settlements.tripId, trip.id));
+  if (settlements.length > 0) {
+    await db.insert(schema.settlements).values(
+      settlements.map((s) => ({
+        tripId: trip.id,
+        fromUserId: s.from,
+        toUserId: s.to,
+        amount: s.amount,
+      })),
+    );
+  }
+  await db
+    .update(schema.trips)
+    .set({ expensesClosedAt: new Date() })
+    .where(eq(schema.trips.id, trip.id));
+
+  const members = await getApprovedMembers();
+  await notify(
+    db,
+    trip.id,
+    members.map((m) => m.userId),
+    {
+      type: "settlement",
+      title: "精算リストが公開されました",
+      body: "費用画面で自分の支払い先・金額を確認できます。",
+      link: "/expenses",
+    },
+  );
+  revalidatePath("/manage/expenses");
+  revalidatePath("/expenses");
+  revalidatePath("/");
+}
+
+// 締めを解除して精算リストを取り消す(管理者のみ)
+export async function reopenExpenses() {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db.delete(schema.settlements).where(eq(schema.settlements.tripId, trip.id));
+  await db
+    .update(schema.trips)
+    .set({ expensesClosedAt: null })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/expenses");
+  revalidatePath("/expenses");
   revalidatePath("/");
 }
