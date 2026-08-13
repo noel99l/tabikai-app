@@ -70,6 +70,12 @@ export default async function SchedulePage({
     }
   }
 
+  // 予約可能な時間帯: 企画の開始前・終了後はグレーアウトして予約不可
+  const isFirstDay = activeDay?.key === jstDateKey(trip.startsAt);
+  const isLastDay = activeDay?.key === jstDateKey(trip.endsAt);
+  const bookableStartMin = isFirstDay ? jstMinutes(trip.startsAt) : startHour * 60;
+  const bookableEndMin = isLastDay ? jstMinutes(trip.endsAt) : endHour * 60;
+
   return (
     <>
       <AppHeader title="予定表" />
@@ -109,6 +115,8 @@ export default async function SchedulePage({
           dayLabel={activeDay?.label ?? days[0].label}
           startHour={startHour}
           endHour={endHour}
+          bookableStartMin={bookableStartMin}
+          bookableEndMin={bookableEndMin}
           days={days}
           members={members}
           selfId={user.id}

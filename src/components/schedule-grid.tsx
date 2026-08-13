@@ -21,6 +21,9 @@ type Props = {
   dayLabel: string; // "10/10(土)"
   startHour: number;
   endHour: number;
+  // 予約可能時間帯(0:00からの分)。これより前・後はグレーアウトして予約不可
+  bookableStartMin: number;
+  bookableEndMin: number;
   // イベント作成モーダル用
   days: { key: string; label: string }[];
   members: { userId: string; name: string }[];
@@ -44,6 +47,8 @@ export function ScheduleGrid({
   dayLabel,
   startHour,
   endHour,
+  bookableStartMin,
+  bookableEndMin,
   days,
   members,
   selfId,
@@ -56,6 +61,11 @@ export function ScheduleGrid({
     { venueId?: string; date?: string; start?: string; end?: string } | undefined
   >(undefined);
   const totalRows = (endHour - startHour) * 2;
+
+  // 予約可能な行の範囲 [minRow, maxRow)(グリッド外はクランプ)
+  const clampRow = (r: number) => Math.max(0, Math.min(totalRows, r));
+  const minRow = clampRow(Math.round((bookableStartMin - startHour * 60) / 30));
+  const maxRow = clampRow(Math.round((bookableEndMin - startHour * 60) / 30));
 
   // 日付タブを切り替えたら選択をリセット
   useEffect(() => setSel(null), [dayKey]);
@@ -89,6 +99,8 @@ export function ScheduleGrid({
     if ((e.target as HTMLElement).closest("a")) return; // 既存イベントのタップは除外
     const c = cellFromPoint(e.clientX, e.clientY);
     if (!c) return;
+    // 予約可能時間外(グレーアウト部分)は選択させない
+    if (c.row < minRow || c.row >= maxRow) return;
     setSel({ col: c.col, a: c.row, b: c.row });
     setDragging(true);
     if (e.pointerType === "mouse") {
@@ -105,18 +117,20 @@ export function ScheduleGrid({
     if (e.pointerType !== "mouse") return; // タッチはスクロール操作を優先(タップで1時間選択)
     const c = cellFromPoint(e.clientX, e.clientY);
     if (!c) return;
-    if (c.row !== sel.b) setSel({ ...sel, b: c.row });
+    // ドラッグ端は予約可能範囲内にクランプ
+    const b = Math.max(minRow, Math.min(maxRow - 1, c.row));
+    if (b !== sel.b) setSel({ ...sel, b });
   };
 
   const endDrag = () => setDragging(false);
 
-  // 選択範囲(行)。タップだけの場合はデフォルト1時間(2行)
-  const lo = sel ? Math.min(sel.a, sel.b) : 0;
+  // 選択範囲(行)。タップだけの場合はデフォルト1時間(2行)。予約可能範囲でクランプ
+  const lo = sel ? Math.max(minRow, Math.min(sel.a, sel.b)) : 0;
   const rawHi = sel ? Math.max(sel.a, sel.b) + 1 : 0;
   const hi = sel
     ? sel.a === sel.b
-      ? Math.min(totalRows, lo + 2)
-      : rawHi
+      ? Math.min(maxRow, lo + 2)
+      : Math.min(maxRow, rawHi)
     : 0;
 
   const toTime = (row: number) => {
@@ -188,6 +202,28 @@ export function ScheduleGrid({
                 style={{ gridColumn: i + 2, gridRow: `1 / ${totalRows + 1}` }}
               />
             ))}
+            {/* 企画開始前のグレーアウト(予約不可) */}
+            {minRow > 0 && (
+              <div
+                aria-hidden
+                className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                style={{
+                  gridColumn: `2 / ${venues.length + 2}`,
+                  gridRow: `1 / ${minRow + 1}`,
+                }}
+              />
+            )}
+            {/* 企画終了後のグレーアウト(予約不可) */}
+            {maxRow < totalRows && (
+              <div
+                aria-hidden
+                className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                style={{
+                  gridColumn: `2 / ${venues.length + 2}`,
+                  gridRow: `${maxRow + 1} / ${totalRows + 1}`,
+                }}
+              />
+            )}
             {sel && (
               <div
                 className="pointer-events-none z-[1] m-0.5 rounded-lg border-2 border-primary bg-primary/15"
