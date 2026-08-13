@@ -88,9 +88,12 @@ npm run dev                  # http://localhost:3000
 
 - Webプッシュ送信: `src/lib/push.ts`(web-push + VAPID)。`notify()` がお知らせ作成時に購読者へ自動送信
 - 購読フロー: 設定画面の「プッシュ通知」トグル → `/api/push/subscribe` `/api/push/unsubscribe`
-- 定期実行(Vercel Cron, `vercel.json`):
-  - `/api/cron/reminders`(5分毎)— イベント開始 `reminderMinutes` 分前に参加登録者へ
-  - `/api/cron/nudges`(毎時)— 24h未承認の割り勘に本人催促+主催者/管理者へエスカレーション
+- 定期実行(Vercel Cron, `vercel.json`)※Vercel Free プランは 1日1回まで:
+  - `/api/cron/reminders`(毎日 07:00 JST = `0 22 * * *` UTC)— 今後24時間以内に始まる
+    イベントを参加登録者へまとめて通知(各イベント1回のみ)
+  - `/api/cron/nudges`(毎日 07:30 JST = `30 22 * * *` UTC)— 24h未承認の割り勘に
+    本人催促+主催者/管理者へエスカレーション
   - `CRON_SECRET` で保護(Vercel Cron が Bearer 自動付与。開発中は認証不要)
-- 注: Vercel Hobbyプランの Cron は日次までのため、5分間隔のリマインドには Pro プラン
-  または外部cron(cron-job.org 等で各エンドポイントを定期GET)が必要
+- 「開始5分前」の細かいリマインドが必要になったら、Vercel Pro にするか外部cron
+  (cron-job.org 等で `/api/cron/reminders` を数分おきに GET、Auth: `Bearer <CRON_SECRET>`)に切替。
+  その場合はリマインド送信ロジックを開始 `reminderMinutes` 分前に戻す

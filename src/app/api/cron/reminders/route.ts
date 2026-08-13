@@ -2,32 +2,31 @@ import { and, eq, gt, isNull, lte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { isAuthorizedCron } from "@/lib/cron";
-import { fmtTime } from "@/lib/format";
+import { fmtDateTime } from "@/lib/format";
 import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
-// イベント開始の trip.reminderMinutes 分前に、参加登録者へリマインドを送る。
-// Vercel Cron から定期実行する想定(数分おき)。
+// 今後24時間以内に始まる時間指定イベントを、参加登録者へまとめてリマインドする。
+// Vercel Free プランの制約で 1日1回(朝)実行のため、「開始5分前」ではなく
+// 「これから始まる予定のまとめ通知」として動作する。各イベントは一度だけ送信。
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const db = await getDb();
   const now = new Date();
-  const windowEnd = new Date(now.getTime() + 60 * 60 * 1000); // 先読み最大60分
+  const windowEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24時間先まで
 
-  // 未送信・未来・60分以内に始まる時間指定イベント(+trip.reminderMinutes)
+  // 未送信・これから24時間以内に始まる時間指定イベント
   const candidates = await db
     .select({
       id: schema.events.id,
       title: schema.events.title,
       startsAt: schema.events.startsAt,
       tripId: schema.events.tripId,
-      reminderMinutes: schema.trips.reminderMinutes,
     })
     .from(schema.events)
-    .innerJoin(schema.trips, eq(schema.trips.id, schema.events.tripId))
     .where(
       and(
         eq(schema.events.allDay, false),
@@ -39,10 +38,6 @@ export async function GET(req: Request) {
 
   let sent = 0;
   for (const e of candidates) {
-    // 開始 reminderMinutes 分前に達しているか
-    const dueAt = e.startsAt.getTime() - e.reminderMinutes * 60 * 1000;
-    if (now.getTime() < dueAt) continue;
-
     // 参加登録済みかつリマインドをオフにしていない人
     const parts = await db.query.eventParticipants.findMany({
       where: and(
@@ -56,7 +51,7 @@ export async function GET(req: Request) {
       await notify(db, e.tripId, userIds, {
         type: "event_reminder",
         title: `まもなく「${e.title}」`,
-        body: `${fmtTime(e.startsAt)} に開始します`,
+        body: `${fmtDateTime(e.startsAt)} に開始します`,
         link: `/events/${e.id}`,
       });
       sent += userIds.length;
