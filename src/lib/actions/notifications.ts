@@ -6,6 +6,22 @@ import { schema } from "@/db";
 import { notify } from "@/lib/notify";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
+// 個別のお知らせを既読にする(ベルのモーダルでタップしたとき)
+export async function markNotificationRead(id: string) {
+  const { user, db } = await requireTripContext();
+  await db
+    .update(schema.notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(schema.notifications.id, id),
+        eq(schema.notifications.userId, user.id),
+        isNull(schema.notifications.readAt),
+      ),
+    );
+  revalidatePath("/", "layout");
+}
+
 export async function markAllRead() {
   const { user, trip, db } = await requireTripContext();
   await db

@@ -2,13 +2,12 @@ import { eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ItemCreateFab } from "@/components/item-create";
-import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
-import { SubmitButton } from "@/components/submit-button";
-import { claimItem, markItemDone } from "@/lib/actions/items";
+import { ItemRow } from "@/components/item-row";
+import { Card, SectionTitle } from "@/components/ui";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function ItemsPage() {
-  const { trip, db, user } = await requireTripContext();
+  const { trip, db, user, isAdmin } = await requireTripContext();
   const [items, events, members] = await Promise.all([
     db.query.items.findMany({
       where: eq(schema.items.tripId, trip.id),
@@ -22,15 +21,31 @@ export default async function ItemsPage() {
   const eventOf = (id: string | null) =>
     events.find((e) => e.id === id)?.title ?? "全体";
 
+  const statusOf = (i: (typeof items)[number]) =>
+    i.done ? "ready" : i.assigneeId ? "planned" : "missing";
   const missing = items.filter((i) => !i.assigneeId && !i.done);
   const planned = items.filter((i) => i.assigneeId && !i.done);
   const ready = items.filter((i) => i.done);
+
+  const toProps = (i: (typeof items)[number]) => ({
+    item: {
+      id: i.id,
+      name: i.name,
+      note: i.note,
+      eventTitle: eventOf(i.eventId),
+      addedByName: nameOf(i.addedBy),
+      assigneeName: i.assigneeId ? nameOf(i.assigneeId) : null,
+      method: i.method,
+      status: statusOf(i) as "missing" | "planned" | "ready",
+    },
+    canDelete: i.addedBy === user.id || isAdmin,
+  });
 
   return (
     <>
       <AppHeader title="持ち物リスト" />
       <p className="mx-0.5 mb-2.5 text-[12.5px] text-muted">
-        イベントに必要なものを全員で共有。足りないものは「買ってくる」で買い出しのついでに調達できます。
+        イベントに必要なものを全員で共有。各項目をタップするとステータスを切り替えられます。
       </p>
 
       <div className="mb-3 grid grid-cols-3 gap-2">
@@ -51,32 +66,11 @@ export default async function ItemsPage() {
         <p className="mx-0.5 text-[12px] text-muted">足りないものはありません。</p>
       )}
       {missing.map((i) => (
-        <Card key={i.id} className="mb-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div>
-              <div className="text-sm font-bold">
-                {i.name} <Pill tone="info">{eventOf(i.eventId)}</Pill>
-              </div>
-              <div className="text-[11.5px] text-muted">
-                追加: {nameOf(i.addedBy)}
-                {i.note ? ` · ${i.note}` : ""}
-              </div>
-            </div>
-            <Pill tone="pend">未調達</Pill>
-          </div>
-          <div className="flex gap-2">
-            <form action={claimItem.bind(null, i.id, "bring")} className="flex-1">
-              <SubmitButton className={`${btnGhostCls} w-full py-1.5 text-xs`}>持っていく</SubmitButton>
-            </form>
-            <form action={claimItem.bind(null, i.id, "buy")} className="flex-1">
-              <SubmitButton className={`${btnCls} w-full py-1.5 text-xs`}>買ってくる</SubmitButton>
-            </form>
-          </div>
-        </Card>
+        <ItemRow key={i.id} {...toProps(i)} />
       ))}
       {missing.length > 0 && (
         <p className="mx-0.5 text-[11px] text-muted">
-          「買ってくる」で引き受けたものは調達予定にまとまり、購入後は費用入力からそのまま精算できます。
+          項目をタップして「持っていく/買ってくる」を選ぶと調達予定に移り、購入分は費用入力から精算できます。
         </p>
       )}
 
@@ -85,44 +79,15 @@ export default async function ItemsPage() {
         <p className="mx-0.5 text-[12px] text-muted">調達予定のものはありません。</p>
       )}
       {planned.map((i) => (
-        <Card key={i.id} className="mb-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-sm font-bold">
-                {i.name} <Pill tone="violet">{eventOf(i.eventId)}</Pill>
-              </div>
-              <div className="text-[11.5px] text-muted">
-                追加: {nameOf(i.addedBy)}
-                {i.note ? ` · ${i.note}` : ""}
-              </div>
-            </div>
-            <Pill tone="info">
-              {nameOf(i.assigneeId)} が{i.method === "buy" ? "買い出し" : "持参"}
-            </Pill>
-          </div>
-          {i.assigneeId === user.id && (
-            <form action={markItemDone.bind(null, i.id)} className="mt-2">
-              <SubmitButton className={`${btnGhostCls} w-full py-1.5 text-xs`}>
-                準備OKにする
-              </SubmitButton>
-            </form>
-          )}
-        </Card>
+        <ItemRow key={i.id} {...toProps(i)} />
       ))}
 
       <SectionTitle>準備OK</SectionTitle>
+      {ready.length === 0 && (
+        <p className="mx-0.5 text-[12px] text-muted">準備OKのものはありません。</p>
+      )}
       {ready.map((i) => (
-        <Card key={i.id} className="mb-2 flex items-center justify-between gap-2 opacity-60">
-          <div>
-            <div className="text-sm font-bold">
-              {i.name} <Pill tone="violet">{eventOf(i.eventId)}</Pill>
-            </div>
-            <div className="text-[11.5px] text-muted">
-              {nameOf(i.assigneeId)} が{i.method === "buy" ? "購入済み" : "持参済み"}
-            </div>
-          </div>
-          <Pill tone="ok">準備OK</Pill>
-        </Card>
+        <ItemRow key={i.id} {...toProps(i)} />
       ))}
 
       <ItemCreateFab

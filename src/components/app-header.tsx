@@ -1,36 +1,50 @@
 import Link from "next/link";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { schema } from "@/db";
+import { fmtDateTime } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
-import { IconBell } from "./icons";
+import { NotificationBell } from "./notification-bell";
 import { Avatar } from "./ui";
 
 export async function AppHeader({ title }: { title: string }) {
   const { user, trip, db } = await requireTripContext();
-  const [row] = await db
-    .select({ value: count() })
-    .from(schema.notifications)
-    .where(
-      and(
+  const [[row], latest] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.tripId, trip.id),
+          eq(schema.notifications.userId, user.id),
+          isNull(schema.notifications.readAt),
+        ),
+      ),
+    db.query.notifications.findMany({
+      where: and(
         eq(schema.notifications.tripId, trip.id),
         eq(schema.notifications.userId, user.id),
-        isNull(schema.notifications.readAt),
       ),
-    );
+      orderBy: [desc(schema.notifications.createdAt)],
+      limit: 3,
+    }),
+  ]);
   const unread = row?.value ?? 0;
 
   return (
     <header className="flex items-center justify-between px-1 pt-3 pb-2.5">
       <h1 className="text-[19px] font-bold">{title}</h1>
       <div className="flex items-center gap-3">
-        <Link href="/notifications" aria-label="お知らせ" className="relative p-0.5">
-          <IconBell className="h-5 w-5" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-accent px-1 text-[9.5px] font-extrabold text-white">
-              {unread > 99 ? "99+" : unread}
-            </span>
-          )}
-        </Link>
+        <NotificationBell
+          unread={unread}
+          latest={latest.map((n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            link: n.link,
+            createdLabel: fmtDateTime(n.createdAt),
+            read: n.readAt !== null,
+          }))}
+        />
         <Link href="/settings" aria-label="アカウント">
           <Avatar name={user.name ?? "?"} size={30} />
         </Link>
