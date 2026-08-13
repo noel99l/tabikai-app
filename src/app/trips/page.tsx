@@ -93,6 +93,19 @@ export default async function TripsPage() {
         <IconPlus className="h-4 w-4" />
         新しいイベントを作成
       </Link>
+
+      <form
+        action={async () => {
+          "use server";
+          const { signOut } = await import("@/auth");
+          await signOut({ redirectTo: "/login" });
+        }}
+        className="mt-6 pb-10 text-center"
+      >
+        <button className="text-[12.5px] font-bold text-muted underline">
+          ログアウト
+        </button>
+      </form>
     </div>
   );
 }
