@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AppHeader } from "@/components/app-header";
+import { ProfileEditButton } from "@/components/profile-edit";
 import { Avatar, Card, Pill } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { fmtDateLabel } from "@/lib/format";
@@ -14,12 +15,15 @@ export default async function SettingsPage() {
       <AppHeader title="アカウント" />
 
       <Card className="flex items-center gap-3.5">
-        <Avatar name={user.name ?? "?"} size={44} />
+        <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} size={44} />
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold">{user.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] font-bold">{user.name}</span>
+            {isAdmin && <Pill tone="info">管理者</Pill>}
+          </div>
           <div className="truncate text-[12px] text-muted">{user.email}</div>
         </div>
-        {isAdmin && <Pill tone="info">管理者</Pill>}
+        <ProfileEditButton name={user.name} emoji={user.avatarEmoji} />
       </Card>
 
       <Card className="mt-2.5">

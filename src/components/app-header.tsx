@@ -46,7 +46,7 @@ export async function AppHeader({ title }: { title: string }) {
           }))}
         />
         <Link href="/settings" aria-label="アカウント">
-          <Avatar name={user.name ?? "?"} size={30} />
+          <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} size={30} />
         </Link>
       </div>
     </header>

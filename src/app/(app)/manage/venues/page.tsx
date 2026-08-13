@@ -5,9 +5,9 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { SubmitButton } from "@/components/submit-button";
+import { VenueRow } from "@/components/venue-row";
 import { Card, SectionTitle, btnCls, inputCls, labelCls } from "@/components/ui";
-import { SwitchButton } from "@/components/switch";
-import { addVenue, deleteVenue, toggleVenueVisible } from "@/lib/actions/venues";
+import { addVenue } from "@/lib/actions/venues";
 import { requireTripContext } from "@/lib/session";
 
 export default async function VenuesPage() {
@@ -51,33 +51,7 @@ export default async function VenuesPage() {
         </p>
       )}
       {venues.map((v) => (
-        <Card key={v.id} className="mb-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="text-sm font-bold">{v.name}</div>
-              <div className="text-[11.5px] text-muted">
-                {v.capacity ? `定員${v.capacity}人` : "定員 —"} ·{" "}
-                {v.openFrom && v.openTo ? `${v.openFrom}–${v.openTo}` : "終日"} · イベント
-                {v.eventCount}件
-              </div>
-            </div>
-            {v.eventCount === 0 ? (
-              <form action={deleteVenue.bind(null, v.id)}>
-                <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
-                  削除
-                </SubmitButton>
-              </form>
-            ) : (
-              <span className="text-[11px] text-muted">イベントあり</span>
-            )}
-          </div>
-          <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
-            <span className="text-[12px] text-muted">予定表にデフォルト表示</span>
-            <form action={toggleVenueVisible.bind(null, v.id, !v.showInSchedule)}>
-              <SwitchButton checked={v.showInSchedule} />
-            </form>
-          </div>
-        </Card>
+        <VenueRow key={v.id} venue={v} />
       ))}
 
       <SectionTitle>会場を追加</SectionTitle>

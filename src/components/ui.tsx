@@ -37,7 +37,27 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">{children}</h3>;
 }
 
-export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
+export function Avatar({
+  name,
+  size = 28,
+  emoji,
+}: {
+  name: string;
+  size?: number;
+  emoji?: string | null;
+}) {
+  // 絵文字アイコンが設定されていればそれを、なければ頭文字+カラーで表示
+  if (emoji) {
+    return (
+      <span
+        className="flex items-center justify-center rounded-full bg-line"
+        style={{ width: size, height: size, fontSize: size * 0.58 }}
+        title={name}
+      >
+        {emoji}
+      </span>
+    );
+  }
   return (
     <span
       className="flex items-center justify-center rounded-full font-bold text-white"

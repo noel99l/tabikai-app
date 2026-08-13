@@ -46,8 +46,10 @@ export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   googleSub: text("google_sub").unique(), // Google OAuth subject
   email: text("email").notNull().unique(),
-  name: text("name").notNull(),
-  image: text("image"),
+  name: text("name").notNull(), // 表示名(初回に本人が設定)
+  image: text("image"), // Googleのプロフィール画像URL
+  avatarEmoji: text("avatar_emoji"), // アイコンとして使う絵文字(任意)
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }), // 表示名設定完了。null=未設定
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
