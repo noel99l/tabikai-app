@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createEvent } from "@/lib/actions/events";
 import { Spinner } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
@@ -20,10 +20,13 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
   const [inviteAll, setInviteAll] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitting = useRef(false);
 
   return (
     <form
       action={async (formData) => {
+        if (submitting.current) return;
+        submitting.current = true;
         setPending(true);
         setError(null);
         try {
@@ -31,6 +34,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
           if (res?.error) {
             setError(res.error);
             setPending(false);
+            submitting.current = false;
           } else {
             setPending(false);
             onSuccess?.();
@@ -38,6 +42,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         } catch {
           setError("作成に失敗しました。時間をおいて再度お試しください。");
           setPending(false);
+          submitting.current = false;
         }
       }}
     >
@@ -107,7 +112,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
 
       <p className="mx-0.5 mt-3.5 text-[11.5px] text-muted">
         同一会場・同一時間帯は早い者勝ちで、重複する場合は作成できません。
-        参加者には開始5分前に自動でリマインド通知が届きます(各自オフ可)。
+        参加者には開始前に自動でリマインド通知が届きます(各自オフ可)。
       </p>
 
       {error && (

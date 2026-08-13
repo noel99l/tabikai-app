@@ -4,7 +4,11 @@ import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, SectionTitle, btnCls, inputCls, labelCls } from "@/components/ui";
-import { updateTripDates, updateTripName } from "@/lib/actions/trips";
+import {
+  updateReminderMinutes,
+  updateTripDates,
+  updateTripName,
+} from "@/lib/actions/trips";
 import { jstDateKey, fmtTime } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
 
@@ -28,6 +32,27 @@ export default async function TripSettingsPage() {
         <form action={updateTripName} className="flex gap-2">
           <input className={inputCls} name="name" defaultValue={trip.name} required />
           <SubmitButton className={`${btnCls} shrink-0`}>保存</SubmitButton>
+        </form>
+      </Card>
+
+      <SectionTitle>リマインド通知</SectionTitle>
+      <Card>
+        <p className="mb-2 text-[11.5px] text-muted">
+          参加登録者に、イベント開始の何分前に通知するかの既定値です(各自オフ可)。
+        </p>
+        <form action={updateReminderMinutes} className="flex items-center gap-2">
+          <span className="text-[13px] text-muted">開始</span>
+          <input
+            className={`${inputCls} w-20 text-center`}
+            name="reminderMinutes"
+            type="number"
+            min={0}
+            max={1440}
+            defaultValue={trip.reminderMinutes}
+            required
+          />
+          <span className="text-[13px] text-muted">分前</span>
+          <SubmitButton className={`${btnCls} ml-auto shrink-0`}>保存</SubmitButton>
         </form>
       </Card>
 

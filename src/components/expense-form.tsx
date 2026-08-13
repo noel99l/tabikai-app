@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
 import { Spinner } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
@@ -16,10 +16,13 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
   const [splitAll, setSplitAll] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitting = useRef(false); // 二重送信防止(状態更新前の連打を弾く)
 
   return (
     <form
       action={async (formData) => {
+        if (submitting.current) return;
+        submitting.current = true;
         setPending(true);
         setError(null);
         try {
@@ -27,6 +30,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
           if (res?.error) {
             setError(res.error);
             setPending(false);
+            submitting.current = false;
           } else {
             setPending(false);
             onSuccess?.();
@@ -34,6 +38,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
         } catch {
           setError("登録に失敗しました。時間をおいて再度お試しください。");
           setPending(false);
+          submitting.current = false;
         }
       }}
     >

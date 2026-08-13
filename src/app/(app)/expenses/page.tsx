@@ -2,12 +2,13 @@ import { eq, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ExpenseCreateFab } from "@/components/expense-create";
+import { ExpenseRow } from "@/components/expense-row";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function ExpensesPage() {
-  const { user, trip, db } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
   const [expenses, members, tripEvents] = await Promise.all([
     db.query.expenses.findMany({
       where: eq(schema.expenses.tripId, trip.id),
@@ -29,6 +30,8 @@ export default async function ExpensesPage() {
     : [];
   const nameOf = (id: string) =>
     members.find((m) => m.userId === id)?.name ?? "退会メンバー";
+  const eventTitleOf = (id: string | null) =>
+    id ? (tripEvents.find((e) => e.id === id)?.title ?? null) : null;
 
   const groupTotal = expenses.reduce((s, e) => s + e.amount, 0);
   const myConfirmed = shares
@@ -70,33 +73,28 @@ export default async function ExpensesPage() {
 
       {expenses.map((x) => {
         const xs = shares.filter((s) => s.expenseId === x.id);
-        const active = xs.filter((s) => s.status !== "excluded");
-        const done = active.filter(
-          (s) => s.status === "approved" || s.status === "forced",
-        );
-        const confirmed = x.splitAll || done.length === active.length;
+        const canEdit =
+          x.createdBy === user.id || x.paidBy === user.id || isAdmin;
         return (
-          <Card key={x.id} className="mb-2.5 flex items-center justify-between gap-2.5">
-            <div className="min-w-0">
-              <div className="text-sm font-bold">
-                {x.title}{" "}
-                {x.splitAll && <Pill tone="violet">全員</Pill>}{" "}
-                {confirmed ? (
-                  <Pill tone="ok">確定</Pill>
-                ) : (
-                  <Pill tone="pend">承認 {done.length}/{active.length}</Pill>
-                )}
-              </div>
-              <div className="text-[11.5px] text-muted">
-                立替: {nameOf(x.paidBy)} · 対象{active.length}人 · 1人あたり{" "}
-                {yen(Math.round(x.amount / Math.max(1, active.length)))}
-                {x.splitAll && " · 承認不要"}
-              </div>
-            </div>
-            <div className="shrink-0 text-base font-extrabold tabular-nums">
-              {yen(x.amount)}
-            </div>
-          </Card>
+          <ExpenseRow
+            key={x.id}
+            expense={{
+              id: x.id,
+              title: x.title,
+              amount: x.amount,
+              paidBy: x.paidBy,
+              splitAll: x.splitAll,
+              eventTitle: eventTitleOf(x.eventId),
+            }}
+            shares={xs.map((s) => ({
+              userId: s.userId,
+              name: nameOf(s.userId),
+              amount: s.amount,
+              status: s.status,
+            }))}
+            members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+            canEdit={canEdit}
+          />
         );
       })}
 

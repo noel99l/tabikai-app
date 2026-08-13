@@ -70,6 +70,7 @@ export const trips = pgTable("trips", {
   logoUrl: text("logo_url"), // 未登録時は標準アイコン
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  reminderMinutes: integer("reminder_minutes").default(5).notNull(), // イベント開始何分前にリマインド
   expensesClosedAt: timestamp("expenses_closed_at", { withTimezone: true }), // 経費入力の締め
   createdBy: uuid("created_by")
     .notNull()
@@ -119,6 +120,7 @@ export const venues = pgTable("venues", {
   openFrom: text("open_from"), // "HH:mm"、null は終日
   openTo: text("open_to"),
   sortOrder: integer("sort_order").default(0).notNull(),
+  showInSchedule: boolean("show_in_schedule").default(true).notNull(), // 予定表にデフォルト表示するか
 });
 
 export const events = pgTable("events", {

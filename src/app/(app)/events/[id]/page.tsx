@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app-header";
 import { IconBack, IconPlus } from "@/components/icons";
 import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
+import { SwitchButton } from "@/components/switch";
 import {
   addParticipants,
   deleteEvent,
@@ -21,7 +22,7 @@ export default async function EventDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
 
   const event = await db.query.events.findFirst({
     where: eq(schema.events.id, id),
@@ -86,19 +87,11 @@ export default async function EventDetailPage({
             </div>
           )}
           <div className="flex items-center justify-between py-2 text-[13px]">
-            <dt className="text-muted">リマインド通知(開始5分前)</dt>
+            <dt className="text-muted">リマインド通知(開始{trip.reminderMinutes}分前)</dt>
             <dd>
               {mine?.status === "joined" ? (
                 <form action={toggleReminder.bind(null, id, !mine.remindOptOut)}>
-                  <SubmitButton
-                    className={`rounded-full px-3 py-1 text-[11.5px] font-bold ${
-                      mine.remindOptOut
-                        ? "bg-line text-muted"
-                        : "bg-ok-soft text-ok"
-                    }`}
-                  >
-                    {mine.remindOptOut ? "オフ(タップでオン)" : "オン(タップでオフ)"}
-                  </SubmitButton>
+                  <SwitchButton checked={!mine.remindOptOut} />
                 </form>
               ) : (
                 <span className="text-[11.5px] text-muted">参加登録後に設定可</span>

@@ -136,6 +136,19 @@ export async function updateTripName(formData: FormData) {
   revalidatePath("/");
 }
 
+// リマインドのデフォルト分数(イベント開始の何分前に通知するか)
+export async function updateReminderMinutes(formData: FormData) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const n = Number(String(formData.get("reminderMinutes") ?? "").replace(/[^\d]/g, ""));
+  if (!Number.isFinite(n) || n < 0 || n > 1440) return;
+  await db
+    .update(schema.trips)
+    .set({ reminderMinutes: n })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/trip");
+}
+
 // 企画の削除(その企画の管理者のみ)。配下の会場・イベント・費用・持ち物・お知らせもすべて削除される
 export async function deleteTrip(tripId: string) {
   const user = await requireUser();

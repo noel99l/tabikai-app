@@ -156,3 +156,92 @@ export async function resolveShare(formData: FormData) {
   revalidatePath("/approvals");
   revalidatePath("/expenses");
 }
+
+// 費用の編集(内容・金額・立替者)。作成者・立替者・管理者のみ。
+// 金額が変わったら割り勘額を再計算し、個別割り勘は再承認のため pending に戻す。
+export async function updateExpense(formData: FormData) {
+  const { user, db, isAdmin } = await requireTripContext();
+  const expenseId = String(formData.get("expenseId"));
+  const title = String(formData.get("title") ?? "").trim();
+  const amount = Number(String(formData.get("amount") ?? "").replace(/[^\d]/g, ""));
+  const paidBy = String(formData.get("paidBy") ?? "");
+  const expense = await db.query.expenses.findFirst({
+    where: eq(schema.expenses.id, expenseId),
+  });
+  if (!expense) return { error: "費用が見つかりません" };
+  if (expense.createdBy !== user.id && expense.paidBy !== user.id && !isAdmin) {
+    return { error: "作成者・立替者・管理者のみ編集できます" };
+  }
+  if (!title || !Number.isFinite(amount) || amount <= 0) {
+    return { error: "内容と金額を入力してください" };
+  }
+
+  const amountChanged = amount !== expense.amount;
+  await db
+    .update(schema.expenses)
+    .set({ title, amount, paidBy: paidBy || expense.paidBy })
+    .where(eq(schema.expenses.id, expenseId));
+
+  if (amountChanged) {
+    // excluded 以外の対象者で再分割
+    const shares = await db.query.expenseShares.findMany({
+      where: eq(schema.expenseShares.expenseId, expenseId),
+    });
+    const active = shares.filter((s) => s.status !== "excluded");
+    const amounts = splitAmount(amount, Math.max(1, active.length));
+    const newPayer = paidBy || expense.paidBy;
+    for (let i = 0; i < active.length; i++) {
+      await db
+        .update(schema.expenseShares)
+        .set({
+          amount: amounts[i],
+          status: expense.splitAll
+            ? "approved"
+            : active[i].userId === newPayer
+              ? "approved"
+              : "pending",
+        })
+        .where(
+          and(
+            eq(schema.expenseShares.expenseId, expenseId),
+            eq(schema.expenseShares.userId, active[i].userId),
+          ),
+        );
+    }
+    if (!expense.splitAll) {
+      await notify(
+        db,
+        expense.tripId,
+        active
+          .map((s) => s.userId)
+          .filter((id) => id !== user.id && id !== newPayer),
+        {
+          type: "expense_assigned",
+          title: `「${title}」の金額が変更されました`,
+          body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
+          link: "/approvals",
+          senderId: user.id,
+        },
+      );
+    }
+  }
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
+  revalidatePath("/");
+}
+
+// 費用の削除。作成者・立替者・管理者のみ。
+export async function deleteExpense(expenseId: string) {
+  const { user, db, isAdmin } = await requireTripContext();
+  const expense = await db.query.expenses.findFirst({
+    where: eq(schema.expenses.id, expenseId),
+  });
+  if (!expense) return;
+  if (expense.createdBy !== user.id && expense.paidBy !== user.id && !isAdmin) {
+    throw new Error("作成者・立替者・管理者のみ削除できます");
+  }
+  await db.delete(schema.expenses).where(eq(schema.expenses.id, expenseId));
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
+  revalidatePath("/");
+}
