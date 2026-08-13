@@ -7,7 +7,7 @@ export default async function AppLayout({
   // 未ログイン → /login、企画未選択 → /trips、参加承認待ち → /trips/pending
   await requireTripContext();
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-3.5 pb-24">
+    <div className="mx-auto min-h-dvh max-w-md px-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {children}
       <BottomNav />
     </div>

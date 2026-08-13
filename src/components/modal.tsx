@@ -66,7 +66,7 @@ export function Fab({
     <button
       onClick={onClick}
       aria-label={label}
-      className="fixed right-4 bottom-24 z-10 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
+      className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
     >
       <svg
         viewBox="0 0 24 24"

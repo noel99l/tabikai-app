@@ -24,6 +24,8 @@ export const viewport: Viewport = {
   themeColor: "#0B7285",
   width: "device-width",
   initialScale: 1,
+  // ホーム画面PWAで env(safe-area-inset-*) を有効にする(ホームインジケータとの重なり回避)
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
