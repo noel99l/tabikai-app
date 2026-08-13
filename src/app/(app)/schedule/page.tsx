@@ -55,7 +55,22 @@ export default async function SchedulePage({
     .where(eq(schema.events.tripId, trip.id))
     .groupBy(schema.events.id);
 
-  const dayEvents = events.filter((e) => jstDateKey(e.startsAt) === activeDay?.key);
+  // アクティブ日の 0:00(JST)を基準に、日をまたぐイベントも当日分にクリップして表示
+  const dayStartMs = activeDay
+    ? new Date(`${activeDay.key}T00:00:00+09:00`).getTime()
+    : 0;
+  const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
+  const minutesFromDayStart = (t: Date) => Math.round((t.getTime() - dayStartMs) / 60000);
+
+  const dayEvents = events
+    .filter((e) => e.startsAt.getTime() < dayEndMs && e.endsAt.getTime() > dayStartMs)
+    .map((e) => ({
+      ...e,
+      clippedStartMin: Math.max(0, minutesFromDayStart(e.startsAt)),
+      clippedEndMin: Math.min(1440, minutesFromDayStart(e.endsAt)),
+      continuesBefore: e.startsAt.getTime() < dayStartMs,
+      continuesAfter: e.endsAt.getTime() > dayEndMs,
+    }));
 
   // 表示時間帯: 日をまたぐ企画は24時間表示。日帰りは 8:00–22:00(イベントに合わせ拡張)
   const isMultiDay = jstDateKey(trip.startsAt) !== jstDateKey(trip.endsAt);
@@ -65,8 +80,8 @@ export default async function SchedulePage({
     startHour = 8;
     endHour = 22;
     for (const e of dayEvents) {
-      startHour = Math.min(startHour, Math.floor(jstMinutes(e.startsAt) / 60));
-      endHour = Math.max(endHour, Math.ceil(jstMinutes(e.endsAt) / 60));
+      startHour = Math.min(startHour, Math.floor(e.clippedStartMin / 60));
+      endHour = Math.max(endHour, Math.ceil(e.clippedEndMin / 60));
     }
   }
 
@@ -102,14 +117,20 @@ export default async function SchedulePage({
         </p>
       ) : (
         <ScheduleGrid
-          venues={venues.map((v) => ({ id: v.id, name: v.name }))}
+          venues={venues.map((v) => ({
+            id: v.id,
+            name: v.name,
+            defaultShow: v.showInSchedule,
+          }))}
           events={dayEvents.map((e) => ({
             id: e.id,
             title: e.title,
             venueId: e.venueId,
-            startMin: jstMinutes(e.startsAt),
-            endMin: jstMinutes(e.endsAt),
+            startMin: e.clippedStartMin,
+            endMin: e.clippedEndMin,
             joined: e.joined,
+            continuesBefore: e.continuesBefore,
+            continuesAfter: e.continuesAfter,
           }))}
           dayKey={activeDay?.key ?? days[0].key}
           dayLabel={activeDay?.label ?? days[0].label}

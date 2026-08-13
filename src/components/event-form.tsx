@@ -56,9 +56,9 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         ))}
       </select>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className={labelCls} htmlFor="date">日付</label>
+          <label className={labelCls} htmlFor="date">開始日</label>
           <select className={inputCls} id="date" name="date" required defaultValue={defaults?.date}>
             {days.map((d) => (
               <option key={d.key} value={d.key}>{d.label}</option>
@@ -66,14 +66,25 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
           </select>
         </div>
         <div>
-          <label className={labelCls} htmlFor="start">開始</label>
+          <label className={labelCls} htmlFor="start">開始時刻</label>
           <input className={inputCls} id="start" name="start" type="time" required defaultValue={defaults?.start ?? "19:30"} />
         </div>
         <div>
-          <label className={labelCls} htmlFor="end">終了</label>
+          <label className={labelCls} htmlFor="endDate">終了日</label>
+          <select className={inputCls} id="endDate" name="endDate" required defaultValue={defaults?.date}>
+            {days.map((d) => (
+              <option key={d.key} value={d.key}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="end">終了時刻</label>
           <input className={inputCls} id="end" name="end" type="time" required defaultValue={defaults?.end ?? "20:30"} />
         </div>
       </div>
+      <p className="mx-0.5 mt-1 text-[11px] text-muted">
+        終了日を翌日以降にすると、日をまたぐ予定を作成できます。
+      </p>
 
       <label className={labelCls} htmlFor="description">説明(任意)</label>
       <input className={inputCls} id="description" name="description" placeholder="持ち物や集合場所など" />

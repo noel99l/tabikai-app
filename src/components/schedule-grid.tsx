@@ -9,13 +9,15 @@ type GridEvent = {
   id: string;
   title: string;
   venueId: string;
-  startMin: number; // JST 0:00からの分
+  startMin: number; // JST 0:00からの分(当日にクリップ済み)
   endMin: number;
   joined: number;
+  continuesBefore: boolean; // 前日から続く
+  continuesAfter: boolean; // 翌日へ続く
 };
 
 type Props = {
-  venues: { id: string; name: string }[];
+  venues: { id: string; name: string; defaultShow: boolean }[];
   events: GridEvent[];
   dayKey: string; // "YYYY-MM-DD"
   dayLabel: string; // "10/10(土)"
@@ -41,7 +43,7 @@ const LABEL_W = 38; // 時刻ラベル列の幅
 
 // カレンダーグリッド。空き枠をドラッグ(タップ)で範囲選択してイベント作成へ。
 export function ScheduleGrid({
-  venues,
+  venues: allVenues,
   events,
   dayKey,
   dayLabel,
@@ -57,9 +59,20 @@ export function ScheduleGrid({
   const [sel, setSel] = useState<{ col: number; a: number; b: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  // 表示する会場(初期値=管理画面でデフォルト表示ONの会場)
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(
+    () => new Set(allVenues.filter((v) => v.defaultShow).map((v) => v.id)),
+  );
   const [prefill, setPrefill] = useState<
     { venueId?: string; date?: string; start?: string; end?: string } | undefined
   >(undefined);
+
+  // 実際に列として表示する会場。全部オフのときは全会場を表示(空グリッド回避)
+  const venues =
+    allVenues.some((v) => visibleIds.has(v.id))
+      ? allVenues.filter((v) => visibleIds.has(v.id))
+      : allVenues;
   const totalRows = (endHour - startHour) * 2;
 
   // 予約可能な行の範囲 [minRow, maxRow)(グリッド外はクランプ)
@@ -155,8 +168,48 @@ export function ScheduleGrid({
     setModalOpen(true);
   };
 
+  const toggleVisible = (id: string) => {
+    setVisibleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <>
+      {/* 表示する会場のフィルタ */}
+      <div className="mb-2">
+        <button
+          onClick={() => setFilterOpen((o) => !o)}
+          className="flex items-center gap-1 text-[12px] font-bold text-primary"
+        >
+          表示する会場({venues.length}/{allVenues.length}){filterOpen ? " ▲" : " ▼"}
+        </button>
+        {filterOpen && (
+          <div className="mt-1.5 flex flex-wrap gap-1.5 rounded-xl border border-line bg-white p-2.5">
+            {allVenues.map((v) => {
+              const on = venues.some((x) => x.id === v.id);
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => toggleVisible(v.id)}
+                  className={`rounded-full border px-3 py-1.5 text-[12.5px] font-semibold ${
+                    on
+                      ? "border-primary bg-primary text-white"
+                      : "border-line bg-white text-muted"
+                  }`}
+                >
+                  {on ? "✓ " : ""}
+                  {v.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="overflow-x-auto rounded-xl border border-line bg-white">
         <div style={{ minWidth: venues.length > 4 ? venues.length * 90 + LABEL_W : undefined }}>
           <div
@@ -246,9 +299,10 @@ export function ScheduleGrid({
                     gridRow: `${rowOf(e.startMin)} / ${rowOf(e.endMin)}`,
                   }}
                 >
+                  {e.continuesBefore && <span className="opacity-70">↑前日から </span>}
                   {e.title}
                   <span className="block text-[9px] font-medium opacity-75">
-                    {e.joined}人
+                    {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}
                   </span>
                 </Link>
               );

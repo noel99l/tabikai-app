@@ -12,6 +12,7 @@ export async function addVenue(formData: FormData) {
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const openFrom = String(formData.get("openFrom") ?? "").trim() || null;
   const openTo = String(formData.get("openTo") ?? "").trim() || null;
+  const showInSchedule = formData.get("showInSchedule") !== null; // 未指定=非表示
   if (!name) return;
   const [{ max }] = await db
     .select({ max: sql<number>`coalesce(max(${schema.venues.sortOrder}), -1)` })
@@ -23,8 +24,21 @@ export async function addVenue(formData: FormData) {
     capacity: capacityRaw ? Number(capacityRaw.replace(/[^\d]/g, "")) || null : null,
     openFrom,
     openTo,
+    showInSchedule,
     sortOrder: Number(max) + 1,
   });
+  revalidatePath("/manage/venues");
+  revalidatePath("/schedule");
+}
+
+// 予定表にデフォルト表示するかどうかの切替
+export async function toggleVenueVisible(venueId: string, visible: boolean) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db
+    .update(schema.venues)
+    .set({ showInSchedule: visible })
+    .where(and(eq(schema.venues.id, venueId), eq(schema.venues.tripId, trip.id)));
   revalidatePath("/manage/venues");
   revalidatePath("/schedule");
 }

@@ -13,6 +13,7 @@ export async function createEvent(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const venueId = String(formData.get("venueId") ?? "");
   const date = String(formData.get("date") ?? "");
+  const endDate = String(formData.get("endDate") ?? "") || date;
   const start = String(formData.get("start") ?? "");
   const end = String(formData.get("end") ?? "");
   const description = String(formData.get("description") ?? "").trim() || null;
@@ -22,9 +23,9 @@ export async function createEvent(formData: FormData) {
     return { error: "入力が不足しています" };
   }
   const startsAt = jstDate(date, start);
-  const endsAt = jstDate(date, end);
+  const endsAt = jstDate(endDate, end);
   if (endsAt <= startsAt) {
-    return { error: "終了時刻は開始より後にしてください" };
+    return { error: "終了日時は開始より後にしてください" };
   }
 
   // 同一会場・同一時間帯は早い者勝ちで不可

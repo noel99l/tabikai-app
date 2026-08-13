@@ -6,7 +6,8 @@ import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, SectionTitle, btnCls, inputCls, labelCls } from "@/components/ui";
-import { addVenue, deleteVenue } from "@/lib/actions/venues";
+import { SwitchButton } from "@/components/switch";
+import { addVenue, deleteVenue, toggleVenueVisible } from "@/lib/actions/venues";
 import { requireTripContext } from "@/lib/session";
 
 export default async function VenuesPage() {
@@ -20,6 +21,7 @@ export default async function VenuesPage() {
       capacity: schema.venues.capacity,
       openFrom: schema.venues.openFrom,
       openTo: schema.venues.openTo,
+      showInSchedule: schema.venues.showInSchedule,
       eventCount: count(schema.events.id),
     })
     .from(schema.venues)
@@ -49,24 +51,32 @@ export default async function VenuesPage() {
         </p>
       )}
       {venues.map((v) => (
-        <Card key={v.id} className="mb-2.5 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-sm font-bold">{v.name}</div>
-            <div className="text-[11.5px] text-muted">
-              {v.capacity ? `定員${v.capacity}人` : "定員 —"} ·{" "}
-              {v.openFrom && v.openTo ? `${v.openFrom}–${v.openTo}` : "終日"} · イベント
-              {v.eventCount}件
+        <Card key={v.id} className="mb-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-sm font-bold">{v.name}</div>
+              <div className="text-[11.5px] text-muted">
+                {v.capacity ? `定員${v.capacity}人` : "定員 —"} ·{" "}
+                {v.openFrom && v.openTo ? `${v.openFrom}–${v.openTo}` : "終日"} · イベント
+                {v.eventCount}件
+              </div>
             </div>
+            {v.eventCount === 0 ? (
+              <form action={deleteVenue.bind(null, v.id)}>
+                <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
+                  削除
+                </SubmitButton>
+              </form>
+            ) : (
+              <span className="text-[11px] text-muted">イベントあり</span>
+            )}
           </div>
-          {v.eventCount === 0 ? (
-            <form action={deleteVenue.bind(null, v.id)}>
-              <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
-                削除
-              </SubmitButton>
+          <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+            <span className="text-[12px] text-muted">予定表にデフォルト表示</span>
+            <form action={toggleVenueVisible.bind(null, v.id, !v.showInSchedule)}>
+              <SwitchButton checked={v.showInSchedule} />
             </form>
-          ) : (
-            <span className="text-[11px] text-muted">イベントあり</span>
-          )}
+          </div>
         </Card>
       ))}
 
@@ -93,6 +103,15 @@ export default async function VenuesPage() {
               <input className={inputCls} id="openTo" name="openTo" type="time" />
             </div>
           </div>
+          <label className="mt-3 flex items-center gap-2.5 text-[13px] font-semibold">
+            <input
+              type="checkbox"
+              name="showInSchedule"
+              defaultChecked
+              className="h-5 w-5 accent-primary"
+            />
+            予定表にデフォルトで表示する
+          </label>
           <SubmitButton className={`${btnCls} mt-4 w-full py-3`}>会場を追加</SubmitButton>
         </form>
       </Card>
