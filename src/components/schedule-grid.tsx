@@ -21,7 +21,6 @@ type Props = {
   events: GridEvent[];
   allDayEvents: { id: string; title: string; venueId: string }[];
   dayKey: string; // "YYYY-MM-DD"
-  dayLabel: string; // "10/10(土)"
   startHour: number;
   endHour: number;
   // 予約可能時間帯(0:00からの分)。これより前・後はグレーアウトして予約不可
@@ -41,14 +40,17 @@ const colorClasses = [
 
 const ROW_H = 26; // 30分 = 1行
 const LABEL_W = 38; // 時刻ラベル列の幅
+const LONG_PRESS_MS = 320; // 長押し判定
+const MOVE_CANCEL_PX = 10; // これ以上動いたら長押しをキャンセル(=スクロール)
 
-// カレンダーグリッド。空き枠をドラッグ(タップ)で範囲選択してイベント作成へ。
+type Sel = { col: number; a: number; b: number };
+
+// カレンダーグリッド。長押し&スライド(PCはドラッグ)で範囲選択してイベントを作成。
 export function ScheduleGrid({
   venues: allVenues,
   events,
   allDayEvents,
   dayKey,
-  dayLabel,
   startHour,
   endHour,
   bookableStartMin,
@@ -57,12 +59,12 @@ export function ScheduleGrid({
   members,
   selfId,
 }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [sel, setSel] = useState<{ col: number; a: number; b: number } | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const [sel, setSelState] = useState<Sel | null>(null);
+  const [selecting, setSelecting] = useState(false); // 選択操作中(この間はスクロールを止める)
   const [modalOpen, setModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  // 表示する会場(初期値=管理画面でデフォルト表示ONの会場)
   const [visibleIds, setVisibleIds] = useState<Set<string>>(
     () => new Set(allVenues.filter((v) => v.defaultShow).map((v) => v.id)),
   );
@@ -70,31 +72,41 @@ export function ScheduleGrid({
     { venueId?: string; date?: string; start?: string; end?: string } | undefined
   >(undefined);
 
-  // 実際に列として表示する会場。全部オフのときは全会場を表示(空グリッド回避)
+  // タッチのジェスチャ管理(タイマー/開始座標)。イベントハンドラの再レンダー遅延に依存しないようrefで保持。
+  const selRef = useRef<Sel | null>(null);
+  const selectingRef = useRef(false);
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startRef = useRef<{ x: number; y: number; col: number; row: number } | null>(null);
+  const setSel = (s: Sel | null) => {
+    selRef.current = s;
+    setSelState(s);
+  };
+  const beginSelecting = (v: boolean) => {
+    selectingRef.current = v;
+    setSelecting(v);
+  };
+
   const venues =
     allVenues.some((v) => visibleIds.has(v.id))
       ? allVenues.filter((v) => visibleIds.has(v.id))
       : allVenues;
-  const needsScroll = venues.length > 4; // 列が多いときのみ横スクロール
+  const minColWidth = 84;
+  const gridMinWidth = venues.length * minColWidth + LABEL_W;
   const visibleVenueIds = new Set(venues.map((v) => v.id));
   const allDayVisible = allDayEvents.filter((e) => visibleVenueIds.has(e.venueId));
   const totalRows = (endHour - startHour) * 2;
 
-  // 予約可能な行の範囲 [minRow, maxRow)(グリッド外はクランプ)
   const clampRow = (r: number) => Math.max(0, Math.min(totalRows, r));
   const minRow = clampRow(Math.round((bookableStartMin - startHour * 60) / 30));
   const maxRow = clampRow(Math.round((bookableEndMin - startHour * 60) / 30));
 
-  // 日付タブを切り替えたら選択をリセット
   useEffect(() => setSel(null), [dayKey]);
 
-  // 24時間表示のときは 8:00 付近まで自動スクロール
+  // 24時間表示のときはパネル内を 8:00 付近まで自動スクロール
   useEffect(() => {
     if (startHour !== 0) return;
-    const el = bodyRef.current;
-    if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY + 16 * ROW_H - 150;
-    window.scrollTo({ top: Math.max(0, y) });
+    const el = scrollRef.current;
+    if (el) el.scrollTop = 16 * ROW_H - 20;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,36 +125,70 @@ export function ScheduleGrid({
     return { col, row };
   };
 
+  const inBookable = (row: number) => row >= minRow && row < maxRow;
+
+  const clearLongPress = () => {
+    if (lpTimer.current) {
+      clearTimeout(lpTimer.current);
+      lpTimer.current = null;
+    }
+    startRef.current = null;
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest("a")) return; // 既存イベントのタップは除外
+    if ((e.target as HTMLElement).closest("a")) return; // 既存イベントは詳細へ
     const c = cellFromPoint(e.clientX, e.clientY);
-    if (!c) return;
-    // 予約可能時間外(グレーアウト部分)は選択させない
-    if (c.row < minRow || c.row >= maxRow) return;
-    setSel({ col: c.col, a: c.row, b: c.row });
-    setDragging(true);
+    if (!c || !inBookable(c.row)) return;
+
     if (e.pointerType === "mouse") {
+      // PC: 押下で即選択開始→ドラッグで範囲指定
+      setSel({ col: c.col, a: c.row, b: c.row });
+      beginSelecting(true);
       try {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       } catch {
-        // 合成イベント等でpointerIdが無効な場合は無視
+        /* noop */
       }
+      return;
+    }
+
+    // タッチ/ペン: 長押しで選択開始
+    startRef.current = { x: e.clientX, y: e.clientY, col: c.col, row: c.row };
+    clearTimeoutOnly();
+    lpTimer.current = setTimeout(() => {
+      const s = startRef.current;
+      if (!s) return;
+      setSel({ col: s.col, a: s.row, b: s.row });
+      beginSelecting(true);
+      lpTimer.current = null;
+    }, LONG_PRESS_MS);
+  };
+
+  function clearTimeoutOnly() {
+    if (lpTimer.current) {
+      clearTimeout(lpTimer.current);
+      lpTimer.current = null;
+    }
+  }
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (selectingRef.current && selRef.current) {
+      const c = cellFromPoint(e.clientX, e.clientY);
+      if (!c) return;
+      const b = Math.max(minRow, Math.min(maxRow - 1, c.row));
+      if (b !== selRef.current.b) setSel({ ...selRef.current, b });
+      if (e.pointerType !== "mouse") e.preventDefault();
+      return;
+    }
+    // 長押し待機中に動いたらスクロールとみなしてキャンセル
+    if (startRef.current && lpTimer.current) {
+      const dx = Math.abs(e.clientX - startRef.current.x);
+      const dy = Math.abs(e.clientY - startRef.current.y);
+      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) clearLongPress();
     }
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging || !sel) return;
-    if (e.pointerType !== "mouse") return; // タッチはスクロール操作を優先(タップで1時間選択)
-    const c = cellFromPoint(e.clientX, e.clientY);
-    if (!c) return;
-    // ドラッグ端は予約可能範囲内にクランプ
-    const b = Math.max(minRow, Math.min(maxRow - 1, c.row));
-    if (b !== sel.b) setSel({ ...sel, b });
-  };
-
-  const endDrag = () => setDragging(false);
-
-  // 選択範囲(行)。タップだけの場合はデフォルト1時間(2行)。予約可能範囲でクランプ
+  // 選択範囲(行)。単発(a===b)はデフォルト1時間。予約可能範囲でクランプ
   const lo = sel ? Math.max(minRow, Math.min(sel.a, sel.b)) : 0;
   const rawHi = sel ? Math.max(sel.a, sel.b) + 1 : 0;
   const hi = sel
@@ -152,25 +198,35 @@ export function ScheduleGrid({
     : 0;
 
   const toTime = (row: number) => {
-    const m = Math.min(startHour * 60 + row * 30, 24 * 60 - 1); // 24:00は23:59に丸める
+    const m = Math.min(startHour * 60 + row * 30, 24 * 60 - 1);
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
-  const displayTime = (row: number) => {
-    const m = startHour * 60 + row * 30;
-    return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-  };
 
-  // 選択範囲からモーダルを開く(遷移しない)
-  const create = () => {
-    if (!sel) return;
+  const finalize = () => {
+    const s = selRef.current;
+    clearLongPress();
+    beginSelecting(false);
+    if (!s) return;
+    const l = Math.max(minRow, Math.min(s.a, s.b));
+    const h = s.a === s.b ? Math.min(maxRow, l + 2) : Math.min(maxRow, Math.max(s.a, s.b) + 1);
     setPrefill({
-      venueId: venues[sel.col].id,
+      venueId: venues[s.col].id,
       date: dayKey,
-      start: toTime(lo),
-      end: toTime(hi),
+      start: toTime(l),
+      end: toTime(h),
     });
     setSel(null);
     setModalOpen(true);
+  };
+
+  const onPointerUp = () => {
+    if (selectingRef.current) finalize();
+    else clearLongPress();
+  };
+  const onPointerCancel = () => {
+    clearLongPress();
+    beginSelecting(false);
+    setSel(null);
   };
 
   const toggleVisible = (id: string) => {
@@ -181,6 +237,8 @@ export function ScheduleGrid({
       return next;
     });
   };
+
+  const gridCols = `${LABEL_W}px repeat(${venues.length}, minmax(${minColWidth}px, 1fr))`;
 
   return (
     <>
@@ -215,170 +273,134 @@ export function ScheduleGrid({
         )}
       </div>
 
-      <div
-        className={`rounded-xl border border-line bg-white ${needsScroll ? "overflow-x-auto" : ""}`}
-      >
-        <div style={{ minWidth: needsScroll ? venues.length * 90 + LABEL_W : undefined }}>
-          {/* 会場名ヘッダー: スクロール時も上部に固定(横スクロール不要時のみ) */}
-          <div
-            className={`grid border-b border-line bg-white text-center text-[10px] font-bold text-muted ${
-              needsScroll ? "" : "sticky top-[46px] z-10"
-            }`}
-            style={{ gridTemplateColumns: `${LABEL_W}px repeat(${venues.length}, 1fr)` }}
-          >
-            <div />
-            {venues.map((v) => (
-              <div key={v.id} className="truncate border-l border-line px-0.5 py-2">
-                {v.name}
-              </div>
-            ))}
-          </div>
-
-          {/* 終日イベント帯 */}
-          {allDayVisible.length > 0 && (
+      {/* 内部スクロールのパネル。縦にスクロールしても会場名ヘッダーは上端に固定される */}
+      <div className="overflow-hidden rounded-xl border border-line bg-white">
+        <div ref={scrollRef} className="max-h-[62dvh] overflow-auto">
+          <div style={{ minWidth: gridMinWidth }}>
+            {/* 会場名ヘッダー(固定) */}
             <div
-              className="grid border-b border-line bg-screen"
-              style={{ gridTemplateColumns: `${LABEL_W}px repeat(${venues.length}, 1fr)` }}
+              className="sticky top-0 z-20 grid border-b border-line bg-white text-center text-[10px] font-bold text-muted"
+              style={{ gridTemplateColumns: gridCols }}
             >
-              <div className="flex items-center justify-end pr-1 text-[9px] text-muted">
-                終日
+              <div className="bg-white" />
+              {venues.map((v) => (
+                <div key={v.id} className="truncate border-l border-line px-0.5 py-2">
+                  {v.name}
+                </div>
+              ))}
+            </div>
+
+            {/* 終日イベント帯 */}
+            {allDayVisible.length > 0 && (
+              <div
+                className="grid border-b border-line bg-screen"
+                style={{ gridTemplateColumns: gridCols }}
+              >
+                <div className="flex items-center justify-end pr-1 text-[9px] text-muted">
+                  終日
+                </div>
+                {venues.map((v, i) => {
+                  const evs = allDayVisible.filter((e) => e.venueId === v.id);
+                  return (
+                    <div key={v.id} className="border-l border-line p-0.5">
+                      {evs.map((e) => (
+                        <Link
+                          key={e.id}
+                          href={`/events/${e.id}`}
+                          className={`mb-0.5 block truncate rounded border-l-[3px] px-1 py-0.5 text-[9.5px] font-bold ${colorClasses[i % colorClasses.length]}`}
+                        >
+                          {e.title}
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
-              {venues.map((v, i) => {
-                const evs = allDayVisible.filter((e) => e.venueId === v.id);
+            )}
+
+            <div
+              ref={bodyRef}
+              className="relative grid touch-none select-none [-webkit-touch-callout:none]"
+              style={{
+                gridTemplateColumns: gridCols,
+                gridAutoRows: `${ROW_H}px`,
+                touchAction: selecting ? "none" : "pan-x pan-y",
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerCancel}
+            >
+              {Array.from({ length: endHour - startHour }, (_, i) => (
+                <div
+                  key={i}
+                  className="pr-1.5 text-right text-[9.5px] tabular-nums text-muted"
+                  style={{ gridColumn: 1, gridRow: i * 2 + 1, transform: "translateY(-7px)" }}
+                >
+                  {startHour + i}:00
+                </div>
+              ))}
+              {venues.map((v, i) => (
+                <div
+                  key={v.id}
+                  className="border-l border-line"
+                  style={{ gridColumn: i + 2, gridRow: `1 / ${totalRows + 1}` }}
+                />
+              ))}
+              {minRow > 0 && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                  style={{ gridColumn: `2 / ${venues.length + 2}`, gridRow: `1 / ${minRow + 1}` }}
+                />
+              )}
+              {maxRow < totalRows && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                  style={{
+                    gridColumn: `2 / ${venues.length + 2}`,
+                    gridRow: `${maxRow + 1} / ${totalRows + 1}`,
+                  }}
+                />
+              )}
+              {sel && (
+                <div
+                  className="pointer-events-none z-[1] m-0.5 flex items-center justify-center rounded-lg border-2 border-primary bg-primary/15 text-[10px] font-bold text-primary"
+                  style={{ gridColumn: sel.col + 2, gridRow: `${lo + 1} / ${hi + 1}` }}
+                >
+                  {toTime(lo)}–{toTime(hi)}
+                </div>
+              )}
+              {events.map((e) => {
+                const col = venues.findIndex((v) => v.id === e.venueId);
+                if (col < 0) return null;
                 return (
-                  <div key={v.id} className="border-l border-line p-0.5">
-                    {evs.map((e) => (
-                      <Link
-                        key={e.id}
-                        href={`/events/${e.id}`}
-                        className={`mb-0.5 block truncate rounded border-l-[3px] px-1 py-0.5 text-[9.5px] font-bold ${colorClasses[i % colorClasses.length]}`}
-                      >
-                        {e.title}
-                      </Link>
-                    ))}
-                  </div>
+                  <Link
+                    key={e.id}
+                    href={`/events/${e.id}`}
+                    className={`m-0.5 overflow-hidden rounded-lg border-l-[3px] px-1.5 py-1 text-left text-[10px] leading-tight font-bold ${colorClasses[col % colorClasses.length]}`}
+                    style={{
+                      gridColumn: col + 2,
+                      gridRow: `${rowOf(e.startMin)} / ${rowOf(e.endMin)}`,
+                    }}
+                  >
+                    {e.continuesBefore && <span className="opacity-70">↑前日から </span>}
+                    {e.title}
+                    <span className="block text-[9px] font-medium opacity-75">
+                      {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}
+                    </span>
+                  </Link>
                 );
               })}
             </div>
-          )}
-
-          <div
-            ref={bodyRef}
-            className="relative grid select-none"
-            style={{
-              gridTemplateColumns: `${LABEL_W}px repeat(${venues.length}, 1fr)`,
-              gridAutoRows: `${ROW_H}px`,
-            }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-          >
-            {Array.from({ length: endHour - startHour }, (_, i) => (
-              <div
-                key={i}
-                className="pr-1.5 text-right text-[9.5px] tabular-nums text-muted"
-                style={{
-                  gridColumn: 1,
-                  gridRow: i * 2 + 1,
-                  transform: "translateY(-7px)",
-                }}
-              >
-                {startHour + i}:00
-              </div>
-            ))}
-            {venues.map((v, i) => (
-              <div
-                key={v.id}
-                className="border-l border-line"
-                style={{ gridColumn: i + 2, gridRow: `1 / ${totalRows + 1}` }}
-              />
-            ))}
-            {/* 企画開始前のグレーアウト(予約不可) */}
-            {minRow > 0 && (
-              <div
-                aria-hidden
-                className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
-                style={{
-                  gridColumn: `2 / ${venues.length + 2}`,
-                  gridRow: `1 / ${minRow + 1}`,
-                }}
-              />
-            )}
-            {/* 企画終了後のグレーアウト(予約不可) */}
-            {maxRow < totalRows && (
-              <div
-                aria-hidden
-                className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
-                style={{
-                  gridColumn: `2 / ${venues.length + 2}`,
-                  gridRow: `${maxRow + 1} / ${totalRows + 1}`,
-                }}
-              />
-            )}
-            {sel && (
-              <div
-                className="pointer-events-none z-[1] m-0.5 rounded-lg border-2 border-primary bg-primary/15"
-                style={{
-                  gridColumn: sel.col + 2,
-                  gridRow: `${lo + 1} / ${hi + 1}`,
-                }}
-              />
-            )}
-            {events.map((e) => {
-              const col = venues.findIndex((v) => v.id === e.venueId);
-              if (col < 0) return null;
-              return (
-                <Link
-                  key={e.id}
-                  href={`/events/${e.id}`}
-                  className={`m-0.5 overflow-hidden rounded-lg border-l-[3px] px-1.5 py-1 text-left text-[10px] leading-tight font-bold ${colorClasses[col % colorClasses.length]}`}
-                  style={{
-                    gridColumn: col + 2,
-                    gridRow: `${rowOf(e.startMin)} / ${rowOf(e.endMin)}`,
-                  }}
-                >
-                  {e.continuesBefore && <span className="opacity-70">↑前日から </span>}
-                  {e.title}
-                  <span className="block text-[9px] font-medium opacity-75">
-                    {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}
-                  </span>
-                </Link>
-              );
-            })}
           </div>
         </div>
       </div>
       <p className="mx-0.5 mt-1.5 text-center text-[11px] text-muted">
-        空き枠をタップ(PCはドラッグで範囲指定)するとイベントを作成できます
+        空き枠を長押し→そのままスライドで時間帯を指定するとイベントを作成できます
+        <span className="hidden sm:inline">(PCはドラッグ)</span>
       </p>
-
-      {sel && !dragging && (
-        <div className="fixed inset-x-0 bottom-[76px] z-20 mx-auto max-w-md px-3.5">
-          <div className="flex items-center gap-2.5 rounded-xl border border-primary bg-white p-3 shadow-lg">
-            <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold">
-                {venues[sel.col].name} · {dayLabel}
-              </div>
-              <div className="text-[12px] text-muted tabular-nums">
-                {displayTime(lo)} – {displayTime(hi)}
-              </div>
-            </div>
-            <button
-              onClick={() => setSel(null)}
-              className="shrink-0 rounded-lg bg-line px-3 py-2 text-xs font-bold text-muted"
-            >
-              取消
-            </button>
-            <button
-              onClick={create}
-              className="shrink-0 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-white"
-            >
-              この枠で作成
-            </button>
-          </div>
-        </div>
-      )}
 
       <Fab
         onClick={() => {

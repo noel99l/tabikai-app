@@ -29,14 +29,31 @@ const statusMeta: Record<Status, { label: string; tone: "pend" | "info" | "ok" }
 
 export function ItemRow({ item, canDelete }: Props) {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false); // 楽観的更新: 反映前に即座に非表示
   const [pending, startTransition] = useTransition();
 
   const change = (status: Status, method: "bring" | "buy" = "bring") => {
+    if (status === item.status) {
+      setOpen(false);
+      return;
+    }
+    setOpen(false);
+    setHidden(true); // 別セクションへ移動するため現在位置からは即消す
     startTransition(async () => {
       await setItemStatus(item.id, status, method);
-      setOpen(false);
     });
   };
+
+  const remove = () => {
+    setOpen(false);
+    setHidden(true);
+    startTransition(async () => {
+      await deleteItem(item.id);
+    });
+  };
+
+  // サーバー再検証で新しい状態が来るまでの間、楽観的に隠す
+  if (hidden) return null;
 
   return (
     <>
@@ -120,13 +137,15 @@ export function ItemRow({ item, canDelete }: Props) {
         </div>
 
         {canDelete && (
-          <form
-            action={deleteItem.bind(null, item.id)}
-            className="mt-5 text-center"
-            onSubmit={() => setOpen(false)}
-          >
-            <button className="text-[12px] font-bold text-accent">この項目を削除する</button>
-          </form>
+          <div className="mt-5 text-center">
+            <button
+              onClick={remove}
+              disabled={pending}
+              className="text-[12px] font-bold text-accent disabled:opacity-50"
+            >
+              この項目を削除する
+            </button>
+          </div>
         )}
       </Modal>
     </>

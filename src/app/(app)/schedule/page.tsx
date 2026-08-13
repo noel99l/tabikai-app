@@ -145,7 +145,6 @@ export default async function SchedulePage({
             venueId: e.venueId,
           }))}
           dayKey={activeDay?.key ?? days[0].key}
-          dayLabel={activeDay?.label ?? days[0].label}
           startHour={startHour}
           endHour={endHour}
           bookableStartMin={bookableStartMin}
