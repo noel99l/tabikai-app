@@ -11,7 +11,13 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "旅会2026",
   },
-  icons: { icon: "/icon.svg" },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icon-180.png", // iOS ホーム画面アイコン
+  },
 };
 
 export const viewport: Viewport = {
