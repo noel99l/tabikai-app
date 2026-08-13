@@ -6,8 +6,13 @@ import { IconBack } from "@/components/icons";
 import { fmtDateLabel, jstDateKey } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
-export default async function NewEventPage() {
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ venueId?: string; date?: string; start?: string; end?: string }>;
+}) {
   const { user, trip, db } = await requireTripContext();
+  const defaults = await searchParams;
   const venues = await db.query.venues.findMany({
     where: eq(schema.venues.tripId, trip.id),
     orderBy: (v, { asc }) => [asc(v.sortOrder)],
@@ -34,7 +39,13 @@ export default async function NewEventPage() {
         予定表へ戻る
       </Link>
       <h1 className="text-xl font-bold">イベントを作成</h1>
-      <EventForm venues={venues} days={days} members={members} selfId={user.id} />
+      <EventForm
+        venues={venues}
+        days={days}
+        members={members}
+        selfId={user.id}
+        defaults={defaults}
+      />
     </>
   );
 }

@@ -10,9 +10,11 @@ type Props = {
   days: { key: string; label: string }[];
   members: { userId: string; name: string }[];
   selfId: string;
+  // 予定表の範囲選択からのプリセット
+  defaults?: { venueId?: string; date?: string; start?: string; end?: string };
 };
 
-export function EventForm({ venues, days, members, selfId }: Props) {
+export function EventForm({ venues, days, members, selfId, defaults }: Props) {
   const [inviteAll, setInviteAll] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function EventForm({ venues, days, members, selfId }: Props) {
       <input className={inputCls} id="title" name="title" required placeholder="花火大会" />
 
       <label className={labelCls} htmlFor="venueId">会場</label>
-      <select className={inputCls} id="venueId" name="venueId" required>
+      <select className={inputCls} id="venueId" name="venueId" required defaultValue={defaults?.venueId}>
         {venues.map((v) => (
           <option key={v.id} value={v.id}>{v.name}</option>
         ))}
@@ -51,7 +53,7 @@ export function EventForm({ venues, days, members, selfId }: Props) {
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className={labelCls} htmlFor="date">日付</label>
-          <select className={inputCls} id="date" name="date" required>
+          <select className={inputCls} id="date" name="date" required defaultValue={defaults?.date}>
             {days.map((d) => (
               <option key={d.key} value={d.key}>{d.label}</option>
             ))}
@@ -59,11 +61,11 @@ export function EventForm({ venues, days, members, selfId }: Props) {
         </div>
         <div>
           <label className={labelCls} htmlFor="start">開始</label>
-          <input className={inputCls} id="start" name="start" type="time" required defaultValue="19:30" />
+          <input className={inputCls} id="start" name="start" type="time" required defaultValue={defaults?.start ?? "19:30"} />
         </div>
         <div>
           <label className={labelCls} htmlFor="end">終了</label>
-          <input className={inputCls} id="end" name="end" type="time" required defaultValue="20:30" />
+          <input className={inputCls} id="end" name="end" type="time" required defaultValue={defaults?.end ?? "20:30"} />
         </div>
       </div>
 
