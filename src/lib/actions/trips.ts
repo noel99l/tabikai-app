@@ -104,6 +104,27 @@ export async function requestJoin(tripId: string) {
   redirect("/trips/pending");
 }
 
+// 企画の削除(その企画の管理者のみ)。配下の会場・イベント・費用・持ち物・お知らせもすべて削除される
+export async function deleteTrip(tripId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const member = await db.query.tripMembers.findFirst({
+    where: and(
+      eq(schema.tripMembers.tripId, tripId),
+      eq(schema.tripMembers.userId, user.id),
+    ),
+  });
+  if (!member || member.role !== "admin") {
+    throw new Error("この企画の管理者のみ削除できます");
+  }
+  await db.delete(schema.trips).where(eq(schema.trips.id, tripId));
+  const store = await cookies();
+  if (store.get(TRIP_COOKIE)?.value === tripId) {
+    store.delete(TRIP_COOKIE);
+  }
+  redirect("/trips");
+}
+
 export async function approveMember(formData: FormData) {
   const { trip, db, isAdmin, user } = await requireTripContext();
   if (!isAdmin) throw new Error("管理者のみ操作できます");

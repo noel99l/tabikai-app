@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "dev:https": "next dev --experimental-https"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
+    "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.45.2",
     "next": "15.5.23",
     "next-auth": "^5.0.0-beta.32",

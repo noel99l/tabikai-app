@@ -40,3 +40,6 @@ yarn-error.log*
 
 # 手元のメモ用envファイル(秘密情報を含むため除外)
 env
+
+# ローカルHTTPS用の自己署名証明書
+/certificates/

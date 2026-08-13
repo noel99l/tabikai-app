@@ -10,13 +10,20 @@ const globalForDb = globalThis as unknown as { __db?: Promise<Db> };
 
 async function createDb(): Promise<Db> {
   const url = process.env.DATABASE_URL;
+  if (url && url.includes(".neon.tech")) {
+    // Neon は serverless ドライバ(HTTPS/443)で接続する。
+    // ポート5432が塞がれたネットワーク(テザリング等)でも動き、Vercelとも相性が良い。
+    const { neon } = await import("@neondatabase/serverless");
+    const { drizzle } = await import("drizzle-orm/neon-http");
+    const client = neon(url);
+    return drizzle(client, { schema }) as unknown as Db;
+  }
   if (url) {
-    // IPv6が塞がれたネットワークでの接続タイムアウト対策
+    // 汎用PostgreSQL(セルフホスト等)
     const { setDefaultResultOrder } = await import("node:dns");
     setDefaultResultOrder("ipv4first");
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const { default: postgres } = await import("postgres");
-    // Neon の pooled 接続(pgbouncer)では prepared statements を無効にする
     const client = postgres(url, { max: 5, prepare: false });
     return drizzle(client, { schema }) as unknown as Db;
   }
