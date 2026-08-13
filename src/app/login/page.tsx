@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { IconSuitcase } from "@/components/icons";
 import { Card } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 
 const hasGoogle =
   !!(process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID) &&
@@ -27,10 +28,10 @@ export default async function LoginPage() {
           }}
           className="mb-4"
         >
-          <button className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[14.5px] font-bold">
+          <SubmitButton className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[14.5px] font-bold">
             <span className="text-[17px] font-extrabold text-[#4285F4]">G</span>
             Google でログイン
-          </button>
+          </SubmitButton>
           <p className="mt-2 text-center text-[11.5px] text-muted">
             Googleアカウントで本人確認を行います
           </p>
@@ -65,9 +66,9 @@ export default async function LoginPage() {
               placeholder="メールアドレス"
               className="rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm"
             />
-            <button className="rounded-[10px] bg-primary px-4 py-3 text-[13.5px] font-bold text-white">
+            <SubmitButton className="rounded-[10px] bg-primary px-4 py-3 text-[13.5px] font-bold text-white">
               ログイン
-            </button>
+            </SubmitButton>
           </form>
         </Card>
       )}

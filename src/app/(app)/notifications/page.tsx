@@ -11,6 +11,7 @@ import {
 } from "@/components/icons";
 import { MarkRead } from "@/components/mark-read";
 import { Card, Pill, btnCls, inputCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { sendAnnouncement } from "@/lib/actions/notifications";
 import { fmtDateTime } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
@@ -54,7 +55,7 @@ export default async function NotificationsPage() {
             required
             placeholder="夕食が完成しました!大広間へどうぞ"
           />
-          <button className={`${btnCls} shrink-0`}>送信</button>
+          <SubmitButton className={`${btnCls} shrink-0`}>送信</SubmitButton>
         </form>
       </Card>
 

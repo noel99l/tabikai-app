@@ -5,6 +5,7 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconBack, IconPlus } from "@/components/icons";
 import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import {
   addParticipants,
   deleteEvent,
@@ -89,7 +90,7 @@ export default async function EventDetailPage({
             <dd>
               {mine?.status === "joined" ? (
                 <form action={toggleReminder.bind(null, id, !mine.remindOptOut)}>
-                  <button
+                  <SubmitButton
                     className={`rounded-full px-3 py-1 text-[11.5px] font-bold ${
                       mine.remindOptOut
                         ? "bg-line text-muted"
@@ -97,7 +98,7 @@ export default async function EventDetailPage({
                     }`}
                   >
                     {mine.remindOptOut ? "オフ(タップでオン)" : "オン(タップでオフ)"}
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : (
                 <span className="text-[11.5px] text-muted">参加登録後に設定可</span>
@@ -135,9 +136,9 @@ export default async function EventDetailPage({
                   </label>
                 ))}
               </div>
-              <button className={`${btnGhostCls} mt-2.5 w-full`}>
+              <SubmitButton className={`${btnGhostCls} mt-2.5 w-full`}>
                 選択したメンバーを追加(お知らせ+通知)
-              </button>
+              </SubmitButton>
             </form>
           </details>
         )}
@@ -145,9 +146,9 @@ export default async function EventDetailPage({
 
       {mine?.status !== "joined" ? (
         <form action={joinEvent.bind(null, id)} className="mt-3">
-          <button className={`${btnCls} w-full py-3.5`}>
+          <SubmitButton className={`${btnCls} w-full py-3.5`}>
             このイベントに参加登録する
-          </button>
+          </SubmitButton>
           <p className="mt-1.5 text-center text-[11px] text-muted">
             参加登録すると開始5分前にプッシュ通知でリマインドされます
           </p>
@@ -160,9 +161,9 @@ export default async function EventDetailPage({
 
       {canManage && (
         <form action={deleteEvent.bind(null, id)} className="mt-6 text-center">
-          <button className="text-[12px] font-bold text-accent">
+          <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
             このイベントを削除する(参加者にお知らせが届きます)
-          </button>
+          </SubmitButton>
         </form>
       )}
     </>

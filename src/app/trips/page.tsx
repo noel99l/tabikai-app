@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { IconPlus, IconSuitcase } from "@/components/icons";
 import { Pill } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { selectTrip } from "@/lib/actions/trips";
 import { fmtDateLabel } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -45,7 +46,8 @@ export default async function TripsPage() {
         return (
           <div key={m.tripId} className="relative mb-2.5">
           <form action={selectTrip.bind(null, m.tripId)}>
-            <button
+            <SubmitButton
+              spinner={false}
               className={`flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3.5 text-left ${ended ? "opacity-60" : ""}`}
             >
               <span
@@ -70,7 +72,7 @@ export default async function TripsPage() {
               ) : (
                 <Pill tone="info">開催予定</Pill>
               )}
-            </button>
+            </SubmitButton>
           </form>
           {m.role === "admin" && (
             <div className="mt-1 text-right">
@@ -102,9 +104,9 @@ export default async function TripsPage() {
         }}
         className="mt-6 pb-10 text-center"
       >
-        <button className="text-[12.5px] font-bold text-muted underline">
+        <SubmitButton spinner={false} className="text-[12.5px] font-bold text-muted underline">
           ログアウト
-        </button>
+        </SubmitButton>
       </form>
     </div>
   );

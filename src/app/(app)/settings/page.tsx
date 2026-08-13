@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { Avatar, Card, Pill } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { fmtDateLabel } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
 
@@ -52,9 +53,9 @@ export default async function SettingsPage() {
         }}
         className="mt-4"
       >
-        <button className="w-full rounded-lg border border-line bg-white px-4 py-3 text-[13.5px] font-bold text-accent">
+        <SubmitButton className="w-full rounded-lg border border-line bg-white px-4 py-3 text-[13.5px] font-bold text-accent">
           ログアウト
-        </button>
+        </SubmitButton>
       </form>
     </>
   );

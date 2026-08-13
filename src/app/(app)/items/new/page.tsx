@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { IconBack } from "@/components/icons";
 import { btnCls, inputCls, labelCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { addItem } from "@/lib/actions/items";
 import { requireTripContext } from "@/lib/session";
 
@@ -35,7 +36,7 @@ export default async function NewItemPage() {
             <option key={e.id} value={e.id}>{e.title}</option>
           ))}
         </select>
-        <button className={`${btnCls} mt-5 w-full py-3.5`}>追加する</button>
+        <SubmitButton className={`${btnCls} mt-5 w-full py-3.5`}>追加する</SubmitButton>
       </form>
     </>
   );

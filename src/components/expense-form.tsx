@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
+import { Spinner } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -117,7 +118,11 @@ export function ExpenseForm({ members, events, selfId }: Props) {
         </p>
       )}
 
-      <button className={`${btnCls} mt-4 w-full py-3.5`} disabled={pending}>
+      <button
+        className={`${btnCls} mt-4 flex w-full items-center justify-center gap-2 py-3.5`}
+        disabled={pending}
+      >
+        {pending && <Spinner />}
         {pending ? "登録中…" : "登録する"}
       </button>
     </form>

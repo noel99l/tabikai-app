@@ -4,6 +4,7 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconPlus } from "@/components/icons";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { claimItem, markItemDone } from "@/lib/actions/items";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
@@ -66,10 +67,10 @@ export default async function ItemsPage() {
           </div>
           <div className="flex gap-2">
             <form action={claimItem.bind(null, i.id, "bring")} className="flex-1">
-              <button className={`${btnGhostCls} w-full py-1.5 text-xs`}>持っていく</button>
+              <SubmitButton className={`${btnGhostCls} w-full py-1.5 text-xs`}>持っていく</SubmitButton>
             </form>
             <form action={claimItem.bind(null, i.id, "buy")} className="flex-1">
-              <button className={`${btnCls} w-full py-1.5 text-xs`}>買ってくる</button>
+              <SubmitButton className={`${btnCls} w-full py-1.5 text-xs`}>買ってくる</SubmitButton>
             </form>
           </div>
         </Card>
@@ -102,9 +103,9 @@ export default async function ItemsPage() {
           </div>
           {i.assigneeId === user.id && (
             <form action={markItemDone.bind(null, i.id)} className="mt-2">
-              <button className={`${btnGhostCls} w-full py-1.5 text-xs`}>
+              <SubmitButton className={`${btnGhostCls} w-full py-1.5 text-xs`}>
                 準備OKにする
-              </button>
+              </SubmitButton>
             </form>
           )}
         </Card>

@@ -2,6 +2,7 @@ import { and, eq, inArray, lt } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { approveShare, resolveShare } from "@/lib/actions/expenses";
 import { sinceLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
@@ -99,7 +100,7 @@ export default async function ApprovalsPage() {
               あなたの負担: <b className="tabular-nums">{yen(s.amount)}</b>
             </div>
             <form action={approveShare.bind(null, s.expenseId)}>
-              <button className={`${btnCls} w-full`}>承認する</button>
+              <SubmitButton className={`${btnCls} w-full`}>承認する</SubmitButton>
             </form>
           </Card>
         );
@@ -124,12 +125,12 @@ export default async function ApprovalsPage() {
                 <form action={resolveShare} className="mt-2.5 flex gap-2">
                   <input type="hidden" name="expenseId" value={s.expenseId} />
                   <input type="hidden" name="userId" value={s.userId} />
-                  <button name="action" value="force" className={`${btnCls} flex-1 text-xs`}>
+                  <SubmitButton name="action" value="force" className={`${btnCls} flex-1 text-xs`}>
                     承認として確定
-                  </button>
-                  <button name="action" value="exclude" className={`${btnGhostCls} flex-1 text-xs`}>
+                  </SubmitButton>
+                  <SubmitButton name="action" value="exclude" className={`${btnGhostCls} flex-1 text-xs`}>
                     割り勘対象から外す
-                  </button>
+                  </SubmitButton>
                 </form>
               </Card>
             );

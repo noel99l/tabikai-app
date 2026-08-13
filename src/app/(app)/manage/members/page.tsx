@@ -6,6 +6,7 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { approveMember } from "@/lib/actions/trips";
 import { requireTripContext } from "@/lib/session";
 
@@ -70,20 +71,20 @@ export default async function MembersPage() {
           </div>
           <form action={approveMember} className="mt-2.5 flex gap-2">
             <input type="hidden" name="userId" value={m.userId} />
-            <button
+            <SubmitButton
               name="action"
               value="approve"
               className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white"
             >
               承認
-            </button>
-            <button
+            </SubmitButton>
+            <SubmitButton
               name="action"
               value="reject"
               className="flex-1 rounded-lg bg-accent-soft px-3 py-2 text-xs font-bold text-accent"
             >
               拒否
-            </button>
+            </SubmitButton>
           </form>
         </Card>
       ))}

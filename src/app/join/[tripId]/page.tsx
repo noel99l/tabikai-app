@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDb, schema } from "@/db";
 import { IconSuitcase } from "@/components/icons";
 import { btnCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { requestJoin, selectTrip } from "@/lib/actions/trips";
 import { fmtDateLabel } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -43,13 +44,13 @@ export default async function JoinPage({
       </p>
       {member ? (
         <form action={selectTrip.bind(null, tripId)} className="mt-6 w-full">
-          <button className={`${btnCls} w-full py-3.5`}>
+          <SubmitButton className={`${btnCls} w-full py-3.5`}>
             {member.status === "approved" ? "アプリを開く" : "承認状況を確認"}
-          </button>
+          </SubmitButton>
         </form>
       ) : (
         <form action={requestJoin.bind(null, tripId)} className="mt-6 w-full">
-          <button className={`${btnCls} w-full py-3.5`}>参加をリクエストする</button>
+          <SubmitButton className={`${btnCls} w-full py-3.5`}>参加をリクエストする</SubmitButton>
         </form>
       )}
     </div>

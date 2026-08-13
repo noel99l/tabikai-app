@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getDb, schema } from "@/db";
 import { IconBack } from "@/components/icons";
 import { Card } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { deleteTrip } from "@/lib/actions/trips";
 import { fmtDateLabel } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -63,9 +64,9 @@ export default async function DeleteTripPage({
           すべてのデータが完全に削除されます。この操作は取り消せません。
         </p>
         <form action={deleteTrip.bind(null, tripId)} className="mt-3">
-          <button className="w-full rounded-lg bg-accent px-4 py-3 text-[13.5px] font-bold text-white">
+          <SubmitButton className="w-full rounded-lg bg-accent px-4 py-3 text-[13.5px] font-bold text-white">
             完全に削除する
-          </button>
+          </SubmitButton>
         </form>
         <Link
           href="/trips"

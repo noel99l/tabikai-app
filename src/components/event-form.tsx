@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createEvent } from "@/lib/actions/events";
+import { Spinner } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -112,7 +113,11 @@ export function EventForm({ venues, days, members, selfId }: Props) {
         </p>
       )}
 
-      <button className={`${btnCls} mt-3 w-full py-3.5`} disabled={pending}>
+      <button
+        className={`${btnCls} mt-3 flex w-full items-center justify-center gap-2 py-3.5`}
+        disabled={pending}
+      >
+        {pending && <Spinner />}
         {pending ? "作成中…" : "会場を予約してイベントを作成"}
       </button>
     </form>

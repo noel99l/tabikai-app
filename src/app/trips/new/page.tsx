@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IconBack } from "@/components/icons";
 import { btnCls, inputCls, labelCls } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { createTrip } from "@/lib/actions/trips";
 import { requireUser } from "@/lib/session";
 
@@ -47,7 +48,7 @@ export default async function NewTripPage() {
           name="venues"
           placeholder="大広間, カラオケルーム, BBQガーデン, ロビー"
         />
-        <button className={`${btnCls} mt-5 w-full py-3.5`}>作成する</button>
+        <SubmitButton className={`${btnCls} mt-5 w-full py-3.5`}>作成する</SubmitButton>
       </form>
     </div>
   );
