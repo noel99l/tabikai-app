@@ -19,6 +19,7 @@ type GridEvent = {
 type Props = {
   venues: { id: string; name: string; defaultShow: boolean }[];
   events: GridEvent[];
+  allDayEvents: { id: string; title: string; venueId: string }[];
   dayKey: string; // "YYYY-MM-DD"
   dayLabel: string; // "10/10(土)"
   startHour: number;
@@ -45,6 +46,7 @@ const LABEL_W = 38; // 時刻ラベル列の幅
 export function ScheduleGrid({
   venues: allVenues,
   events,
+  allDayEvents,
   dayKey,
   dayLabel,
   startHour,
@@ -73,6 +75,9 @@ export function ScheduleGrid({
     allVenues.some((v) => visibleIds.has(v.id))
       ? allVenues.filter((v) => visibleIds.has(v.id))
       : allVenues;
+  const needsScroll = venues.length > 4; // 列が多いときのみ横スクロール
+  const visibleVenueIds = new Set(venues.map((v) => v.id));
+  const allDayVisible = allDayEvents.filter((e) => visibleVenueIds.has(e.venueId));
   const totalRows = (endHour - startHour) * 2;
 
   // 予約可能な行の範囲 [minRow, maxRow)(グリッド外はクランプ)
@@ -210,10 +215,15 @@ export function ScheduleGrid({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-white">
-        <div style={{ minWidth: venues.length > 4 ? venues.length * 90 + LABEL_W : undefined }}>
+      <div
+        className={`rounded-xl border border-line bg-white ${needsScroll ? "overflow-x-auto" : ""}`}
+      >
+        <div style={{ minWidth: needsScroll ? venues.length * 90 + LABEL_W : undefined }}>
+          {/* 会場名ヘッダー: スクロール時も上部に固定(横スクロール不要時のみ) */}
           <div
-            className="grid border-b border-line text-center text-[10px] font-bold text-muted"
+            className={`grid border-b border-line bg-white text-center text-[10px] font-bold text-muted ${
+              needsScroll ? "" : "sticky top-[46px] z-10"
+            }`}
             style={{ gridTemplateColumns: `${LABEL_W}px repeat(${venues.length}, 1fr)` }}
           >
             <div />
@@ -223,6 +233,35 @@ export function ScheduleGrid({
               </div>
             ))}
           </div>
+
+          {/* 終日イベント帯 */}
+          {allDayVisible.length > 0 && (
+            <div
+              className="grid border-b border-line bg-screen"
+              style={{ gridTemplateColumns: `${LABEL_W}px repeat(${venues.length}, 1fr)` }}
+            >
+              <div className="flex items-center justify-end pr-1 text-[9px] text-muted">
+                終日
+              </div>
+              {venues.map((v, i) => {
+                const evs = allDayVisible.filter((e) => e.venueId === v.id);
+                return (
+                  <div key={v.id} className="border-l border-line p-0.5">
+                    {evs.map((e) => (
+                      <Link
+                        key={e.id}
+                        href={`/events/${e.id}`}
+                        className={`mb-0.5 block truncate rounded border-l-[3px] px-1 py-0.5 text-[9.5px] font-bold ${colorClasses[i % colorClasses.length]}`}
+                      >
+                        {e.title}
+                      </Link>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div
             ref={bodyRef}
             className="relative grid select-none"

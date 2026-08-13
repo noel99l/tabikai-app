@@ -16,28 +16,42 @@ export async function createEvent(formData: FormData) {
   const endDate = String(formData.get("endDate") ?? "") || date;
   const start = String(formData.get("start") ?? "");
   const end = String(formData.get("end") ?? "");
+  const allDay = formData.get("allDay") === "on";
   const description = String(formData.get("description") ?? "").trim() || null;
   const inviteAll = formData.get("inviteAll") === "on";
   const memberIds = formData.getAll("memberIds").map(String);
-  if (!title || !venueId || !date || !start || !end) {
+  if (!title || !venueId || !date) {
     return { error: "入力が不足しています" };
   }
-  const startsAt = jstDate(date, start);
-  const endsAt = jstDate(endDate, end);
-  if (endsAt <= startsAt) {
-    return { error: "終了日時は開始より後にしてください" };
-  }
 
-  // 同一会場・同一時間帯は早い者勝ちで不可
-  const conflict = await db.query.events.findFirst({
-    where: and(
-      eq(schema.events.venueId, venueId),
-      lt(schema.events.startsAt, endsAt),
-      gt(schema.events.endsAt, startsAt),
-    ),
-  });
-  if (conflict) {
-    return { error: `この時間帯は「${conflict.title}」が予約済みです` };
+  let startsAt: Date;
+  let endsAt: Date;
+  if (allDay) {
+    // 終日: 開始日の0:00 〜 終了日の翌日0:00(=終了日いっぱい)
+    startsAt = jstDate(date, "00:00");
+    endsAt = new Date(jstDate(endDate, "00:00").getTime() + 24 * 60 * 60 * 1000);
+    if (endsAt <= startsAt) {
+      return { error: "終了日は開始日以降にしてください" };
+    }
+  } else {
+    if (!start || !end) return { error: "開始・終了時刻を入力してください" };
+    startsAt = jstDate(date, start);
+    endsAt = jstDate(endDate, end);
+    if (endsAt <= startsAt) {
+      return { error: "終了日時は開始より後にしてください" };
+    }
+    // 同一会場・同一時間帯は早い者勝ちで不可(時間指定イベント同士のみ判定)
+    const overlaps = await db.query.events.findMany({
+      where: and(
+        eq(schema.events.venueId, venueId),
+        eq(schema.events.allDay, false),
+        lt(schema.events.startsAt, endsAt),
+        gt(schema.events.endsAt, startsAt),
+      ),
+    });
+    if (overlaps.length > 0) {
+      return { error: `この時間帯は「${overlaps[0].title}」が予約済みです` };
+    }
   }
 
   const [event] = await db
@@ -49,6 +63,7 @@ export async function createEvent(formData: FormData) {
       description,
       startsAt,
       endsAt,
+      allDay,
       hostId: user.id,
       inviteAll,
     })

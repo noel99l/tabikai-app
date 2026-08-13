@@ -18,6 +18,7 @@ type Props = {
 
 export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
   const [inviteAll, setInviteAll] = useState(true);
+  const [allDay, setAllDay] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
@@ -56,6 +57,17 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         ))}
       </select>
 
+      <label className="mt-3 flex items-center gap-2.5 text-[13px] font-semibold">
+        <input
+          type="checkbox"
+          name="allDay"
+          checked={allDay}
+          onChange={(e) => setAllDay(e.target.checked)}
+          className="h-5 w-5 accent-primary"
+        />
+        終日(期間で会場を確保)
+      </label>
+
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className={labelCls} htmlFor="date">開始日</label>
@@ -65,10 +77,12 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
             ))}
           </select>
         </div>
-        <div>
-          <label className={labelCls} htmlFor="start">開始時刻</label>
-          <input className={inputCls} id="start" name="start" type="time" required defaultValue={defaults?.start ?? "19:30"} />
-        </div>
+        {!allDay && (
+          <div>
+            <label className={labelCls} htmlFor="start">開始時刻</label>
+            <input className={inputCls} id="start" name="start" type="time" required defaultValue={defaults?.start ?? "19:30"} />
+          </div>
+        )}
         <div>
           <label className={labelCls} htmlFor="endDate">終了日</label>
           <select className={inputCls} id="endDate" name="endDate" required defaultValue={defaults?.date}>
@@ -77,13 +91,17 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
             ))}
           </select>
         </div>
-        <div>
-          <label className={labelCls} htmlFor="end">終了時刻</label>
-          <input className={inputCls} id="end" name="end" type="time" required defaultValue={defaults?.end ?? "20:30"} />
-        </div>
+        {!allDay && (
+          <div>
+            <label className={labelCls} htmlFor="end">終了時刻</label>
+            <input className={inputCls} id="end" name="end" type="time" required defaultValue={defaults?.end ?? "20:30"} />
+          </div>
+        )}
       </div>
       <p className="mx-0.5 mt-1 text-[11px] text-muted">
-        終了日を翌日以降にすると、日をまたぐ予定を作成できます。
+        {allDay
+          ? "開始日〜終了日の期間、この会場を終日押さえます。"
+          : "終了日を翌日以降にすると、日をまたぐ予定を作成できます。"}
       </p>
 
       <label className={labelCls} htmlFor="description">説明(任意)</label>

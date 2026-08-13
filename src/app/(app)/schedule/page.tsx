@@ -45,6 +45,7 @@ export default async function SchedulePage({
       venueId: schema.events.venueId,
       startsAt: schema.events.startsAt,
       endsAt: schema.events.endsAt,
+      allDay: schema.events.allDay,
       joined: count(schema.eventParticipants.userId),
     })
     .from(schema.events)
@@ -62,8 +63,13 @@ export default async function SchedulePage({
   const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
   const minutesFromDayStart = (t: Date) => Math.round((t.getTime() - dayStartMs) / 60000);
 
+  const intersectsDay = (e: (typeof events)[number]) =>
+    e.startsAt.getTime() < dayEndMs && e.endsAt.getTime() > dayStartMs;
+
+  // 終日イベント(当日に重なるもの)は上部の終日帯へ
+  const allDayEvents = events.filter((e) => e.allDay && intersectsDay(e));
   const dayEvents = events
-    .filter((e) => e.startsAt.getTime() < dayEndMs && e.endsAt.getTime() > dayStartMs)
+    .filter((e) => !e.allDay && intersectsDay(e))
     .map((e) => ({
       ...e,
       clippedStartMin: Math.max(0, minutesFromDayStart(e.startsAt)),
@@ -95,7 +101,8 @@ export default async function SchedulePage({
     <>
       <AppHeader title="予定表" />
 
-      <div className="mb-2.5 flex gap-1.5 overflow-x-auto">
+      {/* スクロール時も日付タブを上部に固定 */}
+      <div className="sticky top-0 z-20 -mx-3.5 mb-2.5 flex gap-1.5 overflow-x-auto bg-screen px-3.5 pb-1.5 pt-1">
         {days.map((d, i) => (
           <Link
             key={d.key}
@@ -131,6 +138,11 @@ export default async function SchedulePage({
             joined: e.joined,
             continuesBefore: e.continuesBefore,
             continuesAfter: e.continuesAfter,
+          }))}
+          allDayEvents={allDayEvents.map((e) => ({
+            id: e.id,
+            title: e.title,
+            venueId: e.venueId,
           }))}
           dayKey={activeDay?.key ?? days[0].key}
           dayLabel={activeDay?.label ?? days[0].label}

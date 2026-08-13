@@ -137,6 +137,7 @@ export const events = pgTable("events", {
   description: text("description"),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  allDay: boolean("all_day").default(false).notNull(), // 期間指定の終日利用
   hostId: uuid("host_id")
     .notNull()
     .references(() => users.id),
