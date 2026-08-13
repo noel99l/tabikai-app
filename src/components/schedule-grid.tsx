@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { EventForm } from "./event-form";
+import { Fab, Modal } from "./modal";
 
 type GridEvent = {
   id: string;
@@ -20,6 +21,10 @@ type Props = {
   dayLabel: string; // "10/10(土)"
   startHour: number;
   endHour: number;
+  // イベント作成モーダル用
+  days: { key: string; label: string }[];
+  members: { userId: string; name: string }[];
+  selfId: string;
 };
 
 const colorClasses = [
@@ -39,11 +44,17 @@ export function ScheduleGrid({
   dayLabel,
   startHour,
   endHour,
+  days,
+  members,
+  selfId,
 }: Props) {
-  const router = useRouter();
   const bodyRef = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<{ col: number; a: number; b: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [prefill, setPrefill] = useState<
+    { venueId?: string; date?: string; start?: string; end?: string } | undefined
+  >(undefined);
   const totalRows = (endHour - startHour) * 2;
 
   // 日付タブを切り替えたら選択をリセット
@@ -117,15 +128,17 @@ export function ScheduleGrid({
     return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
   };
 
+  // 選択範囲からモーダルを開く(遷移しない)
   const create = () => {
     if (!sel) return;
-    const params = new URLSearchParams({
+    setPrefill({
       venueId: venues[sel.col].id,
       date: dayKey,
       start: toTime(lo),
       end: toTime(hi),
     });
-    router.push(`/schedule/new?${params.toString()}`);
+    setSel(null);
+    setModalOpen(true);
   };
 
   return (
@@ -237,6 +250,24 @@ export function ScheduleGrid({
           </div>
         </div>
       )}
+
+      <Fab
+        onClick={() => {
+          setPrefill(undefined);
+          setModalOpen(true);
+        }}
+        label="会場を予約してイベントを作成"
+      />
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="イベントを作成">
+        <EventForm
+          venues={venues}
+          days={days}
+          members={members}
+          selfId={selfId}
+          defaults={prefill ?? { date: dayKey }}
+          onSuccess={() => setModalOpen(false)}
+        />
+      </Modal>
     </>
   );
 }

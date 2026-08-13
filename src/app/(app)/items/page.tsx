@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
-import { IconPlus } from "@/components/icons";
+import { ItemCreateFab } from "@/components/item-create";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { claimItem, markItemDone } from "@/lib/actions/items";
@@ -126,13 +125,12 @@ export default async function ItemsPage() {
         </Card>
       ))}
 
-      <Link
-        href="/items/new"
-        aria-label="必要なものを追加"
-        className="fixed right-4 bottom-24 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
-      >
-        <IconPlus className="h-6 w-6" strokeWidth={2.4} />
-      </Link>
+      <ItemCreateFab
+        events={events
+          .slice()
+          .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+          .map((e) => ({ id: e.id, title: e.title }))}
+      />
     </>
   );
 }

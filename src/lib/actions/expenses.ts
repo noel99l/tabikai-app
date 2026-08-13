@@ -2,7 +2,6 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { schema } from "@/db";
 import { yen } from "@/lib/format";
 import { notify } from "@/lib/notify";
@@ -64,6 +63,7 @@ export async function createExpense(formData: FormData) {
   );
 
   const payerName = members.find((m) => m.userId === paidBy)?.name ?? "";
+  // (通知送信後にモーダルを閉じるだけで反映されるよう、遷移せずrevalidateする)
   if (splitAll) {
     await notify(
       db,
@@ -91,7 +91,9 @@ export async function createExpense(formData: FormData) {
       },
     );
   }
-  redirect("/expenses");
+  revalidatePath("/expenses");
+  revalidatePath("/approvals");
+  revalidatePath("/");
 }
 
 export async function approveShare(expenseId: string) {

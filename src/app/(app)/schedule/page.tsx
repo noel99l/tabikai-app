@@ -2,10 +2,9 @@ import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
-import { IconPlus } from "@/components/icons";
 import { ScheduleGrid } from "@/components/schedule-grid";
 import { fmtDateLabel, jstDateKey, jstMinutes } from "@/lib/format";
-import { requireTripContext } from "@/lib/session";
+import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 // 予定表: 列=会場 × 行=時間帯(Teams風)。日付タブはURLクエリ ?day=
 export default async function SchedulePage({
@@ -13,7 +12,7 @@ export default async function SchedulePage({
 }: {
   searchParams: Promise<{ day?: string }>;
 }) {
-  const { trip, db } = await requireTripContext();
+  const { user, trip, db } = await requireTripContext();
   const { day } = await searchParams;
 
   // 旅行日程(管理者設定)から日付タブを生成
@@ -31,10 +30,13 @@ export default async function SchedulePage({
   const dayIdx = Math.min(days.length - 1, Number(day ?? defaultIdx) || 0);
   const activeDay = days[dayIdx];
 
-  const venues = await db.query.venues.findMany({
-    where: eq(schema.venues.tripId, trip.id),
-    orderBy: (v, { asc }) => [asc(v.sortOrder)],
-  });
+  const [venues, members] = await Promise.all([
+    db.query.venues.findMany({
+      where: eq(schema.venues.tripId, trip.id),
+      orderBy: (v, { asc }) => [asc(v.sortOrder)],
+    }),
+    getApprovedMembers(),
+  ]);
 
   const events = await db
     .select({
@@ -107,16 +109,11 @@ export default async function SchedulePage({
           dayLabel={activeDay?.label ?? days[0].label}
           startHour={startHour}
           endHour={endHour}
+          days={days}
+          members={members}
+          selfId={user.id}
         />
       )}
-
-      <Link
-        href="/schedule/new"
-        aria-label="会場を予約してイベントを作成"
-        className="fixed right-4 bottom-24 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
-      >
-        <IconPlus className="h-6 w-6" strokeWidth={2.4} />
-      </Link>
     </>
   );
 }

@@ -9,9 +9,10 @@ type Props = {
   members: { userId: string; name: string }[];
   events: { id: string; title: string }[];
   selfId: string;
+  onSuccess?: () => void;
 };
 
-export function ExpenseForm({ members, events, selfId }: Props) {
+export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
   const [splitAll, setSplitAll] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +27,11 @@ export function ExpenseForm({ members, events, selfId }: Props) {
           if (res?.error) {
             setError(res.error);
             setPending(false);
+          } else {
+            setPending(false);
+            onSuccess?.();
           }
-        } catch (e) {
-          const digest =
-            e && typeof e === "object" && "digest" in e ? String(e.digest) : "";
-          if (digest.startsWith("NEXT_REDIRECT")) throw e;
+        } catch {
           setError("登録に失敗しました。時間をおいて再度お試しください。");
           setPending(false);
         }

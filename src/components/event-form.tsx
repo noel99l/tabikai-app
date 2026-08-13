@@ -12,9 +12,11 @@ type Props = {
   selfId: string;
   // 予定表の範囲選択からのプリセット
   defaults?: { venueId?: string; date?: string; start?: string; end?: string };
+  // 作成成功時(モーダルを閉じる等)
+  onSuccess?: () => void;
 };
 
-export function EventForm({ venues, days, members, selfId, defaults }: Props) {
+export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
   const [inviteAll, setInviteAll] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +31,11 @@ export function EventForm({ venues, days, members, selfId, defaults }: Props) {
           if (res?.error) {
             setError(res.error);
             setPending(false);
+          } else {
+            setPending(false);
+            onSuccess?.();
           }
-        } catch (e) {
-          // redirect() は NEXT_REDIRECT 例外として飛ぶので握りつぶさない
-          const digest =
-            e && typeof e === "object" && "digest" in e ? String(e.digest) : "";
-          if (digest.startsWith("NEXT_REDIRECT")) throw e;
+        } catch {
           setError("作成に失敗しました。時間をおいて再度お試しください。");
           setPending(false);
         }

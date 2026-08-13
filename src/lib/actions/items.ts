@@ -2,7 +2,6 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { schema } from "@/db";
 import { requireTripContext } from "@/lib/session";
 
@@ -11,7 +10,7 @@ export async function addItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
   const eventId = String(formData.get("eventId") ?? "") || null;
-  if (!name) throw new Error("品名を入力してください");
+  if (!name) return;
   await db.insert(schema.items).values({
     tripId: trip.id,
     eventId,
@@ -19,7 +18,7 @@ export async function addItem(formData: FormData) {
     note,
     addedBy: user.id,
   });
-  redirect("/items");
+  revalidatePath("/items");
 }
 
 // 「持っていく」(bring) / 「買ってくる」(buy) の引き受け

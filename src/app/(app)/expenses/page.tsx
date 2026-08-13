@@ -1,20 +1,23 @@
-import Link from "next/link";
 import { eq, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
-import { IconPlus } from "@/components/icons";
+import { ExpenseCreateFab } from "@/components/expense-create";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function ExpensesPage() {
   const { user, trip, db } = await requireTripContext();
-  const [expenses, members] = await Promise.all([
+  const [expenses, members, tripEvents] = await Promise.all([
     db.query.expenses.findMany({
       where: eq(schema.expenses.tripId, trip.id),
       orderBy: (e, { desc }) => [desc(e.createdAt)],
     }),
     getApprovedMembers(),
+    db.query.events.findMany({
+      where: eq(schema.events.tripId, trip.id),
+      orderBy: (e, { asc }) => [asc(e.startsAt)],
+    }),
   ]);
   const shares = expenses.length
     ? await db.query.expenseShares.findMany({
@@ -132,13 +135,11 @@ export default async function ExpensesPage() {
         </Card>
       )}
 
-      <Link
-        href="/expenses/new"
-        aria-label="費用を追加"
-        className="fixed right-4 bottom-24 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
-      >
-        <IconPlus className="h-6 w-6" strokeWidth={2.4} />
-      </Link>
+      <ExpenseCreateFab
+        members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+        events={tripEvents.map((e) => ({ id: e.id, title: e.title }))}
+        selfId={user.id}
+      />
     </>
   );
 }

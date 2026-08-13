@@ -84,7 +84,9 @@ export async function createEvent(formData: FormData) {
     senderId: user.id,
   });
 
-  redirect(`/events/${event.id}`);
+  // モーダルからの作成なので遷移せず、予定表を再検証して反映する
+  revalidatePath("/schedule");
+  revalidatePath("/");
 }
 
 export async function joinEvent(eventId: string) {
