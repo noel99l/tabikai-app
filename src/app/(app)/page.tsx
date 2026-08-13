@@ -2,7 +2,7 @@ import Link from "next/link";
 import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
-import { IconSuitcase, IconUsers } from "@/components/icons";
+import { IconSettings, IconSuitcase, IconUsers } from "@/components/icons";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fmtDateTime, fmtTime, untilLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
@@ -100,11 +100,15 @@ export default async function DashboardPage() {
         </Link>
       )}
       {isAdmin && (
-        <p className="mt-2 text-center text-[11.5px]">
-          <Link href="/manage/members" className="font-bold text-primary">
-            メンバー管理・招待リンクはこちら
-          </Link>
-        </p>
+        <Link href="/manage" className="mt-2.5 block">
+          <Card className="flex items-center gap-3">
+            <IconSettings className="h-5 w-5 text-primary" />
+            <span className="flex-1 text-[13px] font-bold text-primary">
+              管理者コンソール(会場・旅程・メンバー・アナウンス)
+            </span>
+            <span className="text-muted">›</span>
+          </Card>
+        </Link>
       )}
 
       <SectionTitle>次の予定</SectionTitle>

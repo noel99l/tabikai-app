@@ -39,11 +39,11 @@ export default async function MembersPage() {
     <>
       <AppHeader title="メンバー管理" />
       <Link
-        href="/"
+        href="/manage"
         className="mb-2 flex items-center gap-1 text-[13px] font-bold text-primary"
       >
         <IconBack className="h-4 w-4" />
-        ホームへ戻る
+        管理者コンソールへ戻る
       </Link>
 
       <Card>

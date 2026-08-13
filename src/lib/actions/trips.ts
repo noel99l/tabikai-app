@@ -104,6 +104,38 @@ export async function requestJoin(tripId: string) {
   redirect("/trips/pending");
 }
 
+// 旅程(開始・終了日時)の更新。予定表の日付タブがこの範囲で生成される
+export async function updateTripDates(formData: FormData) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const startDate = String(formData.get("startDate") ?? "");
+  const startTime = String(formData.get("startTime") ?? "15:00");
+  const endDate = String(formData.get("endDate") ?? "");
+  const endTime = String(formData.get("endTime") ?? "12:00");
+  if (!startDate || !endDate) return;
+  const startsAt = jstDate(startDate, startTime);
+  const endsAt = jstDate(endDate, endTime);
+  if (endsAt <= startsAt) throw new Error("終了日時は開始より後にしてください");
+  await db
+    .update(schema.trips)
+    .set({ startsAt, endsAt })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/trip");
+  revalidatePath("/schedule");
+  revalidatePath("/");
+}
+
+// 企画名の更新
+export async function updateTripName(formData: FormData) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await db.update(schema.trips).set({ name }).where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/trip");
+  revalidatePath("/");
+}
+
 // 企画の削除(その企画の管理者のみ)。配下の会場・イベント・費用・持ち物・お知らせもすべて削除される
 export async function deleteTrip(tripId: string) {
   const user = await requireUser();

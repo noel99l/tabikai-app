@@ -103,6 +103,13 @@ export const IconUsers = (p: SVGProps<SVGSVGElement>) => (
   </Svg>
 );
 
+export const IconSettings = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+  </Svg>
+);
+
 export const IconSuitcase = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <rect x="3.5" y="7" width="17" height="13" rx="2.5" />

@@ -37,10 +37,10 @@ export default async function SettingsPage() {
           </Link>
           {isAdmin && (
             <Link
-              href="/manage/members"
+              href="/manage"
               className="rounded-lg bg-primary-soft px-3 py-2.5 text-center text-[13px] font-bold text-primary"
             >
-              メンバー管理・招待リンク
+              管理者コンソール
             </Link>
           )}
         </div>
