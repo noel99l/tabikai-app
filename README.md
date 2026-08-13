@@ -79,7 +79,18 @@ npm run dev                  # http://localhost:3000
 ## 実装フェーズ
 
 - [x] フェーズ1: 雛形 — スキーマ / 認証基盤 / PWA基盤 / 全画面UI(サンプルデータ)
-- [ ] フェーズ2: DB接続 — 参加承認フロー、イベントCRUD、費用・承認、持ち物リスト
-- [ ] フェーズ3: 通知 — Webプッシュ購読、リマインド(5分前)、24h催促、アナウンス
-- [ ] フェーズ4: 管理者画面(PC) — 日程/ロゴ/会場/精算締め/管理者招待
+- [x] フェーズ2: DB接続 — 参加承認フロー、イベントCRUD、費用・承認、持ち物リスト
+- [x] フェーズ3: 通知 — Webプッシュ購読、リマインド、24h催促、アナウンス
+- [ ] フェーズ4: 管理者画面(PC) — ロゴ登録 / 精算締め・精算リスト公開 / 管理者招待URL
 - [ ] フェーズ5: Vercel + Neon 本番デプロイ
+
+### フェーズ3 の構成(通知)
+
+- Webプッシュ送信: `src/lib/push.ts`(web-push + VAPID)。`notify()` がお知らせ作成時に購読者へ自動送信
+- 購読フロー: 設定画面の「プッシュ通知」トグル → `/api/push/subscribe` `/api/push/unsubscribe`
+- 定期実行(Vercel Cron, `vercel.json`):
+  - `/api/cron/reminders`(5分毎)— イベント開始 `reminderMinutes` 分前に参加登録者へ
+  - `/api/cron/nudges`(毎時)— 24h未承認の割り勘に本人催促+主催者/管理者へエスカレーション
+  - `CRON_SECRET` で保護(Vercel Cron が Bearer 自動付与。開発中は認証不要)
+- 注: Vercel Hobbyプランの Cron は日次までのため、5分間隔のリマインドには Pro プラン
+  または外部cron(cron-job.org 等で各エンドポイントを定期GET)が必要

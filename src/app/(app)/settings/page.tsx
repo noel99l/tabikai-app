@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { ProfileEditButton } from "@/components/profile-edit";
+import { PushToggle } from "@/components/push-toggle";
 import { Avatar, Card, Pill } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { fmtDateLabel } from "@/lib/format";
@@ -25,6 +26,8 @@ export default async function SettingsPage() {
         </div>
         <ProfileEditButton name={user.name} emoji={user.avatarEmoji} />
       </Card>
+
+      <PushToggle />
 
       <Card className="mt-2.5">
         <div className="text-[11px] text-muted">参加中のイベント</div>
