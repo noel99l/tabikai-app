@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
+import { notify } from "@/lib/notify";
 import { requireTripContext } from "@/lib/session";
 
 export async function addItem(formData: FormData) {
@@ -21,63 +22,76 @@ export async function addItem(formData: FormData) {
   revalidatePath("/items");
 }
 
-// 「持っていく」(bring) / 「買ってくる」(buy) の引き受け
-export async function claimItem(itemId: string, method: "bring" | "buy") {
-  const { user, db } = await requireTripContext();
-  await db
-    .update(schema.items)
-    .set({ assigneeId: user.id, method })
-    .where(eq(schema.items.id, itemId));
-  revalidatePath("/items");
-}
-
-export async function markItemDone(itemId: string) {
-  const { db } = await requireTripContext();
-  await db
-    .update(schema.items)
-    .set({ done: true })
-    .where(eq(schema.items.id, itemId));
-  revalidatePath("/items");
-}
-
-// ステータスを直接切り替える(足りない / 調達予定 / 準備OK)
+// ステータス変更(足りない / 調達予定 / 準備OK)。
+// 掲載者への情報連携: 引き受け・完了・取り消しをお知らせ+プッシュで通知する。
 export async function setItemStatus(
   itemId: string,
   status: "missing" | "planned" | "ready",
   method: "bring" | "buy" = "bring",
 ) {
-  const { user, db } = await requireTripContext();
+  const { user, trip, db } = await requireTripContext();
+  const item = await db.query.items.findFirst({
+    where: eq(schema.items.id, itemId),
+  });
+  if (!item || item.tripId !== trip.id) return;
+
   if (status === "missing") {
+    // 担当を外して募集中に戻す
     await db
       .update(schema.items)
       .set({ assigneeId: null, method: null, done: false })
       .where(eq(schema.items.id, itemId));
+    if (item.assigneeId && item.addedBy !== user.id) {
+      await notify(db, trip.id, [item.addedBy], {
+        type: "item_update",
+        title: `「${item.name}」の担当がなくなりました`,
+        body: `${user.name} さんが取り消しました · 再度募集中です`,
+        link: "/items",
+        senderId: user.id,
+      });
+    }
   } else if (status === "planned") {
-    // 担当者未設定なら自分を担当に
-    const item = await db.query.items.findFirst({
-      where: eq(schema.items.id, itemId),
-    });
+    // 引き受け(持参 or 買い出し)。担当未設定なら自分が担当に
+    const assigneeId = item.assigneeId ?? user.id;
+    const m = item.assigneeId ? (item.method ?? method) : method;
     await db
       .update(schema.items)
-      .set({
-        assigneeId: item?.assigneeId ?? user.id,
-        method: item?.method ?? method,
-        done: false,
-      })
+      .set({ assigneeId, method: m, done: false })
       .where(eq(schema.items.id, itemId));
+    if (!item.assigneeId && item.addedBy !== user.id) {
+      await notify(db, trip.id, [item.addedBy], {
+        type: "item_update",
+        title:
+          m === "buy"
+            ? `「${item.name}」は ${user.name} さんが買ってきます`
+            : `「${item.name}」は ${user.name} さんが持っていきます`,
+        link: "/items",
+        senderId: user.id,
+      });
+    }
   } else {
-    // ready: 担当者未設定なら自分を担当にして完了
-    const item = await db.query.items.findFirst({
-      where: eq(schema.items.id, itemId),
-    });
+    // 準備OK(購入完了 / 持参準備済み)
+    const assigneeId = item.assigneeId ?? user.id;
+    const m = item.method ?? method;
     await db
       .update(schema.items)
-      .set({
-        assigneeId: item?.assigneeId ?? user.id,
-        method: item?.method ?? method,
-        done: true,
-      })
+      .set({ assigneeId, method: m, done: true })
       .where(eq(schema.items.id, itemId));
+    if (item.addedBy !== user.id) {
+      await notify(db, trip.id, [item.addedBy], {
+        type: "item_update",
+        title:
+          m === "buy"
+            ? `「${item.name}」が購入されました`
+            : `「${item.name}」の準備ができました`,
+        body:
+          m === "buy"
+            ? `${user.name} さんが購入 · 費用は割り勘に登録できます`
+            : `${user.name} さんが持参します`,
+        link: "/items",
+        senderId: user.id,
+      });
+    }
   }
   revalidatePath("/items");
 }

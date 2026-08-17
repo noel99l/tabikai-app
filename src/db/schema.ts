@@ -38,6 +38,7 @@ export const notificationType = pgEnum("notification_type", [
   "approval_nudge", // 24h未承認の催促(本人向け)
   "approval_escalation", // 24h未承認のエスカレーション(主催者/管理者向け)
   "settlement", // 精算確定
+  "item_update", // 持ち物の引き受け・購入完了・取り消し(掲載者向け)
 ]);
 
 // ============ users / auth ============
