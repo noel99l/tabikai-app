@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { moveEvent } from "@/lib/actions/events";
 import { EventForm } from "./event-form";
 import { Fab, Modal } from "./modal";
@@ -507,6 +514,27 @@ export function ScheduleView({
 
   const gestureActive = !!moving || !!sel;
 
+  // グリッドを画面下端(下部ナビの上)まで広げる。
+  // パネルの上端位置はフィルタ開閉などで変わるため実測する。
+  const [panelTop, setPanelTop] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = scrollRef.current;
+      if (!el) return;
+      setPanelTop(
+        Math.round(el.getBoundingClientRect().top + window.scrollY),
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [filterOpen]);
+  // 下部ナビ(約56px)+余白ぶんを差し引く。安全領域は env() で加算
+  const panelHeight =
+    panelTop === null
+      ? undefined
+      : `max(280px, calc(100dvh - ${panelTop}px - 76px - env(safe-area-inset-bottom)))`;
+
   return (
     <>
       {/* 日付タブ(クライアント切替で即時反映) */}
@@ -573,7 +601,11 @@ export function ScheduleView({
 
       {/* グリッド(内部スクロール・ヘッダー固定) */}
       <div className="overflow-hidden rounded-xl border border-line bg-white">
-        <div ref={scrollRef} className="max-h-[62dvh] overflow-auto">
+        <div
+          ref={scrollRef}
+          className={panelHeight ? "overflow-auto" : "max-h-[62dvh] overflow-auto"}
+          style={panelHeight ? { height: panelHeight } : undefined}
+        >
           <div style={{ minWidth: gridMinWidth }}>
             <div
               className="sticky top-0 z-20 grid border-b border-line bg-white text-center text-[10px] font-bold text-muted"
