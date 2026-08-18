@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gt, lt, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { schema } from "@/db";
@@ -40,18 +40,7 @@ export async function createEvent(formData: FormData) {
     if (endsAt <= startsAt) {
       return { error: "終了日時は開始より後にしてください" };
     }
-    // 同一会場・同一時間帯は早い者勝ちで不可(時間指定イベント同士のみ判定)
-    const overlaps = await db.query.events.findMany({
-      where: and(
-        eq(schema.events.venueId, venueId),
-        eq(schema.events.allDay, false),
-        lt(schema.events.startsAt, endsAt),
-        gt(schema.events.endsAt, startsAt),
-      ),
-    });
-    if (overlaps.length > 0) {
-      return { error: `この時間帯は「${overlaps[0].title}」が予約済みです` };
-    }
+    // 同一会場・同一時間帯の重複は許可(並行開催OK)。予定表では横並びで表示する
   }
 
   const [event] = await db
@@ -151,6 +140,57 @@ export async function addParticipants(formData: FormData) {
     senderId: user.id,
   });
   revalidatePath(`/events/${eventId}`);
+}
+
+// イベントのドラッグ移動(会場・開始時刻の変更、所要時間は維持)。主催者・管理者のみ。
+export async function moveEvent(
+  eventId: string,
+  venueId: string,
+  dayKey: string, // "YYYY-MM-DD"(JST)
+  startMin: number, // その日の0:00からの分
+) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event || event.tripId !== trip.id) return;
+  if (event.hostId !== user.id && !isAdmin) {
+    return { error: "主催者または管理者のみ移動できます" };
+  }
+  const duration = event.endsAt.getTime() - event.startsAt.getTime();
+  const dayStart = new Date(`${dayKey}T00:00:00+09:00`).getTime();
+  const startsAt = new Date(dayStart + startMin * 60 * 1000);
+  const endsAt = new Date(startsAt.getTime() + duration);
+  await db
+    .update(schema.events)
+    .set({ venueId, startsAt, endsAt })
+    .where(eq(schema.events.id, eventId));
+
+  // 参加登録者(操作者以外)へ変更を通知
+  const venue = await db.query.venues.findFirst({
+    where: eq(schema.venues.id, venueId),
+  });
+  const parts = await db.query.eventParticipants.findMany({
+    where: and(
+      eq(schema.eventParticipants.eventId, eventId),
+      eq(schema.eventParticipants.status, "joined"),
+      ne(schema.eventParticipants.userId, user.id),
+    ),
+  });
+  await notify(
+    db,
+    trip.id,
+    parts.map((p) => p.userId),
+    {
+      type: "event_invite",
+      title: `「${event.title}」の予定が変更されました`,
+      body: `${fmtDateTime(startsAt)} · ${venue?.name ?? ""}`,
+      link: `/events/${eventId}`,
+      senderId: user.id,
+    },
+  );
+  revalidatePath("/schedule");
+  revalidatePath("/");
 }
 
 // リマインド通知(開始5分前・デフォルトオン)の個人オン/オフ

@@ -140,7 +140,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
       )}
 
       <p className="mx-0.5 mt-3.5 text-[11.5px] text-muted">
-        同一会場・同一時間帯は早い者勝ちで、重複する場合は作成できません。
+        同じ会場・時間帯に複数のイベントを重ねて登録できます。
         参加者には開始前に自動でリマインド通知が届きます(各自オフ可)。
       </p>
 
