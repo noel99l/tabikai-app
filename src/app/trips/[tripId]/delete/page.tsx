@@ -60,7 +60,7 @@ export default async function DeleteTripPage({
           {members.value}人
         </p>
         <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-[12px] font-bold text-accent">
-          イベント{events.value}件・費用{expenses.value}件・持ち物・お知らせを含む
+          イベント{events.value}件・費用{expenses.value}件・買い出しリスト・お知らせを含む
           すべてのデータが完全に削除されます。この操作は取り消せません。
         </p>
         <form action={deleteTrip.bind(null, tripId)} className="mt-3">

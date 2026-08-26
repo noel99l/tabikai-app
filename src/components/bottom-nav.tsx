@@ -13,7 +13,7 @@ import {
 const tabs = [
   { href: "/", label: "ホーム", icon: IconHome },
   { href: "/schedule", label: "予定表", icon: IconCalendar },
-  { href: "/items", label: "持ち物", icon: IconList },
+  { href: "/items", label: "買い出し", icon: IconList },
   { href: "/expenses", label: "費用", icon: IconMoney },
   { href: "/approvals", label: "承認", icon: IconCheck },
 ];

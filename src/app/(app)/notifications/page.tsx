@@ -26,7 +26,7 @@ const typeMeta = {
   approval_nudge: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
   approval_escalation: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
   settlement: { icon: IconMoney, cls: "bg-ok-soft text-ok", label: "精算", tone: "ok" as const },
-  item_update: { icon: IconList, cls: "bg-primary-soft text-primary", label: "持ち物", tone: "info" as const },
+  item_update: { icon: IconList, cls: "bg-primary-soft text-primary", label: "買い出し", tone: "info" as const },
 };
 
 export default async function NotificationsPage() {

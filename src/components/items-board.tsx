@@ -114,9 +114,15 @@ export function ItemsBoard({
               ` · ${i.assigneeName} が${i.method === "buy" ? "買い出し" : "持参"}`}
           </div>
         </div>
-        {i.canDelete && (
+        {/* 掲載の削除は担当が付く前(足りない)のみ。担当が付いた後は
+            「取り消す」「足りないに戻す」で戻してから削除する */}
+        {i.canDelete && i.status === "missing" && (
           <button
-            onClick={() => remove(i.id)}
+            onClick={() => {
+              if (window.confirm(`「${i.name}」の掲載を削除しますか?`)) {
+                remove(i.id);
+              }
+            }}
             aria-label="削除"
             className="shrink-0 px-1 text-[11px] font-bold text-muted"
           >
