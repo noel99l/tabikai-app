@@ -43,7 +43,16 @@ export function ProfileForm({
             submitting.current = false;
           }
           // 成功時は action 内で redirect / revalidate される
-        } catch {
+        } catch (err) {
+          // 成功時の redirect は例外として伝播するため、失敗と誤表示しない
+          if (
+            err &&
+            typeof err === "object" &&
+            "digest" in err &&
+            String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+          ) {
+            throw err;
+          }
           setError("保存に失敗しました。");
           setPending(false);
           submitting.current = false;

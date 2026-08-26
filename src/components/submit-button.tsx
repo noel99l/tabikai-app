@@ -44,15 +44,21 @@ export function SubmitButton({
   value?: string;
   spinner?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const { pending, data } = useFormStatus();
+  // name/value 付き(同一フォーム内に複数ボタン)の場合は、押されたボタンだけを
+  // 送信中表示にする。押されていない方は disabled のみで静かに無効化する。
+  const isSubmitter =
+    pending && (!name || value === undefined || data?.get(name) === value);
   return (
     <button
       name={name}
       value={value}
       disabled={pending}
-      className={`${className} ${pending ? "animate-pulse opacity-60" : ""}`}
+      className={`${className} ${
+        isSubmitter ? "animate-pulse opacity-60" : pending ? "opacity-40" : ""
+      }`}
     >
-      {spinner && pending ? (
+      {spinner && isSubmitter ? (
         <span className="inline-flex items-center justify-center gap-2">
           <Spinner />
           {children}

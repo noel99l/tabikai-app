@@ -74,6 +74,7 @@ export const trips = pgTable("trips", {
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
   reminderMinutes: integer("reminder_minutes").default(5).notNull(), // イベント開始何分前にリマインド
+  autoApprove: boolean("auto_approve").default(false).notNull(), // 参加リクエストの自動承認モード
   expensesClosedAt: timestamp("expenses_closed_at", { withTimezone: true }), // 経費入力の締め
   createdBy: uuid("created_by")
     .notNull()

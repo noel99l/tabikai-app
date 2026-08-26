@@ -8,7 +8,8 @@ import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
-import { approveMember } from "@/lib/actions/trips";
+import { SwitchButton } from "@/components/switch";
+import { approveMember, setAutoApprove } from "@/lib/actions/trips";
 import { requireTripContext } from "@/lib/session";
 
 // メンバー参加承認(管理者のみ)。PC管理画面はフェーズ4で拡張予定。
@@ -57,6 +58,18 @@ export default async function MembersPage() {
         <p className="rounded-lg bg-screen px-2.5 py-2 text-[11.5px] break-all select-all">
           {inviteUrl}
         </p>
+        <form
+          action={setAutoApprove.bind(null, !trip.autoApprove)}
+          className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3"
+        >
+          <span>
+            <span className="block text-[13px] font-bold">自動承認モード</span>
+            <span className="block text-[11.5px] text-muted">
+              オンの間は参加リクエストを承認なしで即メンバーにします。
+            </span>
+          </span>
+          <SwitchButton checked={trip.autoApprove} />
+        </form>
       </Card>
 
       <Card className="mt-2.5">

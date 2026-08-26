@@ -78,9 +78,15 @@ export async function requestJoin(tripId: string) {
     where: eq(schema.trips.id, tripId),
   });
   if (!trip) redirect("/trips");
+  // 自動承認モード中は承認待ちを挟まず、即メンバーとして参加できる
+  const autoApprove = trip.autoApprove;
   await db
     .insert(schema.tripMembers)
-    .values({ tripId, userId: user.id, status: "pending" })
+    .values({
+      tripId,
+      userId: user.id,
+      status: autoApprove ? "approved" : "pending",
+    })
     .onConflictDoNothing();
   // 管理者へお知らせ
   const admins = await db.query.tripMembers.findMany({
@@ -92,17 +98,36 @@ export async function requestJoin(tripId: string) {
   await notify(
     db,
     tripId,
-    admins.map((a) => a.userId),
-    {
-      type: "announce",
-      title: `${user.name ?? user.email} さんが参加をリクエストしました`,
-      body: "メンバー管理から承認してください。",
-      link: "/manage/members",
-      senderId: user.id,
-    },
+    admins.map((a) => a.userId).filter((id) => id !== user.id),
+    autoApprove
+      ? {
+          type: "announce",
+          title: `${user.name ?? user.email} さんが参加しました`,
+          body: "自動承認モードにより承認済みです。",
+          link: "/manage/members",
+          senderId: user.id,
+        }
+      : {
+          type: "announce",
+          title: `${user.name ?? user.email} さんが参加をリクエストしました`,
+          body: "メンバー管理から承認してください。",
+          link: "/manage/members",
+          senderId: user.id,
+        },
   );
   await setTripCookie(tripId);
-  redirect("/trips/pending");
+  redirect(autoApprove ? "/" : "/trips/pending");
+}
+
+// 参加リクエストの自動承認モードの切替(管理者のみ)
+export async function setAutoApprove(next: boolean) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db
+    .update(schema.trips)
+    .set({ autoApprove: next })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/members");
 }
 
 // 旅程(開始・終了日時)の更新。予定表の日付タブがこの範囲で生成される

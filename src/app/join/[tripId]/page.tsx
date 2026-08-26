@@ -39,8 +39,9 @@ export default async function JoinPage({
         {fmtDateLabel(trip.startsAt)} – {fmtDateLabel(trip.endsAt)}
       </p>
       <p className="mt-4 text-[13px] text-muted">
-        {user.name} さん({user.email})として参加をリクエストします。
-        管理者が承認すると利用を開始できます。
+        {trip.autoApprove
+          ? `${user.name} さん(${user.email})として参加します。参加後すぐに利用を開始できます。`
+          : `${user.name} さん(${user.email})として参加をリクエストします。管理者が承認すると利用を開始できます。`}
       </p>
       {member ? (
         <form action={selectTrip.bind(null, tripId)} className="mt-6 w-full">
@@ -50,7 +51,9 @@ export default async function JoinPage({
         </form>
       ) : (
         <form action={requestJoin.bind(null, tripId)} className="mt-6 w-full">
-          <SubmitButton className={`${btnCls} w-full py-3.5`}>参加をリクエストする</SubmitButton>
+          <SubmitButton className={`${btnCls} w-full py-3.5`}>
+            {trip.autoApprove ? "参加する" : "参加をリクエストする"}
+          </SubmitButton>
         </form>
       )}
     </div>
