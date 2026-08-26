@@ -25,29 +25,37 @@ export function VenueRow({ venue: v }: Props) {
   return (
     <div className="mb-2.5 rounded-xl border border-line bg-white p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-sm font-bold">{v.name}</div>
-          <div className="text-[11.5px] text-muted">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-bold">{v.name}</div>
+          <div className="truncate text-[11.5px] text-muted">
             {v.capacity ? `定員${v.capacity}人` : "定員 —"} ·{" "}
             {v.openFrom && v.openTo ? `${v.openFrom}–${v.openTo}` : "終日"} · イベント
             {v.eventCount}件
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={() => setOpen(true)}
-            className="text-[12px] font-bold text-primary"
+            className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-primary"
           >
             編集
           </button>
           {v.eventCount === 0 ? (
             <form action={deleteVenue.bind(null, v.id)}>
-              <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
+              <SubmitButton
+                spinner={false}
+                className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-accent"
+              >
                 削除
               </SubmitButton>
             </form>
           ) : (
-            <span className="text-[11px] text-muted">イベントあり</span>
+            <span
+              title="イベントが登録されている会場は削除できません"
+              className="rounded-lg border border-line bg-screen px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap text-muted"
+            >
+              イベントあり
+            </span>
           )}
         </div>
       </div>

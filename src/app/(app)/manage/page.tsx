@@ -36,16 +36,16 @@ export default async function ManagePage() {
 
   const items = [
     {
-      href: "/manage/venues",
-      icon: IconHome,
-      title: "会場(部屋)管理",
-      desc: `予定表の列になる会場を追加・編集(現在 ${venues.value} 件)`,
-    },
-    {
       href: "/manage/trip",
       icon: IconCalendar,
       title: "旅程・企画設定",
       desc: "開始日時・終了日時・企画名の変更",
+    },
+    {
+      href: "/manage/venues",
+      icon: IconHome,
+      title: "会場(部屋)管理",
+      desc: `予定表の列になる会場を追加・編集(現在 ${venues.value} 件)`,
     },
     {
       href: "/manage/members",
@@ -81,16 +81,19 @@ export default async function ManagePage() {
         ホームへ戻る
       </Link>
 
-      <Card className="mb-3 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-primary-soft">
-          <IconSuitcase className="h-6 w-6 text-primary" />
+      {/* 管理対象の企画(下のメニューカードと区別するため塗りのヒーロー表示) */}
+      <div className="mb-3.5 flex items-center gap-3 rounded-xl bg-primary p-4 text-white">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-white/20">
+          <IconSuitcase className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold">{trip.name}</div>
-          <div className="text-[11.5px] text-muted">管理対象の企画</div>
+          <div className="text-[11px] font-semibold text-white/75">管理対象の企画</div>
+          <div className="truncate text-[15px] font-bold">{trip.name}</div>
         </div>
-        <Pill tone="info">管理者</Pill>
-      </Card>
+        <span className="shrink-0 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold">
+          管理者
+        </span>
+      </div>
 
       {items.map(({ href, icon: Icon, title, desc, badge }) => (
         <Link key={href} href={href} className="block">

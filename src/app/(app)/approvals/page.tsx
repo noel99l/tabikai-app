@@ -1,9 +1,9 @@
-import { and, eq, inArray, lt } from "drizzle-orm";
+import { and, eq, inArray, lt, or } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
-import { approveShare, resolveShare } from "@/lib/actions/expenses";
+import { approveShare, rejectShare, resolveShare } from "@/lib/actions/expenses";
 import { fmtEventSpan, sinceLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
@@ -37,14 +37,19 @@ export default async function ApprovalsPage() {
       })
     : [];
 
-  // 24時間以上未承認(主催者・管理者の操作対象)
+  // 主催者・管理者の操作対象: 本人が否認したもの+24時間以上未承認のもの
   const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
   const staleAll = expenseIds.length
     ? await db.query.expenseShares.findMany({
         where: and(
           inArray(schema.expenseShares.expenseId, expenseIds),
-          eq(schema.expenseShares.status, "pending"),
-          lt(schema.expenseShares.createdAt, dayAgo),
+          or(
+            eq(schema.expenseShares.status, "rejected"),
+            and(
+              eq(schema.expenseShares.status, "pending"),
+              lt(schema.expenseShares.createdAt, dayAgo),
+            ),
+          ),
         ),
       })
     : [];
@@ -66,7 +71,12 @@ export default async function ApprovalsPage() {
           ),
         })
       )
-        .filter((s) => s.status === "approved" || s.status === "forced")
+        .filter(
+          (s) =>
+            s.status === "approved" ||
+            s.status === "forced" ||
+            s.status === "rejected",
+        )
         .slice(0, 5)
     : [];
 
@@ -105,16 +115,27 @@ export default async function ApprovalsPage() {
             <div className="my-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
               あなたの負担: <b className="tabular-nums">{yen(s.amount)}</b>
             </div>
-            <form action={approveShare.bind(null, s.expenseId)}>
-              <SubmitButton className={`${btnCls} w-full`}>承認する</SubmitButton>
-            </form>
+            <div className="flex items-center gap-2">
+              <form action={approveShare.bind(null, s.expenseId)} className="flex-1">
+                <SubmitButton className={`${btnCls} w-full`}>承認する</SubmitButton>
+              </form>
+              {/* 否認は例外的な操作なので控えめに表示する */}
+              <form action={rejectShare.bind(null, s.expenseId)} className="shrink-0">
+                <SubmitButton
+                  spinner={false}
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-[11.5px] font-bold text-muted"
+                >
+                  否認
+                </SubmitButton>
+              </form>
+            </div>
           </Card>
         );
       })}
 
       {stale.length > 0 && (
         <>
-          <SectionTitle>主催者・管理者の操作(24時間以上未承認)</SectionTitle>
+          <SectionTitle>主催者・管理者の操作(否認・24時間以上未承認)</SectionTitle>
           {stale.map((s) => {
             const x = expenseOf(s.expenseId)!;
             const ev = eventOf(x.eventId);
@@ -132,7 +153,11 @@ export default async function ApprovalsPage() {
                       </div>
                     )}
                   </div>
-                  <Pill tone="pend">放置 {sinceLabel(s.createdAt)}</Pill>
+                  {s.status === "rejected" ? (
+                    <Pill tone="pend">否認</Pill>
+                  ) : (
+                    <Pill tone="pend">放置 {sinceLabel(s.createdAt)}</Pill>
+                  )}
                 </div>
                 <form action={resolveShare} className="mt-2.5 flex gap-2">
                   <input type="hidden" name="expenseId" value={s.expenseId} />
@@ -152,7 +177,7 @@ export default async function ApprovalsPage() {
 
       {myResolved.length > 0 && (
         <>
-          <SectionTitle>承認済み</SectionTitle>
+          <SectionTitle>対応済み</SectionTitle>
           {myResolved.map((s) => {
             const x = expenseOf(s.expenseId);
             if (!x) return null;
@@ -167,7 +192,11 @@ export default async function ApprovalsPage() {
                     立替: {nameOf(x.paidBy)} · あなたの負担 {yen(s.amount)}
                   </div>
                 </div>
-                <Pill tone="ok">承認済み</Pill>
+                {s.status === "rejected" ? (
+                  <Pill tone="pend">否認済み</Pill>
+                ) : (
+                  <Pill tone="ok">承認済み</Pill>
+                )}
               </Card>
             );
           })}

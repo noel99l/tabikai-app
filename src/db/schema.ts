@@ -27,6 +27,7 @@ export const shareStatus = pgEnum("share_status", [
   "approved", // 本人が承認
   "forced", // 主催者/管理者が「承認として確定」
   "excluded", // 主催者/管理者が「割り勘対象から外す」
+  "rejected", // 本人が否認(主催者/管理者が最終判断する)
 ]);
 export const itemMethod = pgEnum("item_method", ["bring", "buy"]); // 持参 / 買い出し
 export const notificationType = pgEnum("notification_type", [

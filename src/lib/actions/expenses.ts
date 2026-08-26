@@ -112,6 +112,47 @@ export async function approveShare(expenseId: string) {
   revalidatePath("/expenses");
 }
 
+// 本人による否認。対象からは外れず、主催者/管理者が最終判断する(承認として確定 or 対象から外す)
+export async function rejectShare(expenseId: string) {
+  const { user, trip, db } = await requireTripContext();
+  const expense = await db.query.expenses.findFirst({
+    where: eq(schema.expenses.id, expenseId),
+  });
+  if (!expense) return;
+  await db
+    .update(schema.expenseShares)
+    .set({ status: "rejected", resolvedAt: new Date() })
+    .where(
+      and(
+        eq(schema.expenseShares.expenseId, expenseId),
+        eq(schema.expenseShares.userId, user.id),
+        eq(schema.expenseShares.status, "pending"),
+      ),
+    );
+  // 立替者・登録者・イベント主催者に知らせて最終判断を促す
+  const event = expense.eventId
+    ? await db.query.events.findFirst({
+        where: eq(schema.events.id, expense.eventId),
+      })
+    : undefined;
+  const targets = [
+    ...new Set(
+      [expense.paidBy, expense.createdBy, event?.hostId].filter(
+        (id): id is string => !!id && id !== user.id,
+      ),
+    ),
+  ];
+  await notify(db, trip.id, targets, {
+    type: "expense_assigned",
+    title: `「${expense.title}」が否認されました`,
+    body: `${user.name} さんが否認 · 承認画面から確定または対象から外せます`,
+    link: "/approvals",
+    senderId: user.id,
+  });
+  revalidatePath("/approvals");
+  revalidatePath("/expenses");
+}
+
 // 主催者/管理者による操作: 承認として確定(forced) or 割り勘対象から外す(excluded)
 export async function resolveShare(formData: FormData) {
   const { user, db, isAdmin } = await requireTripContext();

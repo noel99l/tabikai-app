@@ -34,3 +34,13 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/* iOS Safari の date/time input は内容依存の固有幅・中央寄せで描画され、
+   狭いグリッド内でははみ出して隣の欄に重なることがある。
+   ネイティブ外観を外し、指定幅どおりに収まるようにする。 */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}

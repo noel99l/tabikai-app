@@ -28,6 +28,7 @@ const statusLabel: Record<string, { label: string; tone: "ok" | "pend" | "info" 
   forced: { label: "確定(管理)", tone: "ok" },
   pending: { label: "承認待ち", tone: "pend" },
   excluded: { label: "対象外", tone: "info" },
+  rejected: { label: "否認", tone: "pend" },
 };
 
 export function ExpenseRow({ expense, shares, members, canEdit }: Props) {

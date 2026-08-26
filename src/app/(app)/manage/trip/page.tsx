@@ -47,9 +47,10 @@ export default async function TripSettingsPage() {
           参加登録者に、イベント開始の何分前に通知するかの既定値です(各自オフ可)。
         </p>
         <form action={updateReminderMinutes} className="flex items-center gap-2">
-          <span className="text-[13px] text-muted">開始</span>
+          <span className="shrink-0 text-[13px] whitespace-nowrap text-muted">開始</span>
+          {/* inputCls(w-full)を使うとw-20が上書きされ全幅になるため専用クラスにする */}
           <input
-            className={`${inputCls} w-20 text-center`}
+            className="w-20 shrink-0 rounded-[10px] border border-line bg-white px-2 py-2.5 text-center text-sm"
             name="reminderMinutes"
             type="number"
             min={0}
@@ -57,7 +58,7 @@ export default async function TripSettingsPage() {
             defaultValue={trip.reminderMinutes}
             required
           />
-          <span className="text-[13px] text-muted">分前</span>
+          <span className="shrink-0 text-[13px] whitespace-nowrap text-muted">分前</span>
           <SubmitButton className={`${btnCls} ml-auto shrink-0`}>保存</SubmitButton>
         </form>
       </Card>
