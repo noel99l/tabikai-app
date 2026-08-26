@@ -240,6 +240,7 @@ export const items = pgTable("items", {
   method: itemMethod("method"), // bring(持参) / buy(買い出し)
   done: boolean("done").default(false).notNull(),
   expenseId: uuid("expense_id").references(() => expenses.id, { onDelete: "set null" }), // 購入分の費用連携
+  sortOrder: integer("sort_order").default(0).notNull(), // 優先度(小さいほど上・ドラッグで並び替え)
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

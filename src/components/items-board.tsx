@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { deleteItem, setItemStatus } from "@/lib/actions/items";
-import { IconCart, IconCheck } from "./icons";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { deleteItem, reorderItems, setItemStatus } from "@/lib/actions/items";
+import { IconCart, IconCheck, IconGrip } from "./icons";
 import { Modal } from "./modal";
 import { Pill } from "./ui";
 
@@ -44,14 +44,23 @@ export function ItemsBoard({
   const [sessionChecked, setSessionChecked] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
 
+  // ドラッグ&ドロップの並び替え(優先度)。orderIds が全体の表示順を上書きする
+  const [orderIds, setOrderIds] = useState<string[] | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const dragRef = useRef<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
   // 楽観的更新を反映した一覧
-  const merged = useMemo(
-    () =>
-      items
-        .filter((i) => !removed.has(i.id))
-        .map((i) => (overrides[i.id] ? { ...i, ...overrides[i.id] } : i)),
-    [items, overrides, removed],
-  );
+  const merged = useMemo(() => {
+    const base = items
+      .filter((i) => !removed.has(i.id))
+      .map((i) => (overrides[i.id] ? { ...i, ...overrides[i.id] } : i));
+    if (!orderIds) return base;
+    const idx = new Map(orderIds.map((id, i) => [id, i]));
+    return [...base].sort(
+      (a, b) => (idx.get(a.id) ?? 1e9) - (idx.get(b.id) ?? 1e9),
+    );
+  }, [items, overrides, removed, orderIds]);
 
   const lists: Record<Status, BoardItem[]> = {
     missing: merged.filter((i) => i.status === "missing"),
@@ -98,13 +107,74 @@ export function ItemsBoard({
     mutate(item, "planned", "buy");
   };
 
+  // ===== 優先度の並び替え(グリップをドラッグ) =====
+  const startDrag = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // 環境によって失敗しても、同一要素上のmove/upで追従できるため続行
+    }
+    dragRef.current = id;
+    setDragId(id);
+  };
+  const moveDrag = (e: React.PointerEvent) => {
+    const id = dragRef.current;
+    if (!id || !listRef.current) return;
+    const cards = [
+      ...listRef.current.querySelectorAll<HTMLElement>("[data-item-id]"),
+    ];
+    // ポインタ位置から、タブ内での新しい位置を求める
+    let newIdx = 0;
+    for (const c of cards) {
+      if (c.dataset.itemId === id) continue;
+      const r = c.getBoundingClientRect();
+      if (e.clientY > r.top + r.height / 2) newIdx++;
+    }
+    const tabIds = lists[tab].map((i) => i.id);
+    const next = tabIds.filter((x) => x !== id);
+    next.splice(newIdx, 0, id);
+    if (next.join() === tabIds.join()) return;
+    // タブ外の項目の位置は保ったまま、全体順序に反映する
+    const tabSet = new Set(tabIds);
+    let k = 0;
+    setOrderIds(merged.map((i) => (tabSet.has(i.id) ? next[k++] : i.id)));
+  };
+  const endDrag = () => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setDragId(null);
+    if (orderIds) {
+      const ids = orderIds;
+      startTransition(async () => {
+        await reorderItems(ids);
+      });
+    }
+  };
+
   const renderCard = (i: BoardItem) => (
     <div
       key={i.id}
-      className={`mb-2 rounded-xl border border-line bg-white p-3 ${i.status === "ready" ? "opacity-70" : ""}`}
+      data-item-id={i.id}
+      className={`mb-2 rounded-xl border bg-white p-3 ${
+        dragId === i.id
+          ? "border-primary opacity-90 shadow-lg"
+          : "border-line"
+      } ${i.status === "ready" && dragId !== i.id ? "opacity-70" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        {/* 優先度の並び替え用グリップ(上下にドラッグ) */}
+        <button
+          aria-label="並び替え"
+          onPointerDown={(e) => startDrag(e, i.id)}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          className="-ml-1 shrink-0 cursor-grab touch-none py-1 text-line active:cursor-grabbing"
+        >
+          <IconGrip className="h-5 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">
             {i.name} <Pill tone="info">{i.eventTitle}</Pill>
           </div>
@@ -229,7 +299,12 @@ export function ItemsBoard({
           {emptyText[tab]}
         </p>
       ) : (
-        lists[tab].map(renderCard)
+        <div ref={listRef}>{lists[tab].map(renderCard)}</div>
+      )}
+      {lists[tab].length > 1 && (
+        <p className="mx-0.5 mt-1 text-[11px] text-muted">
+          左のグリップを上下にドラッグすると優先度順に並び替えられます。
+        </p>
       )}
       {tab === "missing" && lists.missing.length > 0 && (
         <p className="mx-0.5 mt-1 text-[11px] text-muted">

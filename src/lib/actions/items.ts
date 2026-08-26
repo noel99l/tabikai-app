@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { notify } from "@/lib/notify";
@@ -12,13 +12,38 @@ export async function addItem(formData: FormData) {
   const note = String(formData.get("note") ?? "").trim() || null;
   const eventId = String(formData.get("eventId") ?? "") || null;
   if (!name) return;
+  // 新規は一番下(優先度低)に追加
+  const [{ max }] = await db
+    .select({ max: sql<number>`coalesce(max(${schema.items.sortOrder}), -1)` })
+    .from(schema.items)
+    .where(eq(schema.items.tripId, trip.id));
   await db.insert(schema.items).values({
     tripId: trip.id,
     eventId,
     name,
     note,
     addedBy: user.id,
+    sortOrder: Number(max) + 1,
   });
+  revalidatePath("/items");
+}
+
+// ドラッグ&ドロップの並び替え(優先度)。表示順のID配列を受け取り一括更新する
+export async function reorderItems(orderedIds: string[]) {
+  const { trip, db } = await requireTripContext();
+  const rows = await db.query.items.findMany({
+    where: eq(schema.items.tripId, trip.id),
+  });
+  const valid = new Set(rows.map((r) => r.id));
+  const ids = orderedIds.filter((id) => valid.has(id));
+  await Promise.all(
+    ids.map((id, i) =>
+      db
+        .update(schema.items)
+        .set({ sortOrder: i })
+        .where(eq(schema.items.id, id)),
+    ),
+  );
   revalidatePath("/items");
 }
 

@@ -124,3 +124,15 @@ export const IconSuitcase = (p: SVGProps<SVGSVGElement>) => (
     <path d="M9 7V5.5A2.5 2.5 0 0 1 11.5 3h1A2.5 2.5 0 0 1 15 5.5V7M8.5 7v13M15.5 7v13" />
   </Svg>
 );
+
+// ドラッグ用グリップ(6点)
+export const IconGrip = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p} fill="currentColor" stroke="none">
+    <circle cx="9" cy="6" r="1.7" />
+    <circle cx="15" cy="6" r="1.7" />
+    <circle cx="9" cy="12" r="1.7" />
+    <circle cx="15" cy="12" r="1.7" />
+    <circle cx="9" cy="18" r="1.7" />
+    <circle cx="15" cy="18" r="1.7" />
+  </Svg>
+);

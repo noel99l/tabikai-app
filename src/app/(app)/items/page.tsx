@@ -10,7 +10,7 @@ export default async function ItemsPage() {
   const [items, events, members] = await Promise.all([
     db.query.items.findMany({
       where: eq(schema.items.tripId, trip.id),
-      orderBy: (i, { asc }) => [asc(i.createdAt)],
+      orderBy: (i, { asc }) => [asc(i.sortOrder), asc(i.createdAt)],
     }),
     db.query.events.findMany({ where: eq(schema.events.tripId, trip.id) }),
     getApprovedMembers(),
