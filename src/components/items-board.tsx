@@ -27,7 +27,7 @@ const tabMeta: { key: Status; label: string; countCls: string }[] = [
   { key: "ready", label: "準備OK", countCls: "text-ok" },
 ];
 
-// 持ち物ボード: ステータスタブ+買い出しモード+掲載者への通知連携
+// 持ち物ボード: ステータスタブ+買い出しリスト+掲載者への通知連携
 export function ItemsBoard({
   items,
   selfId,
@@ -58,7 +58,7 @@ export function ItemsBoard({
     planned: merged.filter((i) => i.status === "planned"),
     ready: merged.filter((i) => i.status === "ready"),
   };
-  // 買い出しモードのリスト: 自分が買う予定+このセッションで購入済みにしたもの
+  // 買い出しリスト: 自分が買う予定+このセッションで購入済みにしたもの
   const shopList = merged.filter(
     (i) =>
       (i.status === "planned" && i.assigneeId === selfId && i.method === "buy") ||
@@ -91,6 +91,11 @@ export function ItemsBoard({
   const buyDone = (item: BoardItem) => {
     setSessionChecked((prev) => new Set(prev).add(item.id));
     mutate(item, "ready");
+  };
+
+  // 誤タップで購入済みにしてしまった場合の戻し(担当・買い出しはそのまま調達予定へ)
+  const buyUndo = (item: BoardItem) => {
+    mutate(item, "planned", "buy");
   };
 
   const renderCard = (i: BoardItem) => (
@@ -197,7 +202,7 @@ export function ItemsBoard({
         ))}
       </div>
 
-      {/* 買い出しモード */}
+      {/* 買い出しリスト */}
       <button
         onClick={() => {
           setSessionChecked(new Set());
@@ -206,7 +211,7 @@ export function ItemsBoard({
         className="mt-2 mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-primary bg-primary-soft py-3 text-[13.5px] font-bold text-primary"
       >
         <IconCart className="h-5 w-5" />
-        買い出しモード
+        買い出しリスト
         <span className="text-[11.5px] font-semibold">
           (買う物 {lists.planned.filter((i) => i.assigneeId === selfId && i.method === "buy").length}
           ・募集中 {lists.missing.length})
@@ -222,12 +227,12 @@ export function ItemsBoard({
       )}
       {tab === "missing" && lists.missing.length > 0 && (
         <p className="mx-0.5 mt-1 text-[11px] text-muted">
-          「買ってくる」を選ぶと買い出しモードのリストに入り、購入すると掲載した人へ通知されます。
+          「買ってくる」を選ぶと買い出しリストに入り、購入すると掲載した人へ通知されます。
         </p>
       )}
 
-      {/* 買い出しモード: 店頭でのチェックリスト */}
-      <Modal open={shopOpen} onClose={() => setShopOpen(false)} title="買い出しモード">
+      {/* 買い出しリスト: 店頭でのチェックリスト */}
+      <Modal open={shopOpen} onClose={() => setShopOpen(false)} title="買い出しリスト">
         <h3 className="mx-0.5 mb-2 text-[13px] font-bold text-muted">
           あなたの買い物リスト({shopList.length})
         </h3>
@@ -241,8 +246,7 @@ export function ItemsBoard({
             return (
               <button
                 key={i.id}
-                disabled={done}
-                onClick={() => buyDone(i)}
+                onClick={() => (done ? buyUndo(i) : buyDone(i))}
                 className={`mb-2 flex w-full items-center gap-3 rounded-xl border p-3.5 text-left ${
                   done ? "border-line bg-screen opacity-60" : "border-line bg-white"
                 }`}
@@ -265,11 +269,11 @@ export function ItemsBoard({
                     {i.eventTitle} · 掲載: {i.addedByName}
                   </span>
                 </span>
-                {!done && (
-                  <span className="shrink-0 text-[11px] font-bold text-ok">
-                    タップで購入済み
-                  </span>
-                )}
+                <span
+                  className={`shrink-0 text-[11px] font-bold ${done ? "text-muted" : "text-ok"}`}
+                >
+                  {done ? "タップで戻す" : "タップで購入済み"}
+                </span>
               </button>
             );
           })

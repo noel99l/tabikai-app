@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { approveShare, resolveShare } from "@/lib/actions/expenses";
-import { sinceLabel, yen } from "@/lib/format";
+import { fmtEventSpan, sinceLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function ApprovalsPage() {
@@ -18,6 +18,13 @@ export default async function ApprovalsPage() {
   });
   const expenseIds = expenses.map((e) => e.id);
   const expenseOf = (id: string) => expenses.find((e) => e.id === id);
+
+  // 費用に紐づくイベントのタイトル・日時表示用
+  const tripEvents = await db.query.events.findMany({
+    where: eq(schema.events.tripId, trip.id),
+  });
+  const eventOf = (id: string | null) =>
+    id ? tripEvents.find((e) => e.id === id) : undefined;
 
   // 自分の承認待ち
   const myPending = expenseIds.length
@@ -42,14 +49,7 @@ export default async function ApprovalsPage() {
       })
     : [];
   const myEventIds = new Set(
-    (
-      await db.query.events.findMany({
-        where: and(
-          eq(schema.events.tripId, trip.id),
-          eq(schema.events.hostId, user.id),
-        ),
-      })
-    ).map((e) => e.id),
+    tripEvents.filter((e) => e.hostId === user.id).map((e) => e.id),
   );
   const stale = staleAll.filter((s) => {
     const x = expenseOf(s.expenseId);
@@ -85,6 +85,7 @@ export default async function ApprovalsPage() {
       {myPending.map((s) => {
         const x = expenseOf(s.expenseId);
         if (!x) return null;
+        const ev = eventOf(x.eventId);
         return (
           <Card key={s.expenseId} className="mb-2.5">
             <div className="flex items-center justify-between gap-2">
@@ -96,6 +97,11 @@ export default async function ApprovalsPage() {
               </div>
               <Pill tone="pend">承認待ち</Pill>
             </div>
+            {ev && (
+              <div className="mt-2 rounded-lg bg-primary-soft px-2.5 py-1.5 text-[11.5px] font-semibold text-primary">
+                関連イベント: {ev.title}({fmtEventSpan(ev.startsAt, ev.endsAt, ev.allDay)})
+              </div>
+            )}
             <div className="my-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
               あなたの負担: <b className="tabular-nums">{yen(s.amount)}</b>
             </div>
@@ -111,6 +117,7 @@ export default async function ApprovalsPage() {
           <SectionTitle>主催者・管理者の操作(24時間以上未承認)</SectionTitle>
           {stale.map((s) => {
             const x = expenseOf(s.expenseId)!;
+            const ev = eventOf(x.eventId);
             return (
               <Card key={`${s.expenseId}-${s.userId}`} className="mb-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -119,6 +126,11 @@ export default async function ApprovalsPage() {
                     <div className="text-[11.5px] text-muted">
                       未承認: {nameOf(s.userId)} · 負担 {yen(s.amount)}
                     </div>
+                    {ev && (
+                      <div className="text-[11.5px] text-muted">
+                        関連イベント: {ev.title}({fmtEventSpan(ev.startsAt, ev.endsAt, ev.allDay)})
+                      </div>
+                    )}
                   </div>
                   <Pill tone="pend">放置 {sinceLabel(s.createdAt)}</Pill>
                 </div>

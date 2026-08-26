@@ -82,3 +82,18 @@ export function avatarColor(name: string) {
 export function jstDate(dateStr: string, timeStr: string) {
   return new Date(`${dateStr}T${timeStr}:00+09:00`);
 }
+
+// イベントの開催日時表示
+// 例: "10/10(土) 19:30–20:30" / 日跨ぎ "10/10(土) 23:00–10/11(日) 02:00" / 終日 "10/10(土) 終日"
+export function fmtEventSpan(start: Date, end: Date, allDay = false) {
+  if (allDay) {
+    // 終日イベントの終了は「終了日の翌日0:00」なので1ms戻して表示上の最終日を得る
+    const last = new Date(end.getTime() - 1);
+    return fmtDateLabel(start) === fmtDateLabel(last)
+      ? `${fmtDateLabel(start)} 終日`
+      : `${fmtDateLabel(start)}–${fmtDateLabel(last)} 終日`;
+  }
+  return fmtDateLabel(start) === fmtDateLabel(end)
+    ? `${fmtDateLabel(start)} ${fmtTime(start)}–${fmtTime(end)}`
+    : `${fmtDateTime(start)}–${fmtDateTime(end)}`;
+}

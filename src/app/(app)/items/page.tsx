@@ -24,7 +24,7 @@ export default async function ItemsPage() {
     <>
       <AppHeader title="持ち物リスト" />
       <p className="mx-0.5 mb-2.5 text-[12.5px] text-muted">
-        足りないものを掲載して、持参か買い出しで調達。買い物中は「買い出しモード」が便利です。
+        足りないものを掲載して、持参か買い出しで調達。買い物中は「買い出しリスト」が便利です。
       </p>
 
       <ItemsBoard

@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ExpenseCreateFab } from "@/components/expense-create";
@@ -25,6 +25,18 @@ export default async function ExpensesPage() {
         where: inArray(
           schema.expenseShares.expenseId,
           expenses.map((e) => e.id),
+        ),
+      })
+    : [];
+  // 費用フォームの「イベントの参加者から選択」用に参加登録者を取得
+  const participants = tripEvents.length
+    ? await db.query.eventParticipants.findMany({
+        where: and(
+          inArray(
+            schema.eventParticipants.eventId,
+            tripEvents.map((e) => e.id),
+          ),
+          eq(schema.eventParticipants.status, "joined"),
         ),
       })
     : [];
@@ -135,7 +147,16 @@ export default async function ExpensesPage() {
 
       <ExpenseCreateFab
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
-        events={tripEvents.map((e) => ({ id: e.id, title: e.title }))}
+        events={tripEvents.map((e) => ({
+          id: e.id,
+          title: e.title,
+          startMs: e.startsAt.getTime(),
+          endMs: e.endsAt.getTime(),
+          allDay: e.allDay,
+          participantIds: participants
+            .filter((p) => p.eventId === e.id)
+            .map((p) => p.userId),
+        }))}
         selfId={user.id}
       />
     </>

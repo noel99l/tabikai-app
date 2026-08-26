@@ -2,12 +2,22 @@
 
 import { useRef, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
+import { fmtEventSpan } from "@/lib/format";
 import { Spinner } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
 
+export type ExpenseEventOption = {
+  id: string;
+  title: string;
+  startMs: number;
+  endMs: number;
+  allDay: boolean;
+  participantIds: string[]; // 参加登録済みメンバー
+};
+
 type Props = {
   members: { userId: string; name: string }[];
-  events: { id: string; title: string }[];
+  events: ExpenseEventOption[];
   selfId: string;
   onSuccess?: () => void;
 };
@@ -17,6 +27,29 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false); // 二重送信防止(状態更新前の連打を弾く)
+
+  // 負担メンバーの選び方: 個別に選択(デフォルト) / イベントの参加者から自動選択
+  const [pickMode, setPickMode] = useState<"members" | "event">("members");
+  const [eventId, setEventId] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(() => new Set([selfId]));
+
+  const currentEvent = events.find((e) => e.id === eventId);
+  const participantIds = new Set(currentEvent?.participantIds ?? []);
+
+  const applyEventMembers = (evId: string) => {
+    const ev = events.find((e) => e.id === evId);
+    if (ev) {
+      setSelected(new Set(ev.participantIds.length ? ev.participantIds : [selfId]));
+    }
+  };
+  const toggleMember = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <form
@@ -84,33 +117,94 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
       {!splitAll && (
         <>
           <label className={labelCls} htmlFor="eventId">関連イベント(個別割り勘では必須)</label>
-          <select className={inputCls} id="eventId" name="eventId" required>
+          <select
+            className={inputCls}
+            id="eventId"
+            name="eventId"
+            required
+            value={eventId}
+            onChange={(e) => {
+              setEventId(e.target.value);
+              if (pickMode === "event") applyEventMembers(e.target.value);
+            }}
+          >
             <option value="">選択してください</option>
             {events.map((e) => (
-              <option key={e.id} value={e.id}>{e.title}</option>
+              <option key={e.id} value={e.id}>
+                {e.title} · {fmtEventSpan(new Date(e.startMs), new Date(e.endMs), e.allDay)}
+              </option>
             ))}
           </select>
           <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
             未承認のまま24時間経過するとイベント主催者と管理者に通知され、承認状況を操作できます。
           </p>
 
+          <label className={labelCls}>負担するメンバーの選び方</label>
+          <div className="grid grid-cols-2 gap-1 rounded-[10px] border border-line bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setPickMode("members")}
+              className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
+                pickMode === "members" ? "bg-primary text-white" : "text-muted"
+              }`}
+            >
+              個別に選択
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPickMode("event");
+                if (eventId) applyEventMembers(eventId);
+              }}
+              className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
+                pickMode === "event" ? "bg-primary text-white" : "text-muted"
+              }`}
+            >
+              イベントの参加者
+            </button>
+          </div>
+          {pickMode === "event" && (
+            <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
+              {eventId
+                ? "参加者を自動選択しました。薄い表示の不参加メンバーもタップで追加できます。"
+                : "関連イベントを選ぶと、その参加者が自動で選択されます。"}
+            </p>
+          )}
+
           <label className={labelCls}>負担するメンバー</label>
           <div className="flex flex-wrap gap-1.5">
-            {members.map((m) => (
-              <label
-                key={m.userId}
-                className="flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-[12.5px] has-checked:border-primary has-checked:bg-primary has-checked:text-white"
-              >
-                <input
-                  type="checkbox"
-                  name="memberIds"
-                  value={m.userId}
-                  defaultChecked={m.userId === selfId}
-                  className="sr-only"
-                />
-                {m.name}
-              </label>
-            ))}
+            {members.map((m) => {
+              const checked = selected.has(m.userId);
+              // イベント参加者モードでは、不参加メンバーを非アクティブ(減光)で
+              // 表示しつつタップで追加選択できるようにする
+              const inactive =
+                pickMode === "event" &&
+                !!eventId &&
+                !participantIds.has(m.userId) &&
+                !checked;
+              return (
+                <label
+                  key={m.userId}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] ${
+                    checked
+                      ? "border-primary bg-primary text-white"
+                      : inactive
+                        ? "border-dashed border-line bg-white text-muted opacity-45"
+                        : "border-line bg-white"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    name="memberIds"
+                    value={m.userId}
+                    checked={checked}
+                    onChange={() => toggleMember(m.userId)}
+                    className="sr-only"
+                  />
+                  {m.name}
+                </label>
+              );
+            })}
           </div>
           <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
             個別指定の費用は、各メンバーの承認後に確定します(立替者本人は承認不要)。

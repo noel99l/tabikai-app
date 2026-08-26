@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ExpenseForm } from "./expense-form";
+import { ExpenseForm, type ExpenseEventOption } from "./expense-form";
 import { Fab, Modal } from "./modal";
 
 type Props = {
   members: { userId: string; name: string }[];
-  events: { id: string; title: string }[];
+  events: ExpenseEventOption[];
   selfId: string;
 };
 
