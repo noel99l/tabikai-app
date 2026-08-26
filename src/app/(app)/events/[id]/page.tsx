@@ -7,13 +7,14 @@ import { IconBack, IconPlus } from "@/components/icons";
 import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
+import { EventEdit } from "@/components/event-edit";
 import {
   addParticipants,
   deleteEvent,
   joinEvent,
   toggleReminder,
 } from "@/lib/actions/events";
-import { fmtDateLabel, fmtTime } from "@/lib/format";
+import { fmtDateLabel, fmtTime, jstDateKey } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function EventDetailPage({
@@ -29,8 +30,11 @@ export default async function EventDetailPage({
   });
   if (!event) notFound();
 
-  const [venue, host, participants, members] = await Promise.all([
-    db.query.venues.findFirst({ where: eq(schema.venues.id, event.venueId) }),
+  const [venues, host, participants, members] = await Promise.all([
+    db.query.venues.findMany({
+      where: eq(schema.venues.tripId, trip.id),
+      orderBy: (v, { asc }) => [asc(v.sortOrder)],
+    }),
     db.query.users.findFirst({ where: eq(schema.users.id, event.hostId) }),
     db
       .select({
@@ -51,6 +55,18 @@ export default async function EventDetailPage({
   const nonParticipants = members.filter(
     (m) => !joined.some((p) => p.userId === m.userId),
   );
+  const venue = venues.find((v) => v.id === event.venueId);
+
+  // 編集フォーム用: 旅程から日付タブを生成(予定表と同じ範囲)
+  const days: { key: string; label: string }[] = [];
+  for (
+    let t = new Date(trip.startsAt);
+    days.length < 14;
+    t = new Date(t.getTime() + 86400000)
+  ) {
+    days.push({ key: jstDateKey(t), label: fmtDateLabel(t) });
+    if (jstDateKey(t) === jstDateKey(trip.endsAt)) break;
+  }
 
   return (
     <>
@@ -153,11 +169,33 @@ export default async function EventDetailPage({
       )}
 
       {canManage && (
-        <form action={deleteEvent.bind(null, id)} className="mt-6 text-center">
-          <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
-            このイベントを削除する(参加者にお知らせが届きます)
-          </SubmitButton>
-        </form>
+        <>
+          <EventEdit
+            eventId={id}
+            venues={venues.map((v) => ({ id: v.id, name: v.name }))}
+            days={days}
+            defaults={{
+              title: event.title,
+              description: event.description ?? "",
+              venueId: event.venueId,
+              date: jstDateKey(event.startsAt),
+              // 終日イベントの終了は翌日0:00なので、表示上の最終日に戻す
+              endDate: jstDateKey(
+                event.allDay
+                  ? new Date(event.endsAt.getTime() - 1)
+                  : event.endsAt,
+              ),
+              start: fmtTime(event.startsAt),
+              end: fmtTime(event.endsAt),
+              allDay: event.allDay,
+            }}
+          />
+          <form action={deleteEvent.bind(null, id)} className="mt-4 text-center">
+            <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
+              このイベントを削除する(参加者にお知らせが届きます)
+            </SubmitButton>
+          </form>
+        </>
       )}
     </>
   );

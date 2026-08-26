@@ -142,6 +142,91 @@ export async function addParticipants(formData: FormData) {
   revalidatePath(`/events/${eventId}`);
 }
 
+// イベントの編集(タイトル・会場・日時・説明)。主催者・管理者のみ。
+export async function updateEvent(eventId: string, formData: FormData) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event || event.tripId !== trip.id) {
+    return { error: "イベントが見つかりません" };
+  }
+  if (event.hostId !== user.id && !isAdmin) {
+    return { error: "主催者または管理者のみ編集できます" };
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const venueId = String(formData.get("venueId") ?? "");
+  const date = String(formData.get("date") ?? "");
+  const endDate = String(formData.get("endDate") ?? "") || date;
+  const start = String(formData.get("start") ?? "");
+  const end = String(formData.get("end") ?? "");
+  const allDay = formData.get("allDay") === "on";
+  const description = String(formData.get("description") ?? "").trim() || null;
+  if (!title || !venueId || !date) {
+    return { error: "入力が不足しています" };
+  }
+
+  let startsAt: Date;
+  let endsAt: Date;
+  if (allDay) {
+    startsAt = jstDate(date, "00:00");
+    endsAt = new Date(jstDate(endDate, "00:00").getTime() + 24 * 60 * 60 * 1000);
+    if (endsAt <= startsAt) {
+      return { error: "終了日は開始日以降にしてください" };
+    }
+  } else {
+    if (!start || !end) return { error: "開始・終了時刻を入力してください" };
+    startsAt = jstDate(date, start);
+    endsAt = jstDate(endDate, end);
+    if (endsAt <= startsAt) {
+      return { error: "終了日時は開始より後にしてください" };
+    }
+  }
+
+  const timeChanged = startsAt.getTime() !== event.startsAt.getTime();
+  await db
+    .update(schema.events)
+    .set({
+      title,
+      venueId,
+      startsAt,
+      endsAt,
+      allDay,
+      description,
+      // 開始日時が変わった場合はリマインド送信済みフラグを解除して再送対象にする
+      ...(timeChanged ? { reminderSentAt: null } : {}),
+    })
+    .where(eq(schema.events.id, eventId));
+
+  // 参加登録者(操作者以外)へ変更を通知
+  const venue = await db.query.venues.findFirst({
+    where: eq(schema.venues.id, venueId),
+  });
+  const parts = await db.query.eventParticipants.findMany({
+    where: and(
+      eq(schema.eventParticipants.eventId, eventId),
+      eq(schema.eventParticipants.status, "joined"),
+      ne(schema.eventParticipants.userId, user.id),
+    ),
+  });
+  await notify(
+    db,
+    trip.id,
+    parts.map((p) => p.userId),
+    {
+      type: "event_invite",
+      title: `「${title}」の内容が変更されました`,
+      body: `${fmtDateTime(startsAt)} · ${venue?.name ?? ""}`,
+      link: `/events/${eventId}`,
+      senderId: user.id,
+    },
+  );
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/schedule");
+  revalidatePath("/");
+}
+
 // イベントのドラッグ移動(会場・開始時刻の変更、所要時間は維持)。主催者・管理者のみ。
 export async function moveEvent(
   eventId: string,
