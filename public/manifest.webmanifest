@@ -1,7 +1,7 @@
 {
-  "name": "突然の旅会2026",
-  "short_name": "旅会2026",
-  "description": "団体旅行企画「突然の旅会2026」のイベント・費用管理アプリ",
+  "name": "突然の旅会アプリ",
+  "short_name": "旅会アプリ",
+  "description": "団体旅行企画のイベント・費用管理アプリ「突然の旅会アプリ」",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F4F6F8",

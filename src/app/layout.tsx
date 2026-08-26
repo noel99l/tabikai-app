@@ -3,13 +3,13 @@ import "./globals.css";
 import { PwaRegister } from "@/components/pwa-register";
 
 export const metadata: Metadata = {
-  title: "突然の旅会2026",
-  description: "団体旅行企画「突然の旅会2026」のイベント・費用管理アプリ",
+  title: "突然の旅会アプリ",
+  description: "団体旅行企画のイベント・費用管理アプリ「突然の旅会アプリ」",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "旅会2026",
+    title: "旅会アプリ",
   },
   icons: {
     icon: [

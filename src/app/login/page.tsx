@@ -16,7 +16,7 @@ export default async function LoginPage() {
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pb-20">
       <div className="mb-6 text-center">
         <IconSuitcase className="mx-auto h-12 w-12 text-primary" strokeWidth={1.6} />
-        <h1 className="mt-2.5 text-[22px] font-bold">突然の旅会2026</h1>
+        <h1 className="mt-2.5 text-[22px] font-bold">突然の旅会アプリ</h1>
         <p className="text-[13px] text-muted">招待メンバー専用アプリ</p>
       </div>
 
