@@ -54,3 +54,23 @@ input[type="time"] {
   appearance: none;
   min-width: 0;
 }
+
+/* モーダルの「飛び出す」アニメーション */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(48px) scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

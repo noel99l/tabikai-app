@@ -770,8 +770,6 @@ export function ScheduleView({
                         marginLeft: `calc(${(lane.lane * 100) / lane.lanes}% + 2px)`,
                         marginTop: 2,
                         marginBottom: 2,
-                        // ステッカーらしさ: 列ごとにわずかに傾ける
-                        rotate: `${(col + lane.lane) % 2 === 0 ? -0.8 : 0.8}deg`,
                         // 主催者・管理者はタッチでもドラッグ移動できるようスクロールを無効化
                         touchAction:
                           e.canManage && !e.continuesBefore && !e.continuesAfter
@@ -799,7 +797,7 @@ export function ScheduleView({
                   style={{ top: nowY, left: 0 }}
                 >
                   <div className="flex items-center">
-                    <span className="-rotate-2 rounded-full border-2 border-line bg-primary px-1.5 py-px text-[9px] font-bold text-white tabular-nums">
+                    <span className="rounded-full border-2 border-line bg-primary px-1.5 py-px text-[9px] font-bold text-white tabular-nums">
                       {nowLabel}
                     </span>
                     <span className="h-[3px] flex-1 bg-primary" />
