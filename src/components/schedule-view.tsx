@@ -10,6 +10,7 @@ import {
   useTransition,
 } from "react";
 import { moveEvent } from "@/lib/actions/events";
+import { EventIcon, eventColorClass } from "./event-icons";
 import { EventForm } from "./event-form";
 import { Fab, Modal } from "./modal";
 
@@ -20,6 +21,8 @@ export type ViewEvent = {
   startMs: number;
   endMs: number;
   allDay: boolean;
+  color: string | null;
+  icon: string | null;
   joined: number;
   mine: boolean; // 自分が参加登録済み
   canManage: boolean; // 主催者 or 管理者(ドラッグ移動可)
@@ -643,10 +646,11 @@ export function ScheduleView({
                         <Link
                           key={e.id}
                           href={`/events/${e.id}`}
-                          className={`mb-1 block truncate rounded-lg border-2 border-line px-1.5 py-0.5 text-[9.5px] font-bold shadow-[2px_2px_0_var(--color-line)] ${colorClasses[i % colorClasses.length]} ${
+                          className={`mb-1 block truncate rounded-lg border-2 border-line px-1.5 py-0.5 text-[9.5px] font-bold shadow-[2px_2px_0_var(--color-line)] ${eventColorClass(e.color) ?? colorClasses[i % colorClasses.length]} ${
                             highlightMine && !e.mine ? "opacity-25" : ""
                           }`}
                         >
+                          <EventIcon icon={e.icon} className="mr-0.5 inline h-3 w-3 align-[-2px]" />
                           {e.title}
                         </Link>
                       ))}
@@ -760,7 +764,7 @@ export function ScheduleView({
                           suppressClick.current = false;
                         }
                       }}
-                      className={`relative overflow-hidden rounded-[10px] border-2 border-line px-1.5 py-1 text-left text-[10px] leading-tight font-bold shadow-[2px_2px_0_var(--color-line)] ${colorClasses[col % colorClasses.length]} ${
+                      className={`relative overflow-hidden rounded-[10px] border-2 border-line px-1.5 py-1 text-left text-[10px] leading-tight font-bold shadow-[2px_2px_0_var(--color-line)] ${eventColorClass(e.color) ?? colorClasses[col % colorClasses.length]} ${
                         isMovingThis ? "opacity-40" : faded ? "opacity-25" : ""
                       }`}
                       style={{
@@ -781,6 +785,7 @@ export function ScheduleView({
                         <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-current" />
                       )}
                       {e.continuesBefore && <span className="opacity-70">↑前日から </span>}
+                      <EventIcon icon={e.icon} className="mr-0.5 inline h-3 w-3 align-[-2px]" />
                       {e.title}
                       <span className="block text-[9px] font-bold opacity-85">
                         {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}

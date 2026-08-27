@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { SubmitButton } from "./submit-button";
 import { Avatar, btnCls, inputCls, labelCls } from "./ui";
 
 const EMOJI_CHOICES = [
@@ -25,7 +26,6 @@ export function ProfileForm({
   const [name, setName] = useState(defaultName);
   const [emoji, setEmoji] = useState<string | null>(defaultEmoji ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const submitting = useRef(false);
 
   return (
@@ -33,13 +33,11 @@ export function ProfileForm({
       action={async (formData) => {
         if (submitting.current) return;
         submitting.current = true;
-        setPending(true);
         setError(null);
         try {
           const res = await action(formData);
           if (res?.error) {
             setError(res.error);
-            setPending(false);
             submitting.current = false;
           }
           // 成功時は action 内で redirect / revalidate される
@@ -54,7 +52,6 @@ export function ProfileForm({
             throw err;
           }
           setError("保存に失敗しました。");
-          setPending(false);
           submitting.current = false;
         }
       }}
@@ -109,9 +106,7 @@ export function ProfileForm({
         </p>
       )}
 
-      <button className={`${btnCls} mt-5 w-full py-3.5`} disabled={pending}>
-        {pending ? "保存中…" : submitLabel}
-      </button>
+      <SubmitButton className={`${btnCls} mt-5 w-full py-3.5`}>{submitLabel}</SubmitButton>
     </form>
   );
 }

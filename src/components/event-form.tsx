@@ -2,7 +2,14 @@
 
 import { useRef, useState } from "react";
 import { createEvent } from "@/lib/actions/events";
-import { Spinner } from "./submit-button";
+import {
+  EVENT_COLORS,
+  EVENT_ICON_KEYS,
+  EVENT_ICON_LABELS,
+  EventIcon,
+  eventSwatchClass,
+} from "./event-icons";
+import { SubmitButton } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -17,32 +24,40 @@ type Props = {
 };
 
 export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
-  const [inviteAll, setInviteAll] = useState(true);
+  // 招待: デフォルトは「個別に招待」
+  const [inviteMode, setInviteMode] = useState<"members" | "all">("members");
+  const [invitees, setInvitees] = useState<Set<string>>(() => new Set());
   const [allDay, setAllDay] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [color, setColor] = useState("red");
+  const [icon, setIcon] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+
+  const toggleInvitee = (id: string) => {
+    setInvitees((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <form
       action={async (formData) => {
         if (submitting.current) return;
         submitting.current = true;
-        setPending(true);
         setError(null);
         try {
           const res = await createEvent(formData);
           if (res?.error) {
             setError(res.error);
-            setPending(false);
             submitting.current = false;
           } else {
-            setPending(false);
             onSuccess?.();
           }
         } catch {
           setError("作成に失敗しました。時間をおいて再度お試しください。");
-          setPending(false);
           submitting.current = false;
         }
       }}
@@ -107,35 +122,106 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
       <label className={labelCls} htmlFor="description">説明(任意)</label>
       <input className={inputCls} id="description" name="description" placeholder="持ち物や集合場所など" />
 
-      <label className="mt-4 flex items-start gap-2.5 rounded-[10px] bg-primary-soft p-3">
-        <input
-          type="checkbox"
-          name="inviteAll"
-          checked={inviteAll}
-          onChange={(e) => setInviteAll(e.target.checked)}
-          className="mt-0.5 h-5 w-5 accent-primary"
-        />
-        <span>
-          <span className="block text-[13px] font-bold">全員を招待する</span>
-          <span className="block text-[11.5px] text-primary">
-            オフにすると招待するメンバーを個別に選べます。
-          </span>
-        </span>
-      </label>
+      {/* 予定表での見た目: カラー+アイコン */}
+      <label className={labelCls}>カレンダーのカラー</label>
+      <input type="hidden" name="color" value={color} />
+      <div className="flex gap-2.5">
+        {EVENT_COLORS.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            aria-label={c.label}
+            onClick={() => setColor(c.key)}
+            className={`h-9 w-9 rounded-full border-2 border-line ${eventSwatchClass(c.key)} ${
+              color === c.key
+                ? "shadow-[2px_2px_0_var(--color-line)] ring-2 ring-ink ring-offset-2 ring-offset-screen"
+                : "opacity-70"
+            }`}
+          />
+        ))}
+      </div>
 
-      {!inviteAll && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+      <label className={labelCls}>カレンダーのアイコン(任意)</label>
+      <input type="hidden" name="icon" value={icon ?? ""} />
+      <div className="grid grid-cols-6 gap-1.5">
+        <button
+          type="button"
+          onClick={() => setIcon(null)}
+          className={`flex aspect-square items-center justify-center rounded-lg border-2 text-[10px] font-bold ${
+            icon === null ? "border-line bg-ink text-screen" : "border-line bg-white text-muted"
+          }`}
+        >
+          なし
+        </button>
+        {EVENT_ICON_KEYS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            aria-label={EVENT_ICON_LABELS[k] ?? k}
+            onClick={() => setIcon(k)}
+            className={`flex aspect-square items-center justify-center rounded-lg border-2 ${
+              icon === k ? "border-line bg-ink text-screen" : "border-line bg-white text-ink"
+            }`}
+          >
+            <EventIcon icon={k} className="h-5 w-5" />
+          </button>
+        ))}
+      </div>
+
+      {/* 招待(費用の「選び方」と同じセグメントUI。デフォルトは個別に招待) */}
+      <label className={labelCls}>招待するメンバー</label>
+      <div className="grid grid-cols-2 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
+        <button
+          type="button"
+          onClick={() => setInviteMode("members")}
+          className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
+            inviteMode === "members" ? "bg-ink text-screen" : "text-muted"
+          }`}
+        >
+          個別に招待
+        </button>
+        <button
+          type="button"
+          onClick={() => setInviteMode("all")}
+          className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
+            inviteMode === "all" ? "bg-ink text-screen" : "text-muted"
+          }`}
+        >
+          全員を招待
+        </button>
+      </div>
+      <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
+        {inviteMode === "all"
+          ? "承認済みメンバー全員に招待のお知らせ+通知が届きます。"
+          : "選んだメンバーにだけ招待が届きます(あとから参加者の追加もできます)。"}
+      </p>
+      {inviteMode === "all" && <input type="hidden" name="inviteAll" value="on" />}
+
+      {inviteMode === "members" && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {members
             .filter((m) => m.userId !== selfId)
-            .map((m) => (
-              <label
-                key={m.userId}
-                className="flex items-center gap-1.5 rounded-full border-2 border-line bg-white px-3 py-1.5 text-[12.5px] font-bold has-checked:bg-primary has-checked:text-white"
-              >
-                <input type="checkbox" name="memberIds" value={m.userId} className="sr-only" />
-                {m.name}
-              </label>
-            ))}
+            .map((m) => {
+              const checked = invitees.has(m.userId);
+              return (
+                <label
+                  key={m.userId}
+                  className={`flex items-center gap-1.5 rounded-full border-2 border-line px-3 py-1.5 text-[12.5px] font-bold ${
+                    checked ? "bg-primary text-white" : "bg-white"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    name="memberIds"
+                    value={m.userId}
+                    checked={checked}
+                    onChange={() => toggleInvitee(m.userId)}
+                    className="sr-only"
+                  />
+                  {m.name}
+                </label>
+              );
+            })}
         </div>
       )}
 
@@ -150,13 +236,9 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         </p>
       )}
 
-      <button
-        className={`${btnCls} mt-3 flex w-full items-center justify-center gap-2 py-3.5`}
-        disabled={pending}
-      >
-        {pending && <Spinner />}
-        {pending ? "作成中…" : "会場を予約してイベントを作成"}
-      </button>
+      <SubmitButton className={`${btnCls} mt-3 w-full py-3.5`}>
+        会場を予約してイベントを作成
+      </SubmitButton>
     </form>
   );
 }

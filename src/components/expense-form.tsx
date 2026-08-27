@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
 import { fmtEventSpan } from "@/lib/format";
-import { Spinner } from "./submit-button";
+import { SubmitButton } from "./submit-button";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 export type ExpenseEventOption = {
@@ -33,7 +33,6 @@ const MODE_LABELS: { key: PickMode; label: string }[] = [
 
 export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
   const [mode, setMode] = useState<PickMode>("all");
-  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false); // 二重送信防止(状態更新前の連打を弾く)
 
@@ -63,21 +62,17 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
       action={async (formData) => {
         if (submitting.current) return;
         submitting.current = true;
-        setPending(true);
         setError(null);
         try {
           const res = await createExpense(formData);
           if (res?.error) {
             setError(res.error);
-            setPending(false);
             submitting.current = false;
           } else {
-            setPending(false);
             onSuccess?.();
           }
         } catch {
           setError("登録に失敗しました。時間をおいて再度お試しください。");
-          setPending(false);
           submitting.current = false;
         }
       }}
@@ -212,13 +207,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
         </p>
       )}
 
-      <button
-        className={`${btnCls} mt-4 flex w-full items-center justify-center gap-2 py-3.5`}
-        disabled={pending}
-      >
-        {pending && <Spinner />}
-        {pending ? "登録中…" : "登録する"}
-      </button>
+      <SubmitButton className={`${btnCls} mt-4 w-full py-3.5`}>登録する</SubmitButton>
     </form>
   );
 }

@@ -141,6 +141,8 @@ export const events = pgTable("events", {
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
   allDay: boolean("all_day").default(false).notNull(), // 期間指定の終日利用
+  color: text("color"), // 予定表での表示カラー(event-icons.tsx のキー。null=会場列の既定色)
+  icon: text("icon"), // 予定表での表示アイコン(event-icons.tsx のキー。null=なし)
   hostId: uuid("host_id")
     .notNull()
     .references(() => users.id),

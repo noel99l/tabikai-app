@@ -2,8 +2,15 @@
 
 import { useRef, useState } from "react";
 import { updateEvent } from "@/lib/actions/events";
+import {
+  EVENT_COLORS,
+  EVENT_ICON_KEYS,
+  EVENT_ICON_LABELS,
+  EventIcon,
+  eventSwatchClass,
+} from "./event-icons";
 import { Modal } from "./modal";
-import { Spinner } from "./submit-button";
+import { SubmitButton } from "./submit-button";
 import { btnCls, btnGhostCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -19,6 +26,8 @@ type Props = {
     start: string;
     end: string;
     allDay: boolean;
+    color: string | null;
+    icon: string | null;
   };
 };
 
@@ -26,7 +35,8 @@ type Props = {
 export function EventEdit({ eventId, venues, days, defaults }: Props) {
   const [open, setOpen] = useState(false);
   const [allDay, setAllDay] = useState(defaults.allDay);
-  const [pending, setPending] = useState(false);
+  const [color, setColor] = useState(defaults.color ?? "red");
+  const [icon, setIcon] = useState<string | null>(defaults.icon);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
 
@@ -41,7 +51,6 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
           action={async (formData) => {
             if (submitting.current) return;
             submitting.current = true;
-            setPending(true);
             setError(null);
             try {
               const res = await updateEvent(eventId, formData);
@@ -53,7 +62,6 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
             } catch {
               setError("保存に失敗しました。時間をおいて再度お試しください。");
             } finally {
-              setPending(false);
               submitting.current = false;
             }
           }}
@@ -148,6 +156,51 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
             )}
           </div>
 
+          <label className={labelCls}>カレンダーのカラー</label>
+          <input type="hidden" name="color" value={color} />
+          <div className="flex gap-2.5">
+            {EVENT_COLORS.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                aria-label={c.label}
+                onClick={() => setColor(c.key)}
+                className={`h-9 w-9 rounded-full border-2 border-line ${eventSwatchClass(c.key)} ${
+                  color === c.key
+                    ? "shadow-[2px_2px_0_var(--color-line)] ring-2 ring-ink ring-offset-2 ring-offset-screen"
+                    : "opacity-70"
+                }`}
+              />
+            ))}
+          </div>
+
+          <label className={labelCls}>カレンダーのアイコン(任意)</label>
+          <input type="hidden" name="icon" value={icon ?? ""} />
+          <div className="grid grid-cols-6 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIcon(null)}
+              className={`flex aspect-square items-center justify-center rounded-lg border-2 text-[10px] font-bold ${
+                icon === null ? "border-line bg-ink text-screen" : "border-line bg-white text-muted"
+              }`}
+            >
+              なし
+            </button>
+            {EVENT_ICON_KEYS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                aria-label={EVENT_ICON_LABELS[k] ?? k}
+                onClick={() => setIcon(k)}
+                className={`flex aspect-square items-center justify-center rounded-lg border-2 ${
+                  icon === k ? "border-line bg-ink text-screen" : "border-line bg-white text-ink"
+                }`}
+              >
+                <EventIcon icon={k} className="h-5 w-5" />
+              </button>
+            ))}
+          </div>
+
           <label className={labelCls} htmlFor="e-description">説明(任意)</label>
           <input
             className={inputCls}
@@ -167,13 +220,9 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
             </p>
           )}
 
-          <button
-            className={`${btnCls} mt-3 flex w-full items-center justify-center gap-2 py-3.5`}
-            disabled={pending}
-          >
-            {pending && <Spinner />}
-            {pending ? "保存中…" : "変更を保存する"}
-          </button>
+          <SubmitButton className={`${btnCls} mt-3 w-full py-3.5`}>
+            変更を保存する
+          </SubmitButton>
         </form>
       </Modal>
     </>

@@ -6,6 +6,7 @@ import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
 import { EventEdit } from "@/components/event-edit";
+import { EventIcon } from "@/components/event-icons";
 import {
   addParticipants,
   deleteEvent,
@@ -65,7 +66,10 @@ export async function EventDetail({ id }: { id: string }) {
   return (
     <>
       <div className="mt-1 mb-3.5 border-l-4 border-l-primary pl-3">
-        <h2 className="text-xl font-bold">{event.title}</h2>
+        <h2 className="flex items-center gap-1.5 text-xl font-bold">
+          <EventIcon icon={event.icon} className="h-5 w-5 shrink-0" />
+          {event.title}
+        </h2>
         <p className="text-[13px] text-muted">
           {fmtDateLabel(event.startsAt)} {fmtTime(event.startsAt)} – {fmtTime(event.endsAt)}
         </p>
@@ -173,6 +177,8 @@ export async function EventDetail({ id }: { id: string }) {
               start: fmtTime(event.startsAt),
               end: fmtTime(event.endsAt),
               allDay: event.allDay,
+              color: event.color,
+              icon: event.icon,
             }}
           />
           <form action={deleteEvent.bind(null, id)} className="mt-4 pb-2 text-center">

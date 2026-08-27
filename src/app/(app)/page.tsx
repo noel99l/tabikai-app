@@ -33,6 +33,8 @@ export default async function DashboardPage() {
         and(
           eq(schema.events.tripId, trip.id),
           eq(schema.eventParticipants.userId, user.id),
+          // 終日(会場確保)の予定は「次の予定」に出さない
+          eq(schema.events.allDay, false),
           gte(schema.events.endsAt, new Date()),
         ),
       )

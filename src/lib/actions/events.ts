@@ -7,6 +7,17 @@ import { schema } from "@/db";
 import { fmtDateTime, jstDate } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
+import { EVENT_COLORS, EVENT_ICON_KEYS } from "@/components/event-icons";
+
+// フォームからのカラー/アイコンを許可リストで検証
+function parseAppearance(formData: FormData) {
+  const rawColor = String(formData.get("color") ?? "");
+  const rawIcon = String(formData.get("icon") ?? "");
+  return {
+    color: EVENT_COLORS.some((c) => c.key === rawColor) ? rawColor : null,
+    icon: EVENT_ICON_KEYS.includes(rawIcon) ? rawIcon : null,
+  };
+}
 
 export async function createEvent(formData: FormData) {
   const { user, trip, db } = await requireTripContext();
@@ -43,6 +54,7 @@ export async function createEvent(formData: FormData) {
     // 同一会場・同一時間帯の重複は許可(並行開催OK)。予定表では横並びで表示する
   }
 
+  const { color, icon } = parseAppearance(formData);
   const [event] = await db
     .insert(schema.events)
     .values({
@@ -53,6 +65,8 @@ export async function createEvent(formData: FormData) {
       startsAt,
       endsAt,
       allDay,
+      color,
+      icon,
       hostId: user.id,
       inviteAll,
     })
@@ -185,6 +199,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   }
 
   const timeChanged = startsAt.getTime() !== event.startsAt.getTime();
+  const { color, icon } = parseAppearance(formData);
   await db
     .update(schema.events)
     .set({
@@ -193,6 +208,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
       startsAt,
       endsAt,
       allDay,
+      color,
+      icon,
       description,
       // 開始日時が変わった場合はリマインド送信済みフラグを解除して再送対象にする
       ...(timeChanged ? { reminderSentAt: null } : {}),

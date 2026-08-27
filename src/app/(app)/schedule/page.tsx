@@ -23,6 +23,8 @@ export default async function SchedulePage() {
         startsAt: schema.events.startsAt,
         endsAt: schema.events.endsAt,
         allDay: schema.events.allDay,
+        color: schema.events.color,
+        icon: schema.events.icon,
         hostId: schema.events.hostId,
         joined: count(schema.eventParticipants.userId),
         // 自分が参加登録済みか(別クエリを往復させず集約で判定)
@@ -71,6 +73,8 @@ export default async function SchedulePage() {
             startMs: e.startsAt.getTime(),
             endMs: e.endsAt.getTime(),
             allDay: e.allDay,
+            color: e.color,
+            icon: e.icon,
             joined: e.joined,
             mine: e.mine,
             canManage: e.hostId === user.id || isAdmin,
