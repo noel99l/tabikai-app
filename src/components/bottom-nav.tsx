@@ -33,6 +33,9 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
+              // 下部タブは常に見えているので、動的ページも本文まで事前取得して
+              // 初回遷移からキャッシュ表示できるようにする
+              prefetch={true}
               className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] ${
                 active ? "bg-ink font-bold text-screen" : "text-muted"
               }`}

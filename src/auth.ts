@@ -10,6 +10,9 @@ const googleSecret = process.env.AUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT
 const hasGoogle = !!googleId && !!googleSecret;
 
 // Google OAuth 未設定のローカル開発時のみ、名前+メールだけの開発用ログインを有効化
+// (ALLOW_DEV_LOGIN=1 でローカルの本番ビルド検証時にも許可。Vercelでは未設定のため無効)
+const allowDevLogin =
+  process.env.NODE_ENV !== "production" || process.env.ALLOW_DEV_LOGIN === "1";
 const devProvider = Credentials({
   id: "dev",
   name: "開発用ログイン",
@@ -18,7 +21,7 @@ const devProvider = Credentials({
     email: { label: "メール", type: "email" },
   },
   async authorize(credentials) {
-    if (process.env.NODE_ENV === "production") return null;
+    if (!allowDevLogin) return null;
     const email = String(credentials?.email ?? "").trim();
     const name = String(credentials?.name ?? "").trim() || email.split("@")[0];
     if (!email) return null;
@@ -32,7 +35,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // 開発環境ではGoogleと開発用ログインを併用できる(本番はGoogleのみ)
   providers: [
     ...(hasGoogle ? [Google({ clientId: googleId, clientSecret: googleSecret })] : []),
-    ...(process.env.NODE_ENV !== "production" ? [devProvider] : []),
+    ...(allowDevLogin ? [devProvider] : []),
   ],
   pages: { signIn: "/login" },
   callbacks: {

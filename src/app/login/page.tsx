@@ -37,7 +37,8 @@ export default async function LoginPage() {
           </p>
         </form>
       )}
-      {process.env.NODE_ENV !== "production" && (
+      {(process.env.NODE_ENV !== "production" ||
+        process.env.ALLOW_DEV_LOGIN === "1") && (
         <Card>
           <h2 className="mb-1 text-sm font-bold">開発用ログイン</h2>
           <p className="mb-3 text-[11.5px] text-muted">
