@@ -66,7 +66,7 @@ export default async function SchedulePage() {
       <AppHeader title="予定表" />
 
       {venues.length === 0 ? (
-        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+        <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
           会場が未登録です。管理者コンソールの「会場(部屋)管理」から追加してください。
         </p>
       ) : (

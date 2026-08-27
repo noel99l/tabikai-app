@@ -185,9 +185,9 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
               return (
                 <label
                   key={m.userId}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] ${
+                  className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-[12.5px] font-bold ${
                     checked
-                      ? "border-primary bg-primary text-white"
+                      ? "border-line bg-primary text-white"
                       : inactive
                         ? "border-dashed border-line bg-white text-muted opacity-45"
                         : "border-line bg-white"

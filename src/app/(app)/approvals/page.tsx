@@ -88,7 +88,7 @@ export default async function ApprovalsPage() {
       </p>
 
       {myPending.length === 0 && (
-        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+        <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
           承認待ちの費用はありません。
         </p>
       )}
@@ -123,7 +123,7 @@ export default async function ApprovalsPage() {
               <form action={rejectShare.bind(null, s.expenseId)} className="shrink-0">
                 <SubmitButton
                   spinner={false}
-                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-[11.5px] font-bold text-muted"
+                  className="rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-[11.5px] font-bold text-muted"
                 >
                   否認
                 </SubmitButton>

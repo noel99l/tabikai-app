@@ -28,7 +28,7 @@ export default async function LoginPage() {
           }}
           className="mb-4"
         >
-          <SubmitButton className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[14.5px] font-bold">
+          <SubmitButton className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border-2 border-line bg-white px-4 py-3 text-[14.5px] font-bold shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
             <span className="text-[17px] font-extrabold text-[#4285F4]">G</span>
             Google でログイン
           </SubmitButton>
@@ -57,14 +57,14 @@ export default async function LoginPage() {
             <input
               name="name"
               placeholder="名前(例: ゆうすけ)"
-              className="rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm"
+              className="rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-sm"
             />
             <input
               name="email"
               type="email"
               required
               placeholder="メールアドレス"
-              className="rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm"
+              className="rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-sm"
             />
             <SubmitButton className="rounded-[10px] bg-primary px-4 py-3 text-[13.5px] font-bold text-white">
               ログイン

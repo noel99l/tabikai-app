@@ -50,7 +50,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
           setEditing(false);
           setError(null);
         }}
-        className="mb-2.5 flex w-full items-center justify-between gap-2.5 rounded-xl border border-line bg-white p-3.5 text-left"
+        className="mb-2.5 flex w-full items-center justify-between gap-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 text-left shadow-[3px_3px_0_var(--color-line)]"
       >
         <div className="min-w-0">
           <div className="text-sm font-bold">
@@ -75,7 +75,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
       <Modal open={open} onClose={() => setOpen(false)} title={expense.title}>
         {!editing ? (
           <>
-            <div className="rounded-xl border border-line bg-white p-3.5">
+            <div className="rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
               <div className="flex justify-between border-b border-line py-2 text-[13px]">
                 <span className="text-muted">金額</span>
                 <span className="font-bold tabular-nums">{yen(expense.amount)}</span>
@@ -104,7 +104,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
             {shares.map((s) => (
               <div
                 key={s.userId}
-                className="mb-1.5 flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2"
+                className="mb-1.5 flex items-center justify-between rounded-lg border-2 border-line bg-white px-3 py-2"
               >
                 <span className="text-[13px] font-semibold">{s.name}</span>
                 <span className="flex items-center gap-2">

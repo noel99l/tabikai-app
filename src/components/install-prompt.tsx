@@ -63,7 +63,7 @@ export function InstallPrompt() {
 
   return (
     <>
-      <div className="mb-2.5 flex items-center gap-3 rounded-xl border border-primary bg-primary-soft p-3">
+      <div className="mb-2.5 flex items-center gap-3 rounded-[14px] border-2 border-line bg-white p-3 shadow-[3px_3px_0_var(--color-line)]">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white">
           <IconSuitcase className="h-5 w-5 text-primary" />
         </span>

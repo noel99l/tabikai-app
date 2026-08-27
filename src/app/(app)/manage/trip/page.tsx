@@ -50,7 +50,7 @@ export default async function TripSettingsPage() {
           <span className="shrink-0 text-[13px] whitespace-nowrap text-muted">開始</span>
           {/* inputCls(w-full)を使うとw-20が上書きされ全幅になるため専用クラスにする */}
           <input
-            className="w-20 shrink-0 rounded-[10px] border border-line bg-white px-2 py-2.5 text-center text-sm"
+            className="w-20 shrink-0 rounded-[10px] border-2 border-line bg-white px-2 py-2.5 text-center text-sm"
             name="reminderMinutes"
             type="number"
             min={0}

@@ -49,7 +49,7 @@ export function NotificationBell({
 
       <Modal open={open} onClose={() => setOpen(false)} title="お知らせ">
         {latest.length === 0 ? (
-          <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+          <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
             お知らせはまだありません。
           </p>
         ) : (
@@ -57,7 +57,7 @@ export function NotificationBell({
             <button
               key={n.id}
               onClick={() => openNotif(n)}
-              className="relative mb-2 flex w-full items-start gap-2.5 rounded-xl border border-line bg-white p-3 text-left"
+              className="relative mb-2 flex w-full items-start gap-2.5 rounded-[12px] border-2 border-line bg-white p-3 text-left"
             >
               {!n.read && (
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />

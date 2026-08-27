@@ -1,8 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="120" fill="#0B7285"/>
-  <g fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="116" y="192" width="280" height="216" rx="40"/>
-    <path d="M204 192v-28a44 44 0 0 1 44-44h16a44 44 0 0 1 44 44v28"/>
-    <path d="M196 192v216M316 192v216"/>
-  </g>
+  <!-- ステッカーポップ: 黄色地×黒アウトラインのスーツケース -->
+  <rect width="512" height="512" fill="#ffdc4a"/>
+  <!-- ハードシャドウ -->
+  <rect x="118" y="186" width="300" height="220" rx="40" fill="#1b1b1b" transform="translate(14 14)"/>
+  <!-- ハンドル -->
+  <path d="M196 196v-38c0-26 21-47 47-47h26c26 0 47 21 47 47v38" fill="none" stroke="#1b1b1b" stroke-width="52" stroke-linecap="round"/>
+  <path d="M196 196v-38c0-26 21-47 47-47h26c26 0 47 21 47 47v38" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round"/>
+  <!-- 本体 -->
+  <rect x="118" y="186" width="300" height="220" rx="40" fill="#ffffff" stroke="#1b1b1b" stroke-width="16"/>
+  <!-- 赤ストライプ -->
+  <rect x="118" y="252" width="300" height="52" fill="#ff4d2e"/>
+  <rect x="118" y="186" width="300" height="220" rx="40" fill="none" stroke="#1b1b1b" stroke-width="16"/>
+  <!-- 留め具 -->
+  <rect x="188" y="234" width="34" height="88" rx="14" fill="#ffffff" stroke="#1b1b1b" stroke-width="12"/>
+  <rect x="290" y="234" width="34" height="88" rx="14" fill="#ffffff" stroke="#1b1b1b" stroke-width="12"/>
+  <!-- ステッカー風のドット -->
+  <circle cx="404" cy="150" r="26" fill="#12a150" stroke="#1b1b1b" stroke-width="10"/>
+  <circle cx="106" cy="128" r="18" fill="#2d7ff9" stroke="#1b1b1b" stroke-width="10"/>
 </svg>

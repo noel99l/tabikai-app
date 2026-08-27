@@ -250,13 +250,13 @@ export function ItemsBoard({
         <div className="mt-2 flex gap-2">
           <button
             onClick={() => mutate(i, "planned", "bring")}
-            className="flex-1 rounded-lg bg-primary-soft px-3 py-2 text-xs font-bold text-primary"
+            className="flex-1 rounded-[10px] border-2 border-line bg-white px-3 py-2 text-xs font-bold text-ink shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             持っていく
           </button>
           <button
             onClick={() => mutate(i, "planned", "buy")}
-            className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white"
+            className="flex-1 rounded-[10px] border-2 border-line bg-primary px-3 py-2 text-xs font-bold text-white shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             買ってくる
           </button>
@@ -267,7 +267,7 @@ export function ItemsBoard({
         <div className="mt-2 flex gap-2">
           <button
             onClick={() => mutate(i, "ready")}
-            className="flex-1 rounded-lg bg-ok px-3 py-2 text-xs font-bold text-white"
+            className="flex-1 rounded-[10px] border-2 border-line bg-ok px-3 py-2 text-xs font-bold text-white shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             {i.method === "buy" ? "購入した" : "準備できた"}
           </button>
@@ -340,7 +340,7 @@ export function ItemsBoard({
       </button>
 
       {lists[tab].length === 0 ? (
-        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+        <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
           {emptyText[tab]}
         </p>
       ) : (
@@ -363,7 +363,7 @@ export function ItemsBoard({
           あなたの買い物リスト({shopList.length})
         </h3>
         {shopList.length === 0 ? (
-          <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+          <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
             買う予定のものはありません。下の募集中から引き受けられます。
           </p>
         ) : (
@@ -373,8 +373,8 @@ export function ItemsBoard({
               <button
                 key={i.id}
                 onClick={() => (done ? buyUndo(i) : buyDone(i))}
-                className={`mb-2 flex w-full items-center gap-3 rounded-xl border p-3.5 text-left ${
-                  done ? "border-line bg-screen opacity-60" : "border-line bg-white"
+                className={`mb-2 flex w-full items-center gap-3 rounded-[12px] border-2 p-3.5 text-left ${
+                  done ? "border-line bg-line-soft opacity-70" : "border-line bg-white"
                 }`}
               >
                 <span
@@ -409,14 +409,14 @@ export function ItemsBoard({
           まだ買う人がいないもの({lists.missing.length})
         </h3>
         {lists.missing.length === 0 ? (
-          <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+          <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
             募集中のものはありません。
           </p>
         ) : (
           lists.missing.map((i) => (
             <div
               key={i.id}
-              className="mb-2 flex items-center gap-3 rounded-xl border border-dashed border-pend/60 bg-white p-3"
+              className="mb-2 flex items-center gap-3 rounded-[12px] border-2 border-dashed border-line bg-white p-3"
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] font-bold">{i.name}</span>
@@ -427,7 +427,7 @@ export function ItemsBoard({
               </span>
               <button
                 onClick={() => mutate(i, "planned", "buy")}
-                className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white"
+                className="shrink-0 rounded-[10px] border-2 border-line bg-primary px-3 py-2 text-xs font-bold text-white"
               >
                 ついで買いする
               </button>

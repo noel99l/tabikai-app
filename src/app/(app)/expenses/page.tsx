@@ -78,7 +78,7 @@ export default async function ExpensesPage() {
       </div>
 
       {expenses.length === 0 && (
-        <p className="rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+        <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
           まだ費用がありません。右下の＋から追加してください。
         </p>
       )}

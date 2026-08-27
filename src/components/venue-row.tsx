@@ -23,7 +23,7 @@ export function VenueRow({ venue: v }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mb-2.5 rounded-xl border border-line bg-white p-3.5">
+    <div className="mb-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">{v.name}</div>
@@ -36,7 +36,7 @@ export function VenueRow({ venue: v }: Props) {
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={() => setOpen(true)}
-            className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-primary"
+            className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-primary"
           >
             編集
           </button>
@@ -44,7 +44,7 @@ export function VenueRow({ venue: v }: Props) {
             <form action={deleteVenue.bind(null, v.id)}>
               <SubmitButton
                 spinner={false}
-                className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-accent"
+                className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-accent"
               >
                 削除
               </SubmitButton>
@@ -52,7 +52,7 @@ export function VenueRow({ venue: v }: Props) {
           ) : (
             <span
               title="イベントが登録されている会場は削除できません"
-              className="rounded-lg border border-line bg-screen px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap text-muted"
+              className="rounded-lg border-2 border-line bg-line-soft px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap text-muted"
             >
               イベントあり
             </span>

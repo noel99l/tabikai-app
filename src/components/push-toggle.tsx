@@ -89,7 +89,7 @@ export function PushToggle() {
   };
 
   return (
-    <div className="mt-2.5 rounded-xl border border-line bg-white p-3.5">
+    <div className="mt-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
       <div className="flex items-center justify-between gap-2">
         <div>
           <div className="text-sm font-bold">プッシュ通知</div>

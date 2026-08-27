@@ -89,7 +89,7 @@ export default async function ManageExpensesPage() {
             {settlements.length === 0 ? (
               <p className="mt-2 text-xs text-muted">精算の必要はありません。</p>
             ) : (
-              <div className="mt-2 overflow-hidden rounded-lg border border-line">
+              <div className="mt-2 overflow-hidden rounded-lg border-2 border-line">
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="bg-screen text-[11px] text-muted">

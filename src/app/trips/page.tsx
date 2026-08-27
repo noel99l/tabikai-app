@@ -38,7 +38,7 @@ export default async function TripsPage() {
       </div>
 
       {memberships.length === 0 && (
-        <p className="mb-3 rounded-xl border border-line bg-white p-4 text-center text-[12.5px] text-muted">
+        <p className="mb-3 rounded-[14px] border-2 border-line bg-white p-4 text-center shadow-[3px_3px_0_var(--color-line)] text-[12.5px] text-muted">
           参加中のイベントはまだありません。招待リンクから参加するか、新しく作成してください。
         </p>
       )}
@@ -50,7 +50,7 @@ export default async function TripsPage() {
           <form action={selectTrip.bind(null, m.tripId)}>
             <SubmitButton
               spinner={false}
-              className={`flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3.5 text-left ${ended ? "opacity-60" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-[14px] border-2 border-line bg-white p-3.5 text-left shadow-[3px_3px_0_var(--color-line)] ${ended ? "opacity-60" : ""}`}
             >
               <TripLogo logoUrl={m.logoUrl} size={52} radius={14} muted={ended} />
               <span className="min-w-0 flex-1">

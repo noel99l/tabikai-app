@@ -575,7 +575,7 @@ export function ScheduleView({
         </button>
       </div>
       {filterOpen && (
-        <div className="mb-2 flex flex-wrap gap-1.5 rounded-xl border border-line bg-white p-2.5">
+        <div className="mb-2 flex flex-wrap gap-1.5 rounded-[14px] border-2 border-line bg-white p-2.5 shadow-[3px_3px_0_var(--color-line)]">
           {allVenues.map((v) => {
             const on = venues.some((x) => x.id === v.id);
             return (

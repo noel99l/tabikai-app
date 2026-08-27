@@ -138,7 +138,7 @@ export default async function EventDetailPage({
                 {nonParticipants.map((m) => (
                   <label
                     key={m.userId}
-                    className="flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-[12.5px] has-checked:border-primary has-checked:bg-primary has-checked:text-white"
+                    className="flex items-center gap-1.5 rounded-full border-2 border-line bg-white px-3 py-1.5 text-[12.5px] font-bold has-checked:bg-primary has-checked:text-white"
                   >
                     <input type="checkbox" name="memberIds" value={m.userId} className="sr-only" />
                     {m.name}

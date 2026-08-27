@@ -60,7 +60,7 @@ export default async function SettingsPage() {
         }}
         className="mt-4"
       >
-        <SubmitButton className="w-full rounded-lg border border-line bg-white px-4 py-3 text-[13.5px] font-bold text-accent">
+        <SubmitButton className="w-full rounded-[12px] border-2 border-line bg-white px-4 py-3 text-[13.5px] font-bold text-accent shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
           ログアウト
         </SubmitButton>
       </form>
