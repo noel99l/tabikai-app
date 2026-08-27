@@ -32,8 +32,8 @@ export async function createExpense(formData: FormData) {
     // 全員割り勘: イベント紐付けなし・承認なしで確定
     targetIds = members.map((m) => m.userId);
   } else {
-    // 個別割り勘: イベント紐付け必須
-    if (!eventId) return { error: "個別割り勘では関連イベントの指定が必須です" };
+    // 個別割り勘: イベント紐付けは任意(「イベントの参加者」選択時のみ紐付く)。
+    // 紐付けがない場合、未承認のエスカレーション先は管理者のみになる
     if (memberIds.length === 0) return { error: "負担するメンバーを選択してください" };
     targetIds = memberIds;
   }
@@ -42,7 +42,7 @@ export async function createExpense(formData: FormData) {
     .insert(schema.expenses)
     .values({
       tripId: trip.id,
-      eventId: splitAll ? null : eventId,
+      eventId: splitAll ? null : eventId || null,
       title,
       amount,
       paidBy,

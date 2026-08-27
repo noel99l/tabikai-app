@@ -22,14 +22,21 @@ type Props = {
   onSuccess?: () => void;
 };
 
+// 負担するメンバーの選び方: 全員で割り勘 / 個別に選択 / イベントの参加者
+type PickMode = "all" | "members" | "event";
+
+const MODE_LABELS: { key: PickMode; label: string }[] = [
+  { key: "all", label: "全員で割り勘" },
+  { key: "members", label: "個別に選択" },
+  { key: "event", label: "イベント参加者" },
+];
+
 export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
-  const [splitAll, setSplitAll] = useState(true);
+  const [mode, setMode] = useState<PickMode>("all");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false); // 二重送信防止(状態更新前の連打を弾く)
 
-  // 負担メンバーの選び方: 個別に選択(デフォルト) / イベントの参加者から自動選択
-  const [pickMode, setPickMode] = useState<"members" | "event">("members");
   const [eventId, setEventId] = useState("");
   const [selected, setSelected] = useState<Set<string>>(() => new Set([selfId]));
 
@@ -98,25 +105,38 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
         ))}
       </select>
 
-      <label className="mt-4 flex items-start gap-2.5 rounded-[10px] bg-primary-soft p-3">
-        <input
-          type="checkbox"
-          name="splitAll"
-          checked={splitAll}
-          onChange={(e) => setSplitAll(e.target.checked)}
-          className="mt-0.5 h-5 w-5 accent-primary"
-        />
-        <span>
-          <span className="block text-[13px] font-bold">全員で割り勘にする</span>
-          <span className="block text-[11.5px] text-primary">
-            参加者全員に均等割り。各メンバーの承認なしでそのまま計上されます。
-          </span>
-        </span>
-      </label>
+      <label className={labelCls}>負担するメンバーの選び方</label>
+      <div className="grid grid-cols-3 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
+        {MODE_LABELS.map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            onClick={() => {
+              setMode(m.key);
+              if (m.key === "event" && eventId) applyEventMembers(eventId);
+            }}
+            className={`rounded-lg px-0.5 py-2 text-center text-[11px] font-bold whitespace-nowrap ${
+              mode === m.key ? "bg-ink text-screen" : "text-muted"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
+        {mode === "all" &&
+          "参加者全員に均等割り。各メンバーの承認なしでそのまま計上されます。"}
+        {mode === "members" &&
+          "選んだメンバーで均等割り。各メンバーの承認後に確定します(立替者本人は承認不要)。"}
+        {mode === "event" &&
+          "イベントを選ぶと参加者が自動で選択されます。各メンバーの承認後に確定します。"}
+      </p>
+      {/* 全員で割り勘はサーバー側の既存フラグで送る */}
+      {mode === "all" && <input type="hidden" name="splitAll" value="on" />}
 
-      {!splitAll && (
+      {mode === "event" && (
         <>
-          <label className={labelCls} htmlFor="eventId">関連イベント(個別割り勘では必須)</label>
+          <label className={labelCls} htmlFor="eventId">関連イベント</label>
           <select
             className={inputCls}
             id="eventId"
@@ -125,7 +145,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
             value={eventId}
             onChange={(e) => {
               setEventId(e.target.value);
-              if (pickMode === "event") applyEventMembers(e.target.value);
+              applyEventMembers(e.target.value);
             }}
           >
             <option value="">選択してください</option>
@@ -138,39 +158,11 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
           <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
             未承認のまま24時間経過するとイベント主催者と管理者に通知され、承認状況を操作できます。
           </p>
+        </>
+      )}
 
-          <label className={labelCls}>負担するメンバーの選び方</label>
-          <div className="grid grid-cols-2 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
-            <button
-              type="button"
-              onClick={() => setPickMode("members")}
-              className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
-                pickMode === "members" ? "bg-ink text-screen" : "text-muted"
-              }`}
-            >
-              個別に選択
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPickMode("event");
-                if (eventId) applyEventMembers(eventId);
-              }}
-              className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
-                pickMode === "event" ? "bg-ink text-screen" : "text-muted"
-              }`}
-            >
-              イベントの参加者
-            </button>
-          </div>
-          {pickMode === "event" && (
-            <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
-              {eventId
-                ? "参加者を自動選択しました。薄い表示の不参加メンバーもタップで追加できます。"
-                : "関連イベントを選ぶと、その参加者が自動で選択されます。"}
-            </p>
-          )}
-
+      {mode !== "all" && (
+        <>
           <label className={labelCls}>負担するメンバー</label>
           <div className="flex flex-wrap gap-1.5">
             {members.map((m) => {
@@ -178,7 +170,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
               // イベント参加者モードでは、不参加メンバーを非アクティブ(減光)で
               // 表示しつつタップで追加選択できるようにする
               const inactive =
-                pickMode === "event" &&
+                mode === "event" &&
                 !!eventId &&
                 !participantIds.has(m.userId) &&
                 !checked;
@@ -206,9 +198,11 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
               );
             })}
           </div>
-          <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
-            個別指定の費用は、各メンバーの承認後に確定します(立替者本人は承認不要)。
-          </p>
+          {mode === "members" && (
+            <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
+              未承認のまま24時間経過すると管理者に通知され、承認状況を操作できます。
+            </p>
+          )}
         </>
       )}
 
