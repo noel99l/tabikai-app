@@ -36,10 +36,12 @@ type Props = {
   selfId: string;
 };
 
+// 会場列ごとのイベントブロック色(ステッカー風のベタ塗り)
 const colorClasses = [
-  "border-l-primary bg-primary-soft text-primary",
-  "border-l-accent bg-accent-soft text-accent",
-  "border-l-violet bg-violet-soft text-violet",
+  "bg-primary text-white",
+  "bg-[#2d7ff9] text-white",
+  "bg-violet text-white",
+  "bg-ok text-white",
 ];
 
 const ROW_H = 26; // 30分 = 1行
@@ -550,7 +552,7 @@ export function ScheduleView({
             {d.label}
             {d.key === todayKey && (
               <span
-                className={`absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full ${i === dayIdx ? "bg-screen" : "bg-primary"}`}
+                className={"absolute top-1 right-1.5 h-2 w-2 rounded-full border border-line bg-primary"}
               />
             )}
           </button>
@@ -561,9 +563,21 @@ export function ScheduleView({
       <div className="mb-2 flex items-center justify-between gap-2">
         <button
           onClick={() => setFilterOpen((o) => !o)}
-          className="text-[12px] font-bold text-primary"
+          className="flex items-center gap-1 text-[12px] font-bold text-ink"
         >
-          表示する会場({venues.length}/{allVenues.length}){filterOpen ? " ▲" : " ▼"}
+          表示する会場({venues.length}/{allVenues.length})
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.6}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-3.5 w-3.5 ${filterOpen ? "rotate-180" : ""}`}
+            aria-hidden
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
         </button>
         <button
           onClick={() => setHighlightMine((v) => !v)}
@@ -582,10 +596,8 @@ export function ScheduleView({
               <button
                 key={v.id}
                 onClick={() => toggleVisible(v.id)}
-                className={`rounded-full border px-3 py-1.5 text-[12.5px] font-semibold ${
-                  on
-                    ? "border-primary bg-primary text-white"
-                    : "border-line bg-white text-muted"
+                className={`rounded-full border-2 border-line px-3 py-1.5 text-[12.5px] font-bold ${
+                  on ? "bg-primary text-white" : "bg-white text-muted"
                 }`}
               >
                 {v.name}
@@ -604,12 +616,12 @@ export function ScheduleView({
         >
           <div style={{ minWidth: gridMinWidth }}>
             <div
-              className="sticky top-0 z-20 grid border-b border-line bg-white text-center text-[10px] font-bold text-muted"
+              className="sticky top-0 z-20 grid border-b-[3px] border-line bg-white text-center text-[10.5px] font-bold text-ink"
               style={{ gridTemplateColumns: gridCols }}
             >
               <div className="sticky left-0 z-[1] bg-white" />
               {venues.map((v) => (
-                <div key={v.id} className="truncate border-l border-line px-0.5 py-2">
+                <div key={v.id} className="truncate border-l-2 border-line px-0.5 py-2">
                   {v.name}
                 </div>
               ))}
@@ -617,21 +629,21 @@ export function ScheduleView({
 
             {allDayVisible.length > 0 && (
               <div
-                className="grid border-b border-line bg-screen"
+                className="grid border-b-2 border-dashed border-line bg-line-soft"
                 style={{ gridTemplateColumns: gridCols }}
               >
-                <div className="sticky left-0 z-[1] flex items-center justify-end bg-screen pr-1 text-[9px] text-muted">
+                <div className="sticky left-0 z-[1] flex items-center justify-end bg-line-soft pr-1 text-[9px] font-bold text-muted">
                   終日
                 </div>
                 {venues.map((v, i) => (
-                  <div key={v.id} className="border-l border-line p-0.5">
+                  <div key={v.id} className="border-l-2 border-line p-1">
                     {allDayVisible
                       .filter((e) => e.venueId === v.id)
                       .map((e) => (
                         <Link
                           key={e.id}
                           href={`/events/${e.id}`}
-                          className={`mb-0.5 block truncate rounded border-l-[3px] px-1 py-0.5 text-[9.5px] font-bold ${colorClasses[i % colorClasses.length]} ${
+                          className={`mb-1 block truncate rounded-lg border-2 border-line px-1.5 py-0.5 text-[9.5px] font-bold shadow-[2px_2px_0_var(--color-line)] ${colorClasses[i % colorClasses.length]} ${
                             highlightMine && !e.mine ? "opacity-25" : ""
                           }`}
                         >
@@ -675,8 +687,20 @@ export function ScheduleView({
                 {venues.map((v, i) => (
                   <div
                     key={v.id}
-                    className="border-l border-line"
+                    className="border-l-2 border-line"
                     style={{ gridColumn: i + 2, gridRow: `1 / ${totalRows + 1}` }}
+                  />
+                ))}
+                {/* 時刻の横罫線(点線・控えめ) */}
+                {Array.from({ length: endHour - startHour - 1 }, (_, i) => (
+                  <div
+                    key={`h-${i}`}
+                    aria-hidden
+                    className="pointer-events-none border-t-2 border-dashed border-ink/10"
+                    style={{
+                      gridColumn: `2 / ${venues.length + 2}`,
+                      gridRow: (i + 1) * 2 + 1,
+                    }}
                   />
                 ))}
                 {minRow > 0 && (
@@ -736,7 +760,7 @@ export function ScheduleView({
                           suppressClick.current = false;
                         }
                       }}
-                      className={`relative overflow-hidden rounded-lg border-l-[3px] px-1.5 py-1 text-left text-[10px] leading-tight font-bold ${colorClasses[col % colorClasses.length]} ${
+                      className={`relative overflow-hidden rounded-[10px] border-2 border-line px-1.5 py-1 text-left text-[10px] leading-tight font-bold shadow-[2px_2px_0_var(--color-line)] ${colorClasses[col % colorClasses.length]} ${
                         isMovingThis ? "opacity-40" : faded ? "opacity-25" : ""
                       }`}
                       style={{
@@ -746,6 +770,8 @@ export function ScheduleView({
                         marginLeft: `calc(${(lane.lane * 100) / lane.lanes}% + 2px)`,
                         marginTop: 2,
                         marginBottom: 2,
+                        // ステッカーらしさ: 列ごとにわずかに傾ける
+                        rotate: `${(col + lane.lane) % 2 === 0 ? -0.8 : 0.8}deg`,
                         // 主催者・管理者はタッチでもドラッグ移動できるようスクロールを無効化
                         touchAction:
                           e.canManage && !e.continuesBefore && !e.continuesAfter
@@ -758,7 +784,7 @@ export function ScheduleView({
                       )}
                       {e.continuesBefore && <span className="opacity-70">↑前日から </span>}
                       {e.title}
-                      <span className="block text-[9px] font-medium opacity-75">
+                      <span className="block text-[9px] font-bold opacity-85">
                         {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}
                       </span>
                     </Link>
@@ -773,11 +799,11 @@ export function ScheduleView({
                   style={{ top: nowY, left: 0 }}
                 >
                   <div className="flex items-center">
-                    <span className="w-[38px] pr-1 text-right text-[9px] font-bold text-accent tabular-nums">
+                    <span className="-rotate-2 rounded-full border-2 border-line bg-primary px-1.5 py-px text-[9px] font-bold text-white tabular-nums">
                       {nowLabel}
                     </span>
-                    <span className="h-2 w-2 -translate-x-1 rounded-full bg-accent" />
-                    <span className="h-[2px] flex-1 bg-accent" />
+                    <span className="h-[3px] flex-1 bg-primary" />
+                    <span className="h-2.5 w-2.5 rounded-full border-2 border-line bg-primary" />
                   </div>
                 </div>
               )}
