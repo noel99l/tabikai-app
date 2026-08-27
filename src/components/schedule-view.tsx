@@ -607,7 +607,7 @@ export function ScheduleView({
               className="sticky top-0 z-20 grid border-b border-line bg-white text-center text-[10px] font-bold text-muted"
               style={{ gridTemplateColumns: gridCols }}
             >
-              <div className="bg-white" />
+              <div className="sticky left-0 z-[1] bg-white" />
               {venues.map((v) => (
                 <div key={v.id} className="truncate border-l border-line px-0.5 py-2">
                   {v.name}
@@ -620,7 +620,7 @@ export function ScheduleView({
                 className="grid border-b border-line bg-screen"
                 style={{ gridTemplateColumns: gridCols }}
               >
-                <div className="flex items-center justify-end pr-1 text-[9px] text-muted">
+                <div className="sticky left-0 z-[1] flex items-center justify-end bg-screen pr-1 text-[9px] text-muted">
                   終日
                 </div>
                 {venues.map((v, i) => (
@@ -657,10 +657,16 @@ export function ScheduleView({
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerCancel}
               >
+                {/* 時間ラベル列は左に固定(横スクロールしても見える) */}
+                <div
+                  aria-hidden
+                  className="sticky left-0 z-[3] bg-white"
+                  style={{ gridColumn: 1, gridRow: `1 / ${totalRows + 1}` }}
+                />
                 {Array.from({ length: endHour - startHour }, (_, i) => (
                   <div
                     key={i}
-                    className="pr-1.5 text-right text-[9.5px] tabular-nums text-muted"
+                    className="sticky left-0 z-[4] bg-white pr-1.5 text-right text-[9.5px] tabular-nums text-muted"
                     style={{ gridColumn: 1, gridRow: i * 2 + 1, transform: "translateY(-7px)" }}
                   >
                     {startHour + i}:00

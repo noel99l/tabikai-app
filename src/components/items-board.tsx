@@ -46,8 +46,21 @@ export function ItemsBoard({
 
   // ドラッグ&ドロップの並び替え(優先度)。orderIds が全体の表示順を上書きする
   const [orderIds, setOrderIds] = useState<string[] | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const dragRef = useRef<string | null>(null);
+  // ドラッグ中はDOMの並びを変えず、transformで「指に追従+他カードが場所を空ける」
+  // 動きにする(ドロップ時にまとめて並びを確定)
+  const [drag, setDrag] = useState<{
+    id: string;
+    dy: number;
+    targetIdx: number;
+  } | null>(null);
+  const dragRef = useRef<{
+    id: string;
+    startIdx: number;
+    targetIdx: number;
+    startY: number;
+    shift: number; // カード高さ+間隔ぶんのずらし量
+    mids: number[]; // ドラッグ開始時点の各カード中心Y
+  } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // 楽観的更新を反映した一覧
@@ -115,52 +128,84 @@ export function ItemsBoard({
     } catch {
       // 環境によって失敗しても、同一要素上のmove/upで追従できるため続行
     }
-    dragRef.current = id;
-    setDragId(id);
-  };
-  const moveDrag = (e: React.PointerEvent) => {
-    const id = dragRef.current;
-    if (!id || !listRef.current) return;
+    if (!listRef.current) return;
     const cards = [
       ...listRef.current.querySelectorAll<HTMLElement>("[data-item-id]"),
     ];
-    // ポインタ位置から、タブ内での新しい位置を求める
-    let newIdx = 0;
-    for (const c of cards) {
-      if (c.dataset.itemId === id) continue;
-      const r = c.getBoundingClientRect();
-      if (e.clientY > r.top + r.height / 2) newIdx++;
-    }
-    const tabIds = lists[tab].map((i) => i.id);
-    const next = tabIds.filter((x) => x !== id);
-    next.splice(newIdx, 0, id);
-    if (next.join() === tabIds.join()) return;
-    // タブ外の項目の位置は保ったまま、全体順序に反映する
-    const tabSet = new Set(tabIds);
-    let k = 0;
-    setOrderIds(merged.map((i) => (tabSet.has(i.id) ? next[k++] : i.id)));
+    const idx = cards.findIndex((c) => c.dataset.itemId === id);
+    if (idx < 0) return;
+    const rects = cards.map((c) => c.getBoundingClientRect());
+    dragRef.current = {
+      id,
+      startIdx: idx,
+      targetIdx: idx,
+      startY: e.clientY,
+      shift: rects[idx].height + 10, // mb-2.5 = 10px
+      mids: rects.map((r) => r.top + r.height / 2),
+    };
+    setDrag({ id, dy: 0, targetIdx: idx });
+  };
+  const moveDrag = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dy = e.clientY - d.startY;
+    // ドラッグ中カードの中心位置から挿入先を求める(開始時点の座標基準で安定)
+    const center = d.mids[d.startIdx] + dy;
+    let targetIdx = 0;
+    d.mids.forEach((m, j) => {
+      if (j !== d.startIdx && m < center) targetIdx++;
+    });
+    d.targetIdx = targetIdx;
+    setDrag({ id: d.id, dy, targetIdx });
   };
   const endDrag = () => {
-    if (!dragRef.current) return;
+    const d = dragRef.current;
     dragRef.current = null;
-    setDragId(null);
-    if (orderIds) {
-      const ids = orderIds;
-      startTransition(async () => {
-        await reorderItems(ids);
-      });
+    setDrag(null);
+    if (!d || d.targetIdx === d.startIdx) return;
+    // タブ内の新しい並びを作り、タブ外の相対順序は保って全体順序へ反映
+    const tabIds = lists[tab].map((i) => i.id);
+    const next = [...tabIds];
+    const [moved] = next.splice(d.startIdx, 1);
+    next.splice(d.targetIdx, 0, moved);
+    const tabSet = new Set(tabIds);
+    let k = 0;
+    const full = merged.map((i) => (tabSet.has(i.id) ? next[k++] : i.id));
+    setOrderIds(full);
+    startTransition(async () => {
+      await reorderItems(full);
+    });
+  };
+  // ドラッグ中の各カードの見た目(追従 or 場所空け)
+  const dragStyle = (id: string, idx: number): React.CSSProperties | undefined => {
+    const d = dragRef.current;
+    if (!drag || !d) return undefined;
+    if (id === drag.id) {
+      return {
+        transform: `translateY(${drag.dy}px) scale(1.02)`,
+        zIndex: 20,
+        position: "relative",
+      };
     }
+    let shift = 0;
+    if (d.startIdx < drag.targetIdx && idx > d.startIdx && idx <= drag.targetIdx) {
+      shift = -d.shift;
+    } else if (d.startIdx > drag.targetIdx && idx < d.startIdx && idx >= drag.targetIdx) {
+      shift = d.shift;
+    }
+    return { transform: `translateY(${shift}px)`, transition: "transform 160ms ease" };
   };
 
-  const renderCard = (i: BoardItem) => (
+  const renderCard = (i: BoardItem, idx: number) => (
     <div
       key={i.id}
       data-item-id={i.id}
+      style={dragStyle(i.id, idx)}
       className={`mb-2.5 rounded-[14px] border-2 bg-white p-3 ${
-        dragId === i.id
-          ? "border-primary opacity-90 shadow-[3px_3px_0_var(--color-primary)]"
+        drag?.id === i.id
+          ? "border-primary shadow-[5px_5px_0_var(--color-primary)]"
           : "border-line shadow-[3px_3px_0_var(--color-line)]"
-      } ${i.status === "ready" && dragId !== i.id ? "opacity-70" : ""}`}
+      } ${i.status === "ready" && drag?.id !== i.id ? "opacity-70" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         {/* 優先度の並び替え用グリップ(上下にドラッグ) */}
@@ -299,7 +344,7 @@ export function ItemsBoard({
           {emptyText[tab]}
         </p>
       ) : (
-        <div ref={listRef}>{lists[tab].map(renderCard)}</div>
+        <div ref={listRef}>{lists[tab].map((it, idx) => renderCard(it, idx))}</div>
       )}
       {lists[tab].length > 1 && (
         <p className="mx-0.5 mt-1 text-[11px] text-muted">
