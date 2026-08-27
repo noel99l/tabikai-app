@@ -44,25 +44,50 @@ export const requireUser = cache(async (): Promise<AppUser> => {
 });
 
 // アクティブな企画(Trip)のコンテキスト。承認済みメンバーであることを保証する。
+// ユーザー・メンバーシップ・企画を1クエリで取得し、DB往復を最小化する。
 export const requireTripContext = cache(async () => {
-  const user = await requireUser();
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
   const store = await cookies();
   const tripId = store.get(TRIP_COOKIE)?.value;
   if (!tripId) redirect("/trips");
   const db = await getDb();
-  const member = await db.query.tripMembers.findFirst({
-    where: and(
-      eq(schema.tripMembers.tripId, tripId),
-      eq(schema.tripMembers.userId, user.id),
-    ),
-  });
-  if (!member) redirect("/trips");
-  if (member.status !== "approved") redirect("/trips/pending");
-  const trip = await db.query.trips.findFirst({
-    where: eq(schema.trips.id, tripId),
-  });
-  if (!trip) redirect("/trips");
-  return { user, trip, member, db, isAdmin: member.role === "admin" };
+  const [row] = await db
+    .select({
+      user: schema.users,
+      member: schema.tripMembers,
+      trip: schema.trips,
+    })
+    .from(schema.users)
+    .leftJoin(
+      schema.tripMembers,
+      and(
+        eq(schema.tripMembers.tripId, tripId),
+        eq(schema.tripMembers.userId, schema.users.id),
+      ),
+    )
+    .leftJoin(schema.trips, eq(schema.trips.id, tripId))
+    .where(eq(schema.users.id, session.user.id))
+    .limit(1);
+  if (!row) redirect("/login");
+  if (!row.user.onboardedAt) redirect("/onboarding");
+  if (!row.member || !row.trip) redirect("/trips");
+  if (row.member.status !== "approved") redirect("/trips/pending");
+  const user: AppUser = {
+    id: row.user.id,
+    email: row.user.email,
+    name: row.user.name,
+    image: row.user.image,
+    avatarEmoji: row.user.avatarEmoji,
+    onboardedAt: row.user.onboardedAt,
+  };
+  return {
+    user,
+    trip: row.trip,
+    member: row.member,
+    db,
+    isAdmin: row.member.role === "admin",
+  };
 });
 
 // 承認済みメンバー一覧(ユーザー情報つき)

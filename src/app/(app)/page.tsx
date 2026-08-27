@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, eq, gte } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconSettings, IconUsers } from "@/components/icons";
@@ -12,63 +12,66 @@ import { getApprovedMembers, requireTripContext } from "@/lib/session";
 // ダッシュボード: イベントロゴ / 次の予定 / 未承認のコスト
 export default async function DashboardPage() {
   const { user, trip, db, isAdmin } = await requireTripContext();
-  const members = await getApprovedMembers();
 
-  // 次の予定: 自分が参加登録/招待されている今後のイベント
-  const upcoming = await db
-    .select({
-      id: schema.events.id,
-      title: schema.events.title,
-      startsAt: schema.events.startsAt,
-      endsAt: schema.events.endsAt,
-      status: schema.eventParticipants.status,
-      venueName: schema.venues.name,
-    })
-    .from(schema.eventParticipants)
-    .innerJoin(schema.events, eq(schema.events.id, schema.eventParticipants.eventId))
-    .innerJoin(schema.venues, eq(schema.venues.id, schema.events.venueId))
-    .where(
-      and(
-        eq(schema.events.tripId, trip.id),
-        eq(schema.eventParticipants.userId, user.id),
-        gte(schema.events.endsAt, new Date()),
-      ),
-    )
-    .orderBy(asc(schema.events.startsAt))
-    .limit(3);
-
-  // 未承認のコスト
-  const tripExpenses = await db.query.expenses.findMany({
-    where: eq(schema.expenses.tripId, trip.id),
-  });
-  const myPending = tripExpenses.length
-    ? await db.query.expenseShares.findMany({
-        where: and(
-          inArray(
-            schema.expenseShares.expenseId,
-            tripExpenses.map((e) => e.id),
-          ),
+  // 依存のないクエリは並列で1往復にまとめる
+  const [members, upcoming, myPending, pendingMemberRows] = await Promise.all([
+    getApprovedMembers(),
+    // 次の予定: 自分が参加登録/招待されている今後のイベント
+    db
+      .select({
+        id: schema.events.id,
+        title: schema.events.title,
+        startsAt: schema.events.startsAt,
+        endsAt: schema.events.endsAt,
+        status: schema.eventParticipants.status,
+        venueName: schema.venues.name,
+      })
+      .from(schema.eventParticipants)
+      .innerJoin(schema.events, eq(schema.events.id, schema.eventParticipants.eventId))
+      .innerJoin(schema.venues, eq(schema.venues.id, schema.events.venueId))
+      .where(
+        and(
+          eq(schema.events.tripId, trip.id),
+          eq(schema.eventParticipants.userId, user.id),
+          gte(schema.events.endsAt, new Date()),
+        ),
+      )
+      .orderBy(asc(schema.events.startsAt))
+      .limit(3),
+    // 未承認のコスト: 費用一覧を経由せず1クエリで自分のpendingを取得
+    db
+      .select({
+        expenseId: schema.expenseShares.expenseId,
+        amount: schema.expenseShares.amount,
+        title: schema.expenses.title,
+      })
+      .from(schema.expenseShares)
+      .innerJoin(
+        schema.expenses,
+        eq(schema.expenses.id, schema.expenseShares.expenseId),
+      )
+      .where(
+        and(
+          eq(schema.expenses.tripId, trip.id),
           eq(schema.expenseShares.userId, user.id),
           eq(schema.expenseShares.status, "pending"),
         ),
-      })
-    : [];
+      ),
+    // 管理者向け: 参加承認待ちの人数
+    isAdmin
+      ? db
+          .select({ value: count() })
+          .from(schema.tripMembers)
+          .where(
+            and(
+              eq(schema.tripMembers.tripId, trip.id),
+              eq(schema.tripMembers.status, "pending"),
+            ),
+          )
+      : Promise.resolve([{ value: 0 }]),
+  ]);
+  const pendingMembers = pendingMemberRows[0] ?? { value: 0 };
   const pendingTotal = myPending.reduce((s, x) => s + x.amount, 0);
-  const titleOf = (id: string) =>
-    tripExpenses.find((e) => e.id === id)?.title ?? "";
-
-  // 管理者向け: 参加承認待ちの人数
-  const [pendingMembers] = isAdmin
-    ? await db
-        .select({ value: count() })
-        .from(schema.tripMembers)
-        .where(
-          and(
-            eq(schema.tripMembers.tripId, trip.id),
-            eq(schema.tripMembers.status, "pending"),
-          ),
-        )
-    : [{ value: 0 }];
 
   return (
     <>
@@ -175,7 +178,7 @@ export default async function DashboardPage() {
           {myPending.map((s) => (
             <div key={s.expenseId} className="mb-2.5 flex items-center justify-between gap-2">
               <div>
-                <div className="text-[13.5px] font-bold">{titleOf(s.expenseId)}</div>
+                <div className="text-[13.5px] font-bold">{s.title}</div>
                 <div className="text-[11.5px] text-muted">あなたの負担 {yen(s.amount)}</div>
               </div>
               <Pill tone="pend">承認待ち</Pill>

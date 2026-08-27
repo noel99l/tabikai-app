@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ScheduleView } from "@/components/schedule-view";
@@ -25,6 +25,8 @@ export default async function SchedulePage() {
         allDay: schema.events.allDay,
         hostId: schema.events.hostId,
         joined: count(schema.eventParticipants.userId),
+        // 自分が参加登録済みか(別クエリを往復させず集約で判定)
+        mine: sql<boolean>`coalesce(bool_or(${schema.eventParticipants.userId} = ${user.id} and ${schema.eventParticipants.status} = 'joined'), false)`,
       })
       .from(schema.events)
       .leftJoin(
@@ -34,21 +36,6 @@ export default async function SchedulePage() {
       .where(eq(schema.events.tripId, trip.id))
       .groupBy(schema.events.id),
   ]);
-
-  // 自分が参加登録済みのイベント
-  const myJoined = events.length
-    ? await db.query.eventParticipants.findMany({
-        where: and(
-          inArray(
-            schema.eventParticipants.eventId,
-            events.map((e) => e.id),
-          ),
-          eq(schema.eventParticipants.userId, user.id),
-          eq(schema.eventParticipants.status, "joined"),
-        ),
-      })
-    : [];
-  const mineIds = new Set(myJoined.map((p) => p.eventId));
 
   // 旅程から日付タブを生成
   const days: { key: string; label: string }[] = [];
@@ -85,7 +72,7 @@ export default async function SchedulePage() {
             endMs: e.endsAt.getTime(),
             allDay: e.allDay,
             joined: e.joined,
-            mine: mineIds.has(e.id),
+            mine: e.mine,
             canManage: e.hostId === user.id || isAdmin,
           }))}
           tripStartMs={trip.startsAt.getTime()}
