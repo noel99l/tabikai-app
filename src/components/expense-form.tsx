@@ -140,12 +140,12 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
           </p>
 
           <label className={labelCls}>負担するメンバーの選び方</label>
-          <div className="grid grid-cols-2 gap-1 rounded-[10px] border border-line bg-white p-1">
+          <div className="grid grid-cols-2 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
             <button
               type="button"
               onClick={() => setPickMode("members")}
               className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
-                pickMode === "members" ? "bg-primary text-white" : "text-muted"
+                pickMode === "members" ? "bg-ink text-screen" : "text-muted"
               }`}
             >
               個別に選択
@@ -157,7 +157,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
                 if (eventId) applyEventMembers(eventId);
               }}
               className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
-                pickMode === "event" ? "bg-primary text-white" : "text-muted"
+                pickMode === "event" ? "bg-ink text-screen" : "text-muted"
               }`}
             >
               イベントの参加者

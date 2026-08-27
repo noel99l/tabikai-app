@@ -43,7 +43,7 @@ export function Modal({
           <button
             onClick={onClose}
             aria-label="閉じる"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-line text-sm font-bold text-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-line bg-line-soft text-sm font-bold text-ink"
           >
             ✕
           </button>
@@ -66,7 +66,7 @@ export function Fab({
     <button
       onClick={onClick}
       aria-label={label}
-      className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40"
+      className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex h-[52px] w-[52px] items-center justify-center rounded-full border-[3px] border-line bg-primary text-white shadow-[4px_4px_0_var(--color-line)]"
     >
       <svg
         viewBox="0 0 24 24"

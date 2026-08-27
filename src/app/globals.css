@@ -1,23 +1,33 @@
+@import url("https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap");
 @import "tailwindcss";
 
+/* ステッカーポップ(B案): 黄色地×黒アウトライン×ハードシャドウ */
 @theme {
-  --color-screen: #f4f6f8;
-  --color-ink: #1e2530;
-  --color-muted: #68727f;
-  --color-line: #e3e7ec;
-  --color-primary: #0b7285;
-  --color-primary-soft: #e0f1f4;
-  --color-pend: #b35c00;
-  --color-pend-soft: #fcf0df;
-  --color-ok: #2b8a3e;
-  --color-ok-soft: #e3f3e7;
-  --color-accent: #d9480f;
-  --color-accent-soft: #fdebe2;
-  --color-violet: #6741d9;
-  --color-violet-soft: #ede7fb;
+  --color-screen: #ffdc4a;
+  --color-ink: #1b1b1b;
+  --color-muted: #6b5f3d;
+  --color-line: #1b1b1b;
+  --color-line-soft: #f1e7c9;
+  --color-primary: #ff4d2e;
+  --color-primary-soft: #ffe8e2;
+  --color-pend: #b3541e;
+  --color-pend-soft: #ffedd6;
+  --color-ok: #12a150;
+  --color-ok-soft: #dcf3e4;
+  --color-accent: #c22326;
+  --color-accent-soft: #fde3e0;
+  --color-violet: #7c3fe4;
+  --color-violet-soft: #ece0fb;
 
-  --font-sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP",
-    "Yu Gothic", sans-serif;
+  --font-sans: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN",
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+/* 見出し(ページタイトル等)はポップな表示用フォント */
+h1,
+h2 {
+  font-family: "Mochiy Pop One", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  font-weight: 400;
 }
 
 body {

@@ -156,10 +156,10 @@ export function ItemsBoard({
     <div
       key={i.id}
       data-item-id={i.id}
-      className={`mb-2 rounded-xl border bg-white p-3 ${
+      className={`mb-2.5 rounded-[14px] border-2 bg-white p-3 ${
         dragId === i.id
-          ? "border-primary opacity-90 shadow-lg"
-          : "border-line"
+          ? "border-primary opacity-90 shadow-[3px_3px_0_var(--color-primary)]"
+          : "border-line shadow-[3px_3px_0_var(--color-line)]"
       } ${i.status === "ready" && dragId !== i.id ? "opacity-70" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -170,7 +170,7 @@ export function ItemsBoard({
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          className="-ml-1 shrink-0 cursor-grab touch-none py-1 text-line active:cursor-grabbing"
+          className="-ml-1 shrink-0 cursor-grab touch-none py-1 text-ink/25 active:cursor-grabbing"
         >
           <IconGrip className="h-5 w-4" />
         </button>
@@ -228,7 +228,7 @@ export function ItemsBoard({
           </button>
           <button
             onClick={() => mutate(i, "missing")}
-            className="shrink-0 rounded-lg bg-line px-3 py-2 text-xs font-bold text-muted"
+            className="shrink-0 rounded-lg border-2 border-line bg-line-soft px-3 py-2 text-xs font-bold text-ink"
           >
             取り消す
           </button>
@@ -261,17 +261,17 @@ export function ItemsBoard({
   return (
     <>
       {/* ステータスタブ */}
-      <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-white p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-xl border-2 border-line bg-white p-1 shadow-[3px_3px_0_var(--color-line)]">
         {tabMeta.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
-              tab === t.key ? "bg-primary text-white" : "text-muted"
+              tab === t.key ? "bg-ink text-screen" : "text-muted"
             }`}
           >
             {t.label}{" "}
-            <span className={tab === t.key ? "text-white" : t.countCls}>
+            <span className={tab === t.key ? "text-screen" : t.countCls}>
               {lists[t.key].length}
             </span>
           </button>
@@ -284,7 +284,7 @@ export function ItemsBoard({
           setSessionChecked(new Set());
           setShopOpen(true);
         }}
-        className="mt-2 mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-primary bg-primary-soft py-3 text-[13.5px] font-bold text-primary"
+        className="mt-2.5 mb-3.5 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-line bg-ok py-3 text-[13.5px] font-bold text-white shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
       >
         <IconCart className="h-5 w-5" />
         買い出しリスト

@@ -35,7 +35,7 @@ export default async function AdminInvitePage({
         「{trip.name}」の管理者になります。会場やイベント、精算などを管理できるようになります。
       </p>
       {invite.usedBy ? (
-        <p className="mt-6 rounded-lg bg-line px-4 py-3 text-[13px] font-bold text-muted">
+        <p className="mt-6 rounded-lg bg-line-soft px-4 py-3 text-[13px] font-bold text-muted">
           この招待リンクは使用済みです。
         </p>
       ) : (

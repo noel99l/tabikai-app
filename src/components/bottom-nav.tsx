@@ -23,7 +23,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="メインナビゲーション"
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-10 border-t-[3px] border-line bg-white pb-[env(safe-area-inset-bottom)]"
     >
       <div className="mx-auto flex max-w-md px-1 pt-1.5 pb-2">
         {tabs.map(({ href, label, icon: Icon }) => {
@@ -33,8 +33,8 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] ${
-                active ? "font-bold text-primary" : "text-muted"
+              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] ${
+                active ? "bg-ink font-bold text-screen" : "text-muted"
               }`}
             >
               <Icon className="h-5 w-5" />

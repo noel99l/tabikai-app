@@ -543,16 +543,14 @@ export function ScheduleView({
           <button
             key={d.key}
             onClick={() => setDayIdx(i)}
-            className={`relative flex-1 rounded-[10px] border px-3 py-2 text-center text-[12.5px] font-semibold whitespace-nowrap ${
-              i === dayIdx
-                ? "border-primary bg-primary text-white"
-                : "border-line bg-white text-muted"
+            className={`relative flex-1 rounded-[12px] border-2 border-line px-3 py-2 text-center text-[12.5px] font-bold whitespace-nowrap shadow-[3px_3px_0_var(--color-line)] ${
+              i === dayIdx ? "bg-ink text-screen" : "bg-white text-muted"
             }`}
           >
             {d.label}
             {d.key === todayKey && (
               <span
-                className={`absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full ${i === dayIdx ? "bg-white" : "bg-accent"}`}
+                className={`absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full ${i === dayIdx ? "bg-screen" : "bg-primary"}`}
               />
             )}
           </button>
@@ -569,10 +567,8 @@ export function ScheduleView({
         </button>
         <button
           onClick={() => setHighlightMine((v) => !v)}
-          className={`rounded-full border px-3 py-1.5 text-[12px] font-bold ${
-            highlightMine
-              ? "border-primary bg-primary text-white"
-              : "border-line bg-white text-muted"
+          className={`rounded-full border-2 border-line px-3 py-1.5 text-[12px] font-bold ${
+            highlightMine ? "bg-ink text-screen" : "bg-white text-muted"
           }`}
         >
           自分の予定
@@ -600,7 +596,7 @@ export function ScheduleView({
       )}
 
       {/* グリッド(内部スクロール・ヘッダー固定) */}
-      <div className="overflow-hidden rounded-xl border border-line bg-white">
+      <div className="overflow-hidden rounded-[14px] border-2 border-line bg-white shadow-[4px_4px_0_var(--color-line)]">
         <div
           ref={scrollRef}
           className={panelHeight ? "overflow-auto" : "max-h-[62dvh] overflow-auto"}
@@ -680,14 +676,14 @@ export function ScheduleView({
                 {minRow > 0 && (
                   <div
                     aria-hidden
-                    className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                    className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-[0.08]"
                     style={{ gridColumn: `2 / ${venues.length + 2}`, gridRow: `1 / ${minRow + 1}` }}
                   />
                 )}
                 {maxRow < totalRows && (
                   <div
                     aria-hidden
-                    className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-70"
+                    className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-[0.08]"
                     style={{
                       gridColumn: `2 / ${venues.length + 2}`,
                       gridRow: `${maxRow + 1} / ${totalRows + 1}`,

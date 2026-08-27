@@ -86,7 +86,7 @@ export function LogoUpload({ logoUrl }: { logoUrl: string | null }) {
             <button
               onClick={remove}
               disabled={busy}
-              className="rounded-lg bg-line px-3 py-2 text-xs font-bold text-muted disabled:opacity-50"
+              className="rounded-lg border-2 border-line bg-line-soft px-3 py-2 text-xs font-bold text-ink disabled:opacity-50"
             >
               削除
             </button>

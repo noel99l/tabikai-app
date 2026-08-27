@@ -1,7 +1,7 @@
 // ページ遷移中に表示するスケルトン部品(Suspense の fallback / loading.tsx 用)
 
 export function SkeletonBox({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-line/70 ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-ink/10 ${className}`} />;
 }
 
 export function SkeletonHeader() {

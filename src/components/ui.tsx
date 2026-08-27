@@ -9,7 +9,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl border border-line bg-white p-3.5 ${className}`}>
+    <div className={`rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)] ${className}`}>
       {children}
     </div>
   );
@@ -26,7 +26,7 @@ const pillTones: Record<PillTone, string> = {
 export function Pill({ tone, children }: { tone: PillTone; children: ReactNode }) {
   return (
     <span
-      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10.5px] font-bold ${pillTones[tone]}`}
+      className={`inline-block whitespace-nowrap rounded-full border border-line px-2.5 py-0.5 text-[10.5px] font-bold ${pillTones[tone]}`}
     >
       {children}
     </span>
@@ -50,7 +50,7 @@ export function Avatar({
   if (emoji) {
     return (
       <span
-        className="flex items-center justify-center rounded-full bg-line"
+        className="flex items-center justify-center rounded-full border-2 border-line bg-line-soft"
         style={{ width: size, height: size, fontSize: size * 0.58 }}
         title={name}
       >
@@ -75,9 +75,9 @@ export function Avatar({
 }
 
 export const inputCls =
-  "w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-sm";
+  "w-full rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-sm";
 export const labelCls = "mt-3 mb-1.5 block text-xs font-bold text-muted";
 export const btnCls =
-  "rounded-lg bg-primary px-4 py-2.5 text-[13px] font-bold text-white disabled:opacity-50";
+  "rounded-[12px] border-2 border-line bg-primary px-4 py-2.5 text-[13px] font-bold text-white shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50";
 export const btnGhostCls =
-  "rounded-lg bg-primary-soft px-4 py-2.5 text-[13px] font-bold text-primary";
+  "rounded-[12px] border-2 border-line bg-white px-4 py-2.5 text-[13px] font-bold text-ink shadow-[3px_3px_0_var(--color-line)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none";

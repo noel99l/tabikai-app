@@ -200,7 +200,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="flex-1 rounded-lg bg-line px-4 py-2.5 text-[13px] font-bold text-muted"
+                className="flex-1 rounded-lg border-2 border-line bg-line-soft px-4 py-2.5 text-[13px] font-bold text-ink"
               >
                 戻る
               </button>

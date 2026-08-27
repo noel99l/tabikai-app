@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B7285",
+  themeColor: "#ffdc4a",
   width: "device-width",
   initialScale: 1,
   // ホーム画面PWAで env(safe-area-inset-*) を有効にする(ホームインジケータとの重なり回避)

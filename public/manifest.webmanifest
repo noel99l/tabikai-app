@@ -4,8 +4,8 @@
   "description": "団体旅行企画のイベント・費用管理アプリ「突然の旅会アプリ」",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4F6F8",
-  "theme_color": "#0B7285",
+  "background_color": "#ffdc4a",
+  "theme_color": "#ffdc4a",
   "lang": "ja",
   "icons": [
     {
