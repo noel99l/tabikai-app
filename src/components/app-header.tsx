@@ -9,10 +9,19 @@ import { Avatar } from "./ui";
 
 // タイトルは即時描画し、通知ベル+アバター(DBアクセスあり)はSuspenseで
 // ストリーミングする。ページ本文のクリティカルパスからヘッダーのクエリを外す。
-export function AppHeader({ title }: { title: string }) {
+export function AppHeader({
+  title,
+  leading,
+}: {
+  title: string;
+  leading?: React.ReactNode;
+}) {
   return (
-    <header className="flex items-center justify-between px-1 pt-3 pb-2.5">
-      <h1 className="text-[19px] font-bold">{title}</h1>
+    <header className="flex items-center justify-between gap-3 px-1 pt-3 pb-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {leading}
+        <h1 className="truncate text-[19px] font-bold">{title}</h1>
+      </div>
       <Suspense
         fallback={
           <div className="flex items-center gap-3">

@@ -30,6 +30,11 @@ h2 {
   font-weight: 400;
 }
 
+/* 見出しフォントを任意の要素で使うためのユーティリティ(カウントダウン数字など) */
+.font-pop {
+  font-family: "Mochiy Pop One", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+}
+
 body {
   background: var(--color-screen);
   color: var(--color-ink);
