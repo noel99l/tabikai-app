@@ -5,7 +5,6 @@ import { IconPlus } from "@/components/icons";
 import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
-import { EventDelete } from "@/components/event-delete";
 import { EventEdit } from "@/components/event-edit";
 import { EventIcon } from "@/components/event-icons";
 import {
@@ -186,7 +185,6 @@ export async function EventDetail({ id }: { id: string }) {
               icon: event.icon,
             }}
           />
-          <EventDelete eventId={id} />
         </>
       )}
     </>

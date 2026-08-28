@@ -13,6 +13,7 @@ import { Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
 import { FormError } from "./form-error";
+import { EventDelete } from "./event-delete";
 import { btnCls, btnGhostCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -268,6 +269,11 @@ export function EventEdit({ eventId, venues, days, members, participantIds, host
             変更を保存する
           </SubmitButton>
         </form>
+
+        {/* 削除は編集モーダル内から(誤操作防止の確認ダイアログつき) */}
+        <div className="mt-4 border-t-2 border-dashed border-line pt-1">
+          <EventDelete eventId={eventId} />
+        </div>
       </Modal>
     </>
   );
