@@ -64,37 +64,26 @@ export function InstallPrompt() {
   return (
     <>
       <div className="mb-2.5 flex items-center gap-3 rounded-[14px] border-2 border-line bg-white p-3 shadow-[3px_3px_0_var(--color-line)]">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-primary-soft">
           <IconSuitcase className="h-5 w-5 text-primary" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-bold">ホーム画面に追加</div>
-          <div className="text-[11.5px] text-primary">
-            アプリのように使え、プッシュ通知も受け取れます
-          </div>
+          <p className="text-[12.5px] font-bold">ホーム画面に追加</p>
+          <p className="text-[11px] text-muted">
+            アプリのように使え、プッシュ通知も受け取れます。
+          </p>
         </div>
-        {platform === "android" ? (
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <button
-            onClick={installAndroid}
-            className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white"
+            onClick={platform === "android" ? installAndroid : () => setIosOpen(true)}
+            className="rounded-full border-2 border-line bg-primary px-3 py-1.5 text-[11.5px] font-bold text-white"
           >
-            追加する
+            {platform === "android" ? "追加する" : "方法を見る"}
           </button>
-        ) : (
-          <button
-            onClick={() => setIosOpen(true)}
-            className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white"
-          >
-            方法を見る
+          <button onClick={dismiss} className="text-[10.5px] font-bold text-muted">
+            あとで
           </button>
-        )}
-        <button
-          onClick={dismiss}
-          aria-label="閉じる"
-          className="shrink-0 text-muted"
-        >
-          ✕
-        </button>
+        </div>
       </div>
 
       <Modal open={iosOpen} onClose={() => setIosOpen(false)} title="ホーム画面に追加">

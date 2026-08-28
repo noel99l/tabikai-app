@@ -240,6 +240,30 @@ export async function approveMember(formData: FormData) {
   revalidatePath("/manage/members");
 }
 
+// メンバー画面から管理者権限を付与する(管理者のみ)
+export async function grantAdmin(userId: string) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db
+    .update(schema.tripMembers)
+    .set({ role: "admin" })
+    .where(
+      and(
+        eq(schema.tripMembers.tripId, trip.id),
+        eq(schema.tripMembers.userId, userId),
+        eq(schema.tripMembers.status, "approved"),
+      ),
+    );
+  await notify(db, trip.id, [userId], {
+    type: "announce",
+    title: `「${trip.name}」の管理者になりました`,
+    body: `${user.name} さんが権限を付与しました。管理者コンソールが利用できます。`,
+    link: "/manage",
+    senderId: user.id,
+  });
+  revalidatePath("/manage/members");
+}
+
 // 管理者招待URLのトークンを発行する(既存の未使用トークンがあれば再利用)
 export async function createAdminInvite(): Promise<string> {
   const { trip, db, isAdmin, user } = await requireTripContext();

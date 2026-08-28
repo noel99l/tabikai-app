@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { schema } from "@/db";
 import { AdminInvite } from "@/components/admin-invite";
+import { GrantAdminButton } from "@/components/grant-admin-button";
 import { AppHeader } from "@/components/app-header";
 import { IconBack } from "@/components/icons";
 import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
@@ -116,7 +117,11 @@ export default async function MembersPage() {
           <div className="min-w-0 flex-1">
             <span className="text-[13.5px] font-bold">{m.name}</span>
           </div>
-          {m.role === "admin" && <Pill tone="info">管理者</Pill>}
+          {m.role === "admin" ? (
+            <Pill tone="info">管理者</Pill>
+          ) : (
+            <GrantAdminButton userId={m.userId} name={m.name} />
+          )}
         </Card>
       ))}
     </>
