@@ -14,6 +14,63 @@ function splitAmount(total: number, n: number): number[] {
   return Array.from({ length: n }, (_, i) => base + (i < remainder ? 1 : 0));
 }
 
+// excluded 以外の対象者で割り勘額を再計算する(金額編集・対象から外した時に使う)。
+// 個別割り勘は再承認のため pending に戻し(立替者は承認扱い)、対象者に再確認を通知する。
+async function redistributeShares(
+  db: Awaited<ReturnType<typeof requireTripContext>>["db"],
+  expense: {
+    id: string;
+    tripId: string;
+    title: string;
+    amount: number;
+    paidBy: string;
+    splitAll: boolean;
+  },
+  actorId: string,
+  notice: { title: string; body: string },
+) {
+  const shares = await db.query.expenseShares.findMany({
+    where: eq(schema.expenseShares.expenseId, expense.id),
+  });
+  const active = shares.filter((s) => s.status !== "excluded");
+  if (active.length === 0) return;
+  const amounts = splitAmount(expense.amount, active.length);
+  for (let i = 0; i < active.length; i++) {
+    await db
+      .update(schema.expenseShares)
+      .set({
+        amount: amounts[i],
+        status: expense.splitAll
+          ? "approved"
+          : active[i].userId === expense.paidBy
+            ? "approved"
+            : "pending",
+      })
+      .where(
+        and(
+          eq(schema.expenseShares.expenseId, expense.id),
+          eq(schema.expenseShares.userId, active[i].userId),
+        ),
+      );
+  }
+  if (!expense.splitAll) {
+    await notify(
+      db,
+      expense.tripId,
+      active
+        .map((s) => s.userId)
+        .filter((id) => id !== actorId && id !== expense.paidBy),
+      {
+        type: "expense_assigned",
+        title: notice.title,
+        body: notice.body,
+        link: "/approvals",
+        senderId: actorId,
+      },
+    );
+  }
+}
+
 export async function createExpense(formData: FormData) {
   const { user, trip, db } = await requireTripContext();
   const title = String(formData.get("title") ?? "").trim();
@@ -194,6 +251,13 @@ export async function resolveShare(formData: FormData) {
     link: "/expenses",
     senderId: user.id,
   });
+  // 外した分を立替者が損しないよう、残りの対象者で割り直す
+  if (action !== "force") {
+    await redistributeShares(db, expense, user.id, {
+      title: `「${expense.title}」の割り勘額が変更されました`,
+      body: "対象から外れたメンバーの分を残りで割り直しました · 再度ご確認ください",
+    });
+  }
   revalidatePath("/approvals");
   revalidatePath("/expenses");
 }
@@ -224,47 +288,22 @@ export async function updateExpense(formData: FormData) {
     .where(eq(schema.expenses.id, expenseId));
 
   if (amountChanged) {
-    // excluded 以外の対象者で再分割
-    const shares = await db.query.expenseShares.findMany({
-      where: eq(schema.expenseShares.expenseId, expenseId),
-    });
-    const active = shares.filter((s) => s.status !== "excluded");
-    const amounts = splitAmount(amount, Math.max(1, active.length));
-    const newPayer = paidBy || expense.paidBy;
-    for (let i = 0; i < active.length; i++) {
-      await db
-        .update(schema.expenseShares)
-        .set({
-          amount: amounts[i],
-          status: expense.splitAll
-            ? "approved"
-            : active[i].userId === newPayer
-              ? "approved"
-              : "pending",
-        })
-        .where(
-          and(
-            eq(schema.expenseShares.expenseId, expenseId),
-            eq(schema.expenseShares.userId, active[i].userId),
-          ),
-        );
-    }
-    if (!expense.splitAll) {
-      await notify(
-        db,
-        expense.tripId,
-        active
-          .map((s) => s.userId)
-          .filter((id) => id !== user.id && id !== newPayer),
-        {
-          type: "expense_assigned",
-          title: `「${title}」の金額が変更されました`,
-          body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
-          link: "/approvals",
-          senderId: user.id,
-        },
-      );
-    }
+    await redistributeShares(
+      db,
+      {
+        id: expenseId,
+        tripId: expense.tripId,
+        title,
+        amount,
+        paidBy: paidBy || expense.paidBy,
+        splitAll: expense.splitAll,
+      },
+      user.id,
+      {
+        title: `「${title}」の金額が変更されました`,
+        body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
+      },
+    );
   }
   revalidatePath("/expenses");
   revalidatePath("/approvals");
