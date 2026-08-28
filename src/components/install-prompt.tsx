@@ -15,13 +15,16 @@ type BeforeInstallPromptEvent = Event & {
 
 // ios-inapp: DiscordやXなどアプリ内ブラウザ(そのままでは追加できない)
 // ios-safari: Safari / ios-browser: iOS版Chrome・Edge等(共有メニューから追加可)
-// android: beforeinstallprompt が使える環境 / android-inapp: アプリ内ブラウザ
+// android: beforeinstallprompt が発火した環境(ワンタップ追加)
+// android-manual: 発火前・シークレットモード等(メニューから手動で追加)
+// android-inapp: アプリ内ブラウザ
 type Platform =
   | "none"
   | "ios-safari"
   | "ios-browser"
   | "ios-inapp"
   | "android"
+  | "android-manual"
   | "android-inapp";
 
 // ---- 手順の図解(ステッカーポップ調のイラスト) ----
@@ -117,7 +120,9 @@ function Step({
   );
 }
 
-export function InstallPrompt() {
+// mode: "banner" はホーム上部の告知(×で以後非表示) /
+// "card" はアカウント画面の常設カード(×なし・いつでも手順を見られる)
+export function InstallPrompt({ mode = "banner" }: { mode?: "banner" | "card" }) {
   const [platform, setPlatform] = useState<Platform>("none");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -129,7 +134,7 @@ export function InstallPrompt() {
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (standalone) return;
-    if (localStorage.getItem(DISMISS_KEY) === "1") return;
+    if (mode === "banner" && localStorage.getItem(DISMISS_KEY) === "1") return;
 
     const ua = navigator.userAgent;
     const isIos =
@@ -153,6 +158,9 @@ export function InstallPrompt() {
       setPlatform("android-inapp");
       return;
     }
+    // シークレットモード等では beforeinstallprompt が発火しないため、
+    // Androidではまず手動手順の案内を出し、発火したらワンタップ追加に切り替える
+    if (/android/i.test(ua)) setPlatform("android-manual");
     const onBip = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
@@ -160,7 +168,7 @@ export function InstallPrompt() {
     };
     window.addEventListener("beforeinstallprompt", onBip);
     return () => window.removeEventListener("beforeinstallprompt", onBip);
-  }, []);
+  }, [mode]);
 
   const dismiss = () => {
     localStorage.setItem(DISMISS_KEY, "1");
@@ -181,7 +189,11 @@ export function InstallPrompt() {
 
   return (
     <>
-      <div className="mb-2.5 flex items-center gap-3 rounded-[14px] border-2 border-line bg-white p-3 shadow-[3px_3px_0_var(--color-line)]">
+      <div
+        className={`flex items-center gap-3 rounded-[14px] border-2 border-line bg-white shadow-[3px_3px_0_var(--color-line)] ${
+          mode === "card" ? "mt-2.5 p-3.5" : "mb-2.5 p-3"
+        }`}
+      >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-primary-soft">
           <IconSuitcase className="h-5 w-5 text-primary" />
         </span>
@@ -199,9 +211,11 @@ export function InstallPrompt() {
         >
           {platform === "android" ? "追加する" : "方法を見る"}
         </button>
-        <button onClick={dismiss} aria-label="閉じる" className="shrink-0 text-muted">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="h-4 w-4" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
+        {mode === "banner" && (
+          <button onClick={dismiss} aria-label="閉じる" className="shrink-0 text-muted">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="h-4 w-4" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        )}
       </div>
 
       <Modal open={guideOpen} onClose={() => setGuideOpen(false)} title="ホーム画面に追加">
@@ -272,21 +286,30 @@ export function InstallPrompt() {
           </ol>
         )}
 
-        {(platform === "android" || platform === "android-inapp") && (
-          <ol className="space-y-4">
-            {platform === "android-inapp" && (
-              <Step n={1} illust={<IllustOpenInBrowser />}>
-                画面右上の<b>「…」メニュー</b>から<b>「ブラウザで開く」</b>を選ぶ
-              </Step>
+        {(platform === "android" ||
+          platform === "android-manual" ||
+          platform === "android-inapp") && (
+          <>
+            {platform === "android-manual" && (
+              <div className="mb-3 rounded-xl border-2 border-pend bg-pend-soft px-3 py-2.5 text-[12px] font-semibold text-pend">
+                シークレットモード(シークレットタブ)ではホーム画面に追加できません。通常のタブで開いてから操作してください。
+              </div>
             )}
-            <Step n={platform === "android-inapp" ? 2 : 1} illust={<IllustAndroidMenu />}>
-              Chromeの<b>「⋮」メニュー</b>から
-              <b>「ホーム画面に追加」(アプリをインストール)</b>をタップ
-            </Step>
-            <Step n={platform === "android-inapp" ? 3 : 2}>
-              <b>「追加」(インストール)</b>をタップして完了
-            </Step>
-          </ol>
+            <ol className="space-y-4">
+              {platform === "android-inapp" && (
+                <Step n={1} illust={<IllustOpenInBrowser />}>
+                  画面右上の<b>「…」メニュー</b>から<b>「ブラウザで開く」</b>を選ぶ
+                </Step>
+              )}
+              <Step n={platform === "android-inapp" ? 2 : 1} illust={<IllustAndroidMenu />}>
+                Chromeの<b>「⋮」メニュー</b>から
+                <b>「ホーム画面に追加」(アプリをインストール)</b>をタップ
+              </Step>
+              <Step n={platform === "android-inapp" ? 3 : 2}>
+                <b>「追加」(インストール)</b>をタップして完了
+              </Step>
+            </ol>
+          </>
         )}
 
         <p className="mt-4 rounded-lg bg-screen px-3 py-2 text-[11.5px] text-muted">
@@ -297,7 +320,7 @@ export function InstallPrompt() {
         <button
           onClick={() => {
             setGuideOpen(false);
-            dismiss();
+            if (mode === "banner") dismiss();
           }}
           className="mt-4 w-full rounded-lg bg-primary px-4 py-3 text-[13px] font-bold text-white"
         >

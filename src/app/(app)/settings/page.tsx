@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { AppHeader } from "@/components/app-header";
+import { InstallPrompt } from "@/components/install-prompt";
 import { ProfileEditButton } from "@/components/profile-edit";
 import { PushToggle } from "@/components/push-toggle";
 import { Avatar, Card, Pill } from "@/components/ui";
@@ -28,6 +29,9 @@ export default async function SettingsPage() {
       </Card>
 
       <PushToggle />
+
+      {/* ホームのバナーを閉じた後でも、ここからいつでも追加手順を見られる */}
+      <InstallPrompt mode="card" />
 
       <Card className="mt-2.5">
         <div className="text-[11px] text-muted">参加中のイベント</div>
