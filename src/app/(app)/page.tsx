@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { and, asc, count, eq, gte } from "drizzle-orm";
 import { schema } from "@/db";
+import { AnnounceFab } from "@/components/announce-fab";
 import { AppHeader } from "@/components/app-header";
 import { IconSettings, IconUsers } from "@/components/icons";
 import { InstallPrompt } from "@/components/install-prompt";
@@ -196,6 +197,8 @@ export default async function DashboardPage() {
           </Link>
         </Card>
       )}
+
+      <AnnounceFab />
     </>
   );
 }

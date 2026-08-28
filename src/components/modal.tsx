@@ -58,9 +58,11 @@ export function Modal({
 export function Fab({
   onClick,
   label,
+  icon,
 }: {
   onClick: () => void;
   label: string;
+  icon?: React.ReactNode; // 省略時は「+」
 }) {
   return (
     <button
@@ -68,17 +70,19 @@ export function Fab({
       aria-label={label}
       className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 flex h-[52px] w-[52px] items-center justify-center rounded-full border-[3px] border-line bg-primary text-white shadow-[4px_4px_0_var(--color-line)]"
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        className="h-6 w-6"
-        aria-hidden="true"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      {icon ?? (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          className="h-6 w-6"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      )}
     </button>
   );
 }
