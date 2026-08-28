@@ -23,26 +23,29 @@ async function ExpensesList() {
       orderBy: (e, { asc }) => [asc(e.startsAt)],
     }),
   ]);
-  const shares = expenses.length
-    ? await db.query.expenseShares.findMany({
-        where: inArray(
-          schema.expenseShares.expenseId,
-          expenses.map((e) => e.id),
-        ),
-      })
-    : [];
-  // 費用フォームの「イベントの参加者から選択」用に参加登録者を取得
-  const participants = tripEvents.length
-    ? await db.query.eventParticipants.findMany({
-        where: and(
-          inArray(
-            schema.eventParticipants.eventId,
-            tripEvents.map((e) => e.id),
+  // shares と参加者は互いに独立なので並列で取得(Neonの往復削減)
+  const [shares, participants] = await Promise.all([
+    expenses.length
+      ? db.query.expenseShares.findMany({
+          where: inArray(
+            schema.expenseShares.expenseId,
+            expenses.map((e) => e.id),
           ),
-          eq(schema.eventParticipants.status, "joined"),
-        ),
-      })
-    : [];
+        })
+      : Promise.resolve([]),
+    // 費用フォームの「イベントの参加者から選択」用に参加登録者を取得
+    tripEvents.length
+      ? db.query.eventParticipants.findMany({
+          where: and(
+            inArray(
+              schema.eventParticipants.eventId,
+              tripEvents.map((e) => e.id),
+            ),
+            eq(schema.eventParticipants.status, "joined"),
+          ),
+        })
+      : Promise.resolve([]),
+  ]);
   const nameOf = (id: string) =>
     members.find((m) => m.userId === id)?.name ?? "退会メンバー";
   const eventTitleOf = (id: string | null) =>
@@ -197,10 +200,10 @@ export default async function ExpensesPage({
       <AppHeader title="費用" />
 
       <div className="mb-3 flex gap-1.5 rounded-[13px] border-2 border-line bg-white p-1 shadow-[3px_3px_0_var(--color-line)]">
-        <Link href="/expenses" className={segCls(!showApprovals)}>
+        <Link href="/expenses" prefetch={true} className={segCls(!showApprovals)}>
           一覧
         </Link>
-        <Link href="/expenses?tab=approvals" className={segCls(showApprovals)}>
+        <Link href="/expenses?tab=approvals" prefetch={true} className={segCls(showApprovals)}>
           承認
           {pendingCount > 0 && (
             <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-bold text-white">

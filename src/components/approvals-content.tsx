@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "./ui";
 import { SubmitButton } from "@/components/submit-button";
@@ -9,76 +9,68 @@ import { getApprovedMembers, requireTripContext } from "@/lib/session";
 // 費用タブ内の「承認」セグメント本体(旧 /approvals ページ)
 export async function ApprovalsContent() {
   const { user, trip, db, isAdmin } = await requireTripContext();
-  const members = await getApprovedMembers();
+
+  // Neonは1往復が重いので、クエリは並列4本にまとめる
+  // (shares系3クエリは trip 全体の1クエリに統合し、振り分けはJS側で行う)
+  const [members, expenses, tripEvents, allShares] = await Promise.all([
+    getApprovedMembers(),
+    db.query.expenses.findMany({
+      where: eq(schema.expenses.tripId, trip.id),
+    }),
+    // 費用に紐づくイベントのタイトル・日時表示用
+    db.query.events.findMany({
+      where: eq(schema.events.tripId, trip.id),
+    }),
+    db
+      .select({
+        expenseId: schema.expenseShares.expenseId,
+        userId: schema.expenseShares.userId,
+        amount: schema.expenseShares.amount,
+        status: schema.expenseShares.status,
+        createdAt: schema.expenseShares.createdAt,
+      })
+      .from(schema.expenseShares)
+      .innerJoin(
+        schema.expenses,
+        eq(schema.expenses.id, schema.expenseShares.expenseId),
+      )
+      .where(eq(schema.expenses.tripId, trip.id)),
+  ]);
   const nameOf = (id: string) =>
     members.find((m) => m.userId === id)?.name ?? "退会メンバー";
-
-  const expenses = await db.query.expenses.findMany({
-    where: eq(schema.expenses.tripId, trip.id),
-  });
-  const expenseIds = expenses.map((e) => e.id);
   const expenseOf = (id: string) => expenses.find((e) => e.id === id);
-
-  // 費用に紐づくイベントのタイトル・日時表示用
-  const tripEvents = await db.query.events.findMany({
-    where: eq(schema.events.tripId, trip.id),
-  });
   const eventOf = (id: string | null) =>
     id ? tripEvents.find((e) => e.id === id) : undefined;
 
   // 自分の承認待ち
-  const myPending = expenseIds.length
-    ? await db.query.expenseShares.findMany({
-        where: and(
-          inArray(schema.expenseShares.expenseId, expenseIds),
-          eq(schema.expenseShares.userId, user.id),
-          eq(schema.expenseShares.status, "pending"),
-        ),
-      })
-    : [];
+  const myPending = allShares.filter(
+    (s) => s.userId === user.id && s.status === "pending",
+  );
 
   // 主催者・管理者の操作対象: 本人が否認したもの+24時間以上未承認のもの
   const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
-  const staleAll = expenseIds.length
-    ? await db.query.expenseShares.findMany({
-        where: and(
-          inArray(schema.expenseShares.expenseId, expenseIds),
-          or(
-            eq(schema.expenseShares.status, "rejected"),
-            and(
-              eq(schema.expenseShares.status, "pending"),
-              lt(schema.expenseShares.createdAt, dayAgo),
-            ),
-          ),
-        ),
-      })
-    : [];
   const myEventIds = new Set(
     tripEvents.filter((e) => e.hostId === user.id).map((e) => e.id),
   );
-  const stale = staleAll.filter((s) => {
+  const stale = allShares.filter((s) => {
+    const target =
+      s.status === "rejected" ||
+      (s.status === "pending" && s.createdAt < dayAgo);
+    if (!target) return false;
     const x = expenseOf(s.expenseId);
     return isAdmin || (x?.eventId && myEventIds.has(x.eventId));
   });
 
   // 自分の承認履歴(直近)
-  const myResolved = expenseIds.length
-    ? (
-        await db.query.expenseShares.findMany({
-          where: and(
-            inArray(schema.expenseShares.expenseId, expenseIds),
-            eq(schema.expenseShares.userId, user.id),
-          ),
-        })
-      )
-        .filter(
-          (s) =>
-            s.status === "approved" ||
-            s.status === "forced" ||
-            s.status === "rejected",
-        )
-        .slice(0, 5)
-    : [];
+  const myResolved = allShares
+    .filter(
+      (s) =>
+        s.userId === user.id &&
+        (s.status === "approved" ||
+          s.status === "forced" ||
+          s.status === "rejected"),
+    )
+    .slice(0, 5);
 
   return (
     <>

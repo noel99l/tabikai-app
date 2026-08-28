@@ -35,6 +35,12 @@ h2 {
   font-family: "Mochiy Pop One", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
 }
 
+/* スクロール端のバウンス(ラバーバンド)で固定フッター/FABが
+   ページごと動いて見えるのを防ぐ(iOS16+/Android対応) */
+html {
+  overscroll-behavior-y: none;
+}
+
 body {
   background: var(--color-screen);
   color: var(--color-ink);
