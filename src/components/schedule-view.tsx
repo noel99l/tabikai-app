@@ -12,7 +12,7 @@ import {
 import { moveEvent } from "@/lib/actions/events";
 import { EventIcon, eventColorClass } from "./event-icons";
 import { EventForm } from "./event-form";
-import { Modal } from "./modal";
+import { Fab, Modal } from "./modal";
 
 export type ViewEvent = {
   id: string;
@@ -36,6 +36,7 @@ type Props = {
   tripEndMs: number;
   isMultiDay: boolean;
   members: { userId: string; name: string }[];
+  participants: { eventId: string; userId: string; status: string }[];
   selfId: string;
 };
 
@@ -100,6 +101,8 @@ function layoutLanes(
   return result;
 }
 
+type Col = { key: string; kind: "venue" | "member"; id: string; label: string };
+
 type Sel = { col: number; a: number; b: number };
 type Moving = {
   id: string;
@@ -120,6 +123,7 @@ export function ScheduleView({
   tripEndMs,
   isMultiDay,
   members,
+  participants,
   selfId,
 }: Props) {
   const todayKey = jstKey(Date.now());
@@ -129,6 +133,9 @@ export function ScheduleView({
   });
   const [visibleIds, setVisibleIds] = useState<Set<string>>(
     () => new Set(allVenues.filter((v) => v.defaultShow).map((v) => v.id)),
+  );
+  const [visibleMemberIds, setVisibleMemberIds] = useState<Set<string>>(
+    () => new Set(),
   );
   const [filterOpen, setFilterOpen] = useState(false);
   const [highlightMine, setHighlightMine] = useState(false);
@@ -182,12 +189,37 @@ export function ScheduleView({
     return () => clearInterval(t);
   }, []);
 
-  // ===== 表示会場 =====
-  const venues = allVenues.some((v) => visibleIds.has(v.id))
-    ? allVenues.filter((v) => visibleIds.has(v.id))
-    : allVenues;
-  const gridMinWidth = venues.length * MIN_COL_W + LABEL_W;
-  const gridCols = `${LABEL_W}px repeat(${venues.length}, minmax(${MIN_COL_W}px, 1fr))`;
+  // ===== 表示列(会場+メンバーをそれぞれ複数選択) =====
+  const selVenues = allVenues.filter((v) => visibleIds.has(v.id));
+  const selMembers = members.filter((m) => visibleMemberIds.has(m.userId));
+  const colsBase: Col[] = [
+    ...selVenues.map((v) => ({ key: `v-${v.id}`, kind: "venue" as const, id: v.id, label: v.name })),
+    ...selMembers.map((m) => ({ key: `m-${m.userId}`, kind: "member" as const, id: m.userId, label: m.name })),
+  ];
+  // 何も選択されていないときは全会場を表示
+  const cols: Col[] =
+    colsBase.length > 0
+      ? colsBase
+      : allVenues.map((v) => ({ key: `v-${v.id}`, kind: "venue" as const, id: v.id, label: v.name }));
+  const colsKey = cols.map((c) => c.key).join(",");
+  const gridMinWidth = cols.length * MIN_COL_W + LABEL_W;
+  const gridCols = `${LABEL_W}px repeat(${cols.length}, minmax(${MIN_COL_W}px, 1fr))`;
+
+  // メンバー列: そのメンバーが参加/招待されているイベントを表示する
+  const partOf = useMemo(() => {
+    const m = new Map<string, Map<string, string>>();
+    for (const pt of participants) {
+      if (!m.has(pt.userId)) m.set(pt.userId, new Map());
+      m.get(pt.userId)!.set(pt.eventId, pt.status);
+    }
+    return m;
+  }, [participants]);
+  const memberStatus = (userId: string, eventId: string) =>
+    partOf.get(userId)?.get(eventId);
+  const eventInCol = (e: { id: string; venueId: string }, c: Col) =>
+    c.kind === "venue"
+      ? e.venueId === c.id
+      : memberStatus(c.id, e.id) === "joined" || memberStatus(c.id, e.id) === "invited";
 
   // ===== アクティブ日のデータ =====
   const activeDay = days[dayIdx] ?? days[0];
@@ -218,8 +250,7 @@ export function ScheduleView({
   const dayAllDay = merged.filter(
     (e) => e.allDay && e.startMs < dayEndMs && e.endMs > dayStartMs,
   );
-  const visibleVenueIds = new Set(venues.map((v) => v.id));
-  const allDayVisible = dayAllDay.filter((e) => visibleVenueIds.has(e.venueId));
+  const allDayVisible = dayAllDay.filter((e) => cols.some((c) => eventInCol(e, c)));
 
   // 表示時間帯
   let startHour = 0;
@@ -258,22 +289,22 @@ export function ScheduleView({
       }).format(nowTick)
     : "";
 
-  // 重なりレーン(会場ごと)
+  // 重なりレーン(列ごと。同一イベントが複数列に出るためキーは列+イベント)
   const laneMap = useMemo(() => {
     const m = new Map<string, { lane: number; lanes: number }>();
-    for (const v of venues) {
+    for (const c of cols) {
       const evts = dayTimed
-        .filter((e) => e.venueId === v.id)
+        .filter((e) => eventInCol(e, c))
         .map((e) => ({
           id: e.id,
           startRow: rowOf(e.clipStartMin),
           endRow: rowOf(e.clipEndMin),
         }));
-      for (const [id, r] of layoutLanes(evts)) m.set(id, r);
+      for (const [id, r] of layoutLanes(evts)) m.set(`${c.key}:${id}`, r);
     }
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dayTimed, venues, startHour]);
+  }, [dayTimed, colsKey, startHour]);
 
   // 日付切替時: 選択解除+スクロール位置(今日→現在時刻付近 / 24h表示→8:00)
   useEffect(() => {
@@ -297,8 +328,8 @@ export function ScheduleView({
     const x = clientX - r.left - LABEL_W;
     const y = clientY - r.top;
     if (x < 0 || y < 0) return null;
-    const colW = (r.width - LABEL_W) / venues.length;
-    const col = Math.min(venues.length - 1, Math.max(0, Math.floor(x / colW)));
+    const colW = (r.width - LABEL_W) / cols.length;
+    const col = Math.min(cols.length - 1, Math.max(0, Math.floor(x / colW)));
     const row = Math.min(totalRows - 1, Math.max(0, Math.floor(y / ROW_H)));
     return { col, row };
   };
@@ -323,8 +354,10 @@ export function ScheduleView({
       const eid = link.dataset.eid!;
       const ev = dayTimed.find((x) => x.id === eid);
       if (!ev?.canManage || ev.continuesBefore || ev.continuesAfter) return;
-      const origCol = venues.findIndex((v) => v.id === ev.venueId);
-      if (origCol < 0) return;
+      // ドラッグ移動は会場列のみ(メンバー列は会場が定まらないため)
+      if (cols[c.col]?.kind !== "venue") return;
+      const origCol = cols.findIndex((x) => x.kind === "venue" && x.id === ev.venueId);
+      if (origCol < 0 || origCol !== c.col) return;
       const origRow = rowOf(ev.clipStartMin) - 1;
       const durRows = rowOf(ev.clipEndMin) - rowOf(ev.clipStartMin);
       const grabOffset = c.row - origRow;
@@ -395,8 +428,10 @@ export function ScheduleView({
       if (!c) return;
       const m = movingRef.current;
       const topRow = Math.max(minRow, Math.min(maxRow - m.durRows, c.row - m.grabOffset));
-      if (c.col !== m.col || topRow !== m.topRow) {
-        setMoving({ ...m, col: c.col, topRow });
+      // メンバー列へは移せない(列は据え置きで時間のみ追従)
+      const nextCol = cols[c.col]?.kind === "venue" ? c.col : m.col;
+      if (nextCol !== m.col || topRow !== m.topRow) {
+        setMoving({ ...m, col: nextCol, topRow });
       }
       if (e.pointerType !== "mouse") e.preventDefault();
       return;
@@ -457,7 +492,7 @@ export function ScheduleView({
         const newStartMin = startHour * 60 + m.topRow * 30;
         const startMs = dayStartMs + newStartMin * 60000;
         const dur = ev.endMs - ev.startMs;
-        const venueId = venues[m.col].id;
+        const venueId = cols[m.col].id;
         setMoveOverrides((prev) => ({
           ...prev,
           [m.id]: { venueId, startMs, endMs: startMs + dur },
@@ -478,8 +513,9 @@ export function ScheduleView({
         s.a === s.b
           ? Math.min(maxRow, l + 2)
           : Math.min(maxRow, Math.max(s.a, s.b) + 1);
+      const col = cols[s.col];
       setPrefill({
-        venueId: venues[s.col].id,
+        venueId: col?.kind === "venue" ? col.id : undefined,
         date: activeDay.key,
         start: toTime(l),
         end: toTime(h),
@@ -510,6 +546,14 @@ export function ScheduleView({
 
   const toggleVisible = (id: string) => {
     setVisibleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleMember = (id: string) => {
+    setVisibleMemberIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -568,7 +612,7 @@ export function ScheduleView({
           onClick={() => setFilterOpen((o) => !o)}
           className="flex items-center gap-1 text-[12px] font-bold text-ink"
         >
-          表示する会場({venues.length}/{allVenues.length})
+          表示する列({cols.length})
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -592,21 +636,44 @@ export function ScheduleView({
         </button>
       </div>
       {filterOpen && (
-        <div className="mb-2 flex flex-wrap gap-1.5 rounded-[14px] border-2 border-line bg-white p-2.5 shadow-[3px_3px_0_var(--color-line)]">
-          {allVenues.map((v) => {
-            const on = venues.some((x) => x.id === v.id);
-            return (
-              <button
-                key={v.id}
-                onClick={() => toggleVisible(v.id)}
-                className={`rounded-full border-2 border-line px-3 py-1.5 text-[12.5px] font-bold ${
-                  on ? "bg-primary text-white" : "bg-white text-muted"
-                }`}
-              >
-                {v.name}
-              </button>
-            );
-          })}
+        <div className="mb-2 rounded-[14px] border-2 border-line bg-white p-2.5 shadow-[3px_3px_0_var(--color-line)]">
+          <div className="mb-1 text-[10.5px] font-bold text-muted">会場</div>
+          <div className="flex flex-wrap gap-1.5">
+            {allVenues.map((v) => {
+              const on = visibleIds.has(v.id);
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => toggleVisible(v.id)}
+                  className={`rounded-full border-2 border-line px-3 py-1.5 text-[12.5px] font-bold ${
+                    on ? "bg-primary text-white" : "bg-white text-muted"
+                  }`}
+                >
+                  {v.name}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2.5 mb-1 text-[10.5px] font-bold text-muted">
+            メンバー(参加・招待中の予定を列で表示)
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {members.map((m) => {
+              const on = visibleMemberIds.has(m.userId);
+              return (
+                <button
+                  key={m.userId}
+                  onClick={() => toggleMember(m.userId)}
+                  className={`rounded-full border-2 border-line px-3 py-1.5 text-[12.5px] font-bold ${
+                    on ? "bg-violet text-white" : "bg-white text-muted"
+                  }`}
+                >
+                  {m.name}
+                  {m.userId === selfId ? "(自分)" : ""}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -623,9 +690,14 @@ export function ScheduleView({
               style={{ gridTemplateColumns: gridCols }}
             >
               <div className="sticky left-0 z-[1] bg-white" />
-              {venues.map((v) => (
-                <div key={v.id} className="truncate border-l-2 border-line px-0.5 py-2">
-                  {v.name}
+              {cols.map((c) => (
+                <div
+                  key={c.key}
+                  className={`truncate border-l-2 border-line px-0.5 py-2 ${
+                    c.kind === "member" ? "bg-violet-soft text-violet" : ""
+                  }`}
+                >
+                  {c.label}
                 </div>
               ))}
             </div>
@@ -638,10 +710,10 @@ export function ScheduleView({
                 <div className="sticky left-0 z-[1] flex items-center justify-end bg-line-soft pr-1 text-[9px] font-bold text-muted">
                   終日
                 </div>
-                {venues.map((v, i) => (
-                  <div key={v.id} className="border-l-2 border-line p-1">
+                {cols.map((c, i) => (
+                  <div key={c.key} className="border-l-2 border-line p-1">
                     {allDayVisible
-                      .filter((e) => e.venueId === v.id)
+                      .filter((e) => eventInCol(e, c))
                       .map((e) => (
                         <Link
                           key={e.id}
@@ -688,10 +760,10 @@ export function ScheduleView({
                     {startHour + i}:00
                   </div>
                 ))}
-                {venues.map((v, i) => (
+                {cols.map((c, i) => (
                   <div
-                    key={v.id}
-                    className="border-l-2 border-line"
+                    key={c.key}
+                    className={`border-l-2 border-line ${c.kind === "member" ? "bg-violet-soft/40" : ""}`}
                     style={{ gridColumn: i + 2, gridRow: `1 / ${totalRows + 1}` }}
                   />
                 ))}
@@ -702,7 +774,7 @@ export function ScheduleView({
                     aria-hidden
                     className="pointer-events-none border-t-2 border-dashed border-ink/10"
                     style={{
-                      gridColumn: `2 / ${venues.length + 2}`,
+                      gridColumn: `2 / ${cols.length + 2}`,
                       gridRow: (i + 1) * 2 + 1,
                     }}
                   />
@@ -711,7 +783,7 @@ export function ScheduleView({
                   <div
                     aria-hidden
                     className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-[0.08]"
-                    style={{ gridColumn: `2 / ${venues.length + 2}`, gridRow: `1 / ${minRow + 1}` }}
+                    style={{ gridColumn: `2 / ${cols.length + 2}`, gridRow: `1 / ${minRow + 1}` }}
                   />
                 )}
                 {maxRow < totalRows && (
@@ -719,7 +791,7 @@ export function ScheduleView({
                     aria-hidden
                     className="pointer-events-none bg-[repeating-linear-gradient(45deg,var(--color-line),var(--color-line)_6px,transparent_6px,transparent_12px)] opacity-[0.08]"
                     style={{
-                      gridColumn: `2 / ${venues.length + 2}`,
+                      gridColumn: `2 / ${cols.length + 2}`,
                       gridRow: `${maxRow + 1} / ${totalRows + 1}`,
                     }}
                   />
@@ -747,15 +819,16 @@ export function ScheduleView({
                   </div>
                 )}
 
-                {dayTimed.map((e) => {
-                  const col = venues.findIndex((v) => v.id === e.venueId);
-                  if (col < 0) return null;
-                  const lane = laneMap.get(e.id) ?? { lane: 0, lanes: 1 };
+                {cols.flatMap((c, col) =>
+                  dayTimed.filter((e) => eventInCol(e, c)).map((e) => {
+                  const lane = laneMap.get(`${c.key}:${e.id}`) ?? { lane: 0, lanes: 1 };
                   const isMovingThis = moving?.id === e.id;
                   const faded = highlightMine && !e.mine;
+                  // メンバー列で招待に未回答のものは薄く表示
+                  const invitedHere = c.kind === "member" && memberStatus(c.id, e.id) === "invited";
                   return (
                     <Link
-                      key={e.id}
+                      key={`${c.key}:${e.id}`}
                       href={`/events/${e.id}`}
                       data-eid={e.id}
                       onClick={(ev) => {
@@ -765,7 +838,7 @@ export function ScheduleView({
                         }
                       }}
                       className={`relative overflow-hidden rounded-[10px] border-2 border-line px-1.5 py-1 text-left text-[10px] leading-tight font-bold shadow-[2px_2px_0_var(--color-line)] ${eventColorClass(e.color) ?? colorClasses[col % colorClasses.length]} ${
-                        isMovingThis ? "opacity-40" : faded ? "opacity-25" : ""
+                        isMovingThis ? "opacity-40" : faded ? "opacity-25" : invitedHere ? "opacity-60" : ""
                       }`}
                       style={{
                         gridColumn: col + 2,
@@ -775,8 +848,12 @@ export function ScheduleView({
                         marginTop: 2,
                         marginBottom: 2,
                         // 主催者・管理者はタッチでもドラッグ移動できるようスクロールを無効化
+                        // (移動できるのは会場列のみ)
                         touchAction:
-                          e.canManage && !e.continuesBefore && !e.continuesAfter
+                          c.kind === "venue" &&
+                          e.canManage &&
+                          !e.continuesBefore &&
+                          !e.continuesAfter
                             ? "none"
                             : undefined,
                       }}
@@ -788,11 +865,13 @@ export function ScheduleView({
                       <EventIcon icon={e.icon} className="mr-0.5 inline h-3 w-3 align-[-2px]" />
                       {e.title}
                       <span className="block text-[9px] font-bold opacity-85">
+                        {invitedHere ? "招待中 · " : ""}
                         {e.joined}人{e.continuesAfter ? " · 翌日へ↓" : ""}
                       </span>
                     </Link>
                   );
-                })}
+                  }),
+                )}
               </div>
 
               {/* 現在時刻バー */}
@@ -815,10 +894,16 @@ export function ScheduleView({
         </div>
       </div>
 
-      {/* 作成FABはイベントタブへ移動。空き枠タップからの作成は継続 */}
+      <Fab
+        onClick={() => {
+          setPrefill(undefined);
+          setModalOpen(true);
+        }}
+        label="イベントを作成"
+      />
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="イベントを作成">
         <EventForm
-          venues={venues}
+          venues={allVenues}
           days={days}
           members={members}
           selfId={selfId}

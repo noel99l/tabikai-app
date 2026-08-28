@@ -73,11 +73,7 @@ export default async function EventsPage() {
           icon: e.icon,
           participants: participants.filter((p) => p.eventId === e.id),
         }))}
-        members={members.map((m) => ({
-          userId: m.userId,
-          name: m.name ?? "?",
-          emoji: m.avatarEmoji,
-        }))}
+        members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}
         venues={venues.map((v) => ({ id: v.id, name: v.name }))}
         days={days}
         selfId={user.id}

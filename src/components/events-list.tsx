@@ -6,7 +6,6 @@ import { EventForm } from "./event-form";
 import { EventIcon, eventColorClass } from "./event-icons";
 import { IconCalendar } from "./icons";
 import { Fab, Modal } from "./modal";
-import { Avatar } from "./ui";
 import { fmtTime, jstDateKey } from "@/lib/format";
 
 type Ev = {
@@ -21,11 +20,9 @@ type Ev = {
   participants: { userId: string; status: string }[];
 };
 
-type Member = { userId: string; name: string; emoji: string | null };
-
 type Props = {
   events: Ev[];
-  members: Member[];
+  members: { userId: string; name: string }[];
   venues: { id: string; name: string }[];
   days: { key: string; label: string }[];
   selfId: string;
@@ -33,7 +30,7 @@ type Props = {
 
 const VIEW_KEY = "events-view";
 
-// 自分/選択メンバーの参加状態ピル
+// 自分の参加状態ピル
 function StatusPill({ status }: { status: string | undefined }) {
   if (status === "joined")
     return (
@@ -57,17 +54,7 @@ function StatusPill({ status }: { status: string | undefined }) {
 }
 
 // アジェンダ1行(開始/終了時刻+イベントカード)
-function AgendaRow({
-  ev,
-  status,
-  dim = false,
-  statusLabelOverride,
-}: {
-  ev: Ev;
-  status: string | undefined;
-  dim?: boolean;
-  statusLabelOverride?: string;
-}) {
+function AgendaRow({ ev, status, dim = false }: { ev: Ev; status: string | undefined; dim?: boolean }) {
   return (
     <div className="mb-2.5 flex gap-2.5">
       <div className="w-11 shrink-0 pt-2 text-right">
@@ -101,82 +88,54 @@ function AgendaRow({
             {ev.participants.filter((p) => p.status === "joined").length}人
           </span>
         </span>
-        {statusLabelOverride ? (
-          <span className="ml-auto shrink-0 rounded-full border-2 border-line bg-violet-soft px-2 py-0.5 text-[10px] font-bold text-violet">
-            {statusLabelOverride}
-          </span>
-        ) : (
-          <StatusPill status={status} />
-        )}
+        <StatusPill status={status} />
       </Link>
     </div>
   );
 }
 
+// イベントリスト: 全日を縦積みで表示([すべて|自分の予定]で絞り込み)
 export function EventsList({ events, members, venues, days, selfId }: Props) {
-  // 今日が旅程内なら今日のタブを初期選択
-  const [dayIdx, setDayIdx] = useState(() => {
-    const today = jstDateKey(new Date());
-    const i = days.findIndex((d) => d.key === today);
-    return i >= 0 ? i : 0;
-  });
-  const [view, setView] = useState<"list" | "members">("list");
-  const [memberId, setMemberId] = useState(selfId);
+  const [view, setView] = useState<"all" | "mine">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [nowTick, setNowTick] = useState<number | null>(null);
 
-  // 表示ビューを記憶(次回も同じビューで開く)
   useEffect(() => {
     const saved = localStorage.getItem(VIEW_KEY);
-    if (saved === "members") setView("members");
+    if (saved === "mine") setView("mine");
     setNowTick(Date.now());
     const t = setInterval(() => setNowTick(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
-  const switchView = (v: "list" | "members") => {
+  const switchView = (v: "all" | "mine") => {
     setView(v);
     localStorage.setItem(VIEW_KEY, v);
   };
 
-  const activeDay = days[dayIdx];
-  const isToday = activeDay && jstDateKey(new Date()) === activeDay.key;
+  const myStatus = (ev: Ev) => ev.participants.find((p) => p.userId === selfId)?.status;
 
-  // 選択日の時間指定イベント(開始時間順)と終日イベント
-  const { timed, allDay } = useMemo(() => {
-    const timed = events
-      .filter((e) => !e.allDay && jstDateKey(e.startsAt) === activeDay?.key)
-      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-    const allDay = events.filter(
-      (e) =>
-        e.allDay &&
-        activeDay &&
-        jstDateKey(e.startsAt) <= activeDay.key &&
-        activeDay.key <= jstDateKey(e.endsAt),
-    );
-    return { timed, allDay };
-  }, [events, activeDay]);
+  // 日ごとにまとめる(すべて縦積み)
+  const byDay = useMemo(() => {
+    const base =
+      view === "mine"
+        ? events.filter((e) => {
+            const st = myStatus(e);
+            return st === "joined" || st === "invited";
+          })
+        : events;
+    return days.map((d) => ({
+      day: d,
+      timed: base
+        .filter((e) => !e.allDay && jstDateKey(e.startsAt) === d.key)
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
+      allDay: base.filter(
+        (e) => e.allDay && jstDateKey(e.startsAt) <= d.key && d.key <= jstDateKey(e.endsAt),
+      ),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, days, view, selfId]);
 
-  const statusOf = (ev: Ev, userId: string) =>
-    ev.participants.find((p) => p.userId === userId)?.status;
-
-  // メンバービュー: 選択メンバーが参加/招待中のイベント
-  const memberEvents = useMemo(
-    () =>
-      timed.filter((e) => {
-        const st = statusOf(e, memberId);
-        return st === "joined" || st === "invited";
-      }),
-    [timed, memberId],
-  );
-  const selectedMember = members.find((m) => m.userId === memberId);
-
-  // 現在時刻ライン(当日のみ)。直後のイベントの直前に挿入する
-  const nowLineIdx =
-    isToday && nowTick
-      ? (view === "list" ? timed : memberEvents).findIndex(
-          (e) => e.startsAt.getTime() > nowTick,
-        )
-      : -1;
+  const todayKey = jstDateKey(new Date());
   const nowLabel = nowTick
     ? new Date(nowTick).toLocaleTimeString("ja-JP", {
         hour: "2-digit",
@@ -197,130 +156,81 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
     `flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-bold ${
       on ? "bg-ink text-screen" : "text-muted"
     }`;
+  const total = byDay.reduce((s, d) => s + d.timed.length, 0);
 
   return (
     <>
-      {/* ビュー切替 */}
+      {/* すべて / 自分の予定 */}
       <div className="mb-3 flex gap-1.5 rounded-[13px] border-2 border-line bg-white p-1 shadow-[3px_3px_0_var(--color-line)]">
-        <button onClick={() => switchView("list")} className={segCls(view === "list")}>
-          リスト
+        <button onClick={() => switchView("all")} className={segCls(view === "all")}>
+          すべて
         </button>
-        <button onClick={() => switchView("members")} className={segCls(view === "members")}>
-          メンバー
+        <button onClick={() => switchView("mine")} className={segCls(view === "mine")}>
+          自分の予定
         </button>
       </div>
 
-      {/* メンバー選択チップ */}
-      {view === "members" && (
-        <div className="-mx-3.5 mb-1 flex gap-2 overflow-x-auto px-3.5 pb-2">
-          {members.map((m) => {
-            const on = m.userId === memberId;
-            return (
-              <button
-                key={m.userId}
-                onClick={() => setMemberId(m.userId)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border-2 border-line py-1 pr-3 pl-1 text-[11.5px] font-bold shadow-[2px_2px_0_var(--color-line)] ${
-                  on ? "bg-ink text-screen" : "bg-white"
-                }`}
-              >
-                <Avatar name={m.name ?? "?"} emoji={m.emoji} size={22} />
-                {m.name}
-                {m.userId === selfId ? "(自分)" : ""}
-              </button>
-            );
-          })}
-        </div>
+      {total === 0 && (
+        <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center text-[12.5px] text-muted shadow-[3px_3px_0_var(--color-line)]">
+          {view === "mine"
+            ? "参加・招待中のイベントはありません。"
+            : "イベントはまだありません。右下の＋から作成できます。"}
+        </p>
       )}
 
-      {/* 日付タブ */}
-      <div className="mb-3 flex gap-2">
-        {days.map((d, i) => (
-          <button
-            key={d.key}
-            onClick={() => setDayIdx(i)}
-            className={`flex-1 rounded-xl border-2 border-line py-2 text-center text-[13px] font-bold shadow-[2px_2px_0_var(--color-line)] ${
-              i === dayIdx ? "bg-ink text-screen" : "bg-white"
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 終日(会場確保) */}
-      {allDay.map((e) => (
-        <Link
-          key={e.id}
-          href={`/events/${e.id}`}
-          className="mb-2.5 flex items-center gap-2 rounded-xl border-2 border-dashed border-line bg-white/60 px-3 py-2 text-[11px] font-bold text-muted"
-        >
-          <IconCalendar className="h-3.5 w-3.5" />
-          終日 · {e.title} · {e.venueName}
-        </Link>
-      ))}
-
-      {view === "list" ? (
-        <>
-          {timed.length === 0 && (
-            <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center text-[12.5px] text-muted shadow-[3px_3px_0_var(--color-line)]">
-              この日のイベントはまだありません。右下の＋から作成できます。
-            </p>
-          )}
-          {timed.map((e, i) => (
-            <div key={e.id}>
-              {i === nowLineIdx && NowLine}
-              <AgendaRow ev={e} status={statusOf(e, selfId)} />
+      {byDay.map(({ day, timed, allDay }) => {
+        if (timed.length === 0 && allDay.length === 0) return null;
+        const isToday = day.key === todayKey;
+        const nowLineIdx =
+          isToday && nowTick ? timed.findIndex((e) => e.startsAt.getTime() > nowTick) : -1;
+        return (
+          <section key={day.key} className="mb-4">
+            {/* 日付見出し(スクロール中も見えるように上部に固定) */}
+            <div className="sticky top-0 z-10 -mx-3.5 mb-2 bg-screen px-3.5 py-1.5">
+              <span
+                className={`inline-block rounded-full border-2 border-line px-3.5 py-1 font-pop text-[13px] shadow-[2px_2px_0_var(--color-line)] ${
+                  isToday ? "bg-ink text-screen" : "bg-white"
+                }`}
+              >
+                {day.label}
+                {isToday ? " · 今日" : ""}
+              </span>
             </div>
-          ))}
-          {timed.length > 0 && nowLineIdx === -1 && isToday && NowLine}
-        </>
-      ) : (
-        <>
-          <p className="mx-0.5 mb-2 text-[11px] font-bold text-muted">
-            {selectedMember?.name}さんの予定 {memberEvents.length}件
-          </p>
-          {memberEvents.length === 0 && (
-            <p className="rounded-[14px] border-2 border-line bg-white p-4 text-center text-[12.5px] text-muted shadow-[3px_3px_0_var(--color-line)]">
-              この日の予定はありません。
-            </p>
-          )}
-          {memberEvents.map((e, i) => {
-            const prev = memberEvents[i - 1];
-            const gapMin = prev
-              ? Math.round((e.startsAt.getTime() - prev.endsAt.getTime()) / 60000)
-              : 0;
-            const st = statusOf(e, memberId);
-            return (
+
+            {allDay.map((e) => (
+              <Link
+                key={e.id}
+                href={`/events/${e.id}`}
+                className="mb-2.5 flex items-center gap-2 rounded-xl border-2 border-dashed border-line bg-white/60 px-3 py-2 text-[11px] font-bold text-muted"
+              >
+                <IconCalendar className="h-3.5 w-3.5" />
+                終日 · {e.title} · {e.venueName}
+              </Link>
+            ))}
+
+            {timed.map((e, i) => (
               <div key={e.id}>
-                {gapMin >= 45 && (
-                  <div className="mb-2.5 ml-[54px] rounded-[11px] border-2 border-dashed border-ink/35 px-3 py-1.5 text-[10.5px] font-bold text-muted">
-                    {fmtTime(prev.endsAt)} – {fmtTime(e.startsAt)} · あき
-                  </div>
-                )}
                 {i === nowLineIdx && NowLine}
                 <AgendaRow
                   ev={e}
-                  status={st}
-                  dim={st === "invited"}
-                  statusLabelOverride={st === "invited" ? "招待中" : undefined}
+                  status={myStatus(e)}
+                  dim={view === "mine" && myStatus(e) === "invited"}
                 />
               </div>
-            );
-          })}
-        </>
-      )}
+            ))}
+            {timed.length > 0 && nowLineIdx === -1 && isToday && NowLine}
+          </section>
+        );
+      })}
 
-      <Fab
-        onClick={() => setModalOpen(true)}
-        label="イベントを作成"
-      />
+      <Fab onClick={() => setModalOpen(true)} label="イベントを作成" />
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="イベントを作成">
         <EventForm
           venues={venues}
           days={days}
-          members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}
+          members={members}
           selfId={selfId}
-          defaults={{ date: activeDay?.key }}
+          defaults={{ date: days.find((d) => d.key === todayKey)?.key ?? days[0]?.key }}
           onSuccess={() => setModalOpen(false)}
         />
       </Modal>

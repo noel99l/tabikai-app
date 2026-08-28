@@ -1,4 +1,4 @@
-import { count, eq, sql } from "drizzle-orm";
+import { count, eq, inArray, sql } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ScheduleView } from "@/components/schedule-view";
@@ -38,6 +38,23 @@ export default async function SchedulePage() {
       .where(eq(schema.events.tripId, trip.id))
       .groupBy(schema.events.id),
   ]);
+
+  // メンバー列表示用: 参加者(参加/招待)の一覧
+  const participants = events.length
+    ? await db
+        .select({
+          eventId: schema.eventParticipants.eventId,
+          userId: schema.eventParticipants.userId,
+          status: schema.eventParticipants.status,
+        })
+        .from(schema.eventParticipants)
+        .where(
+          inArray(
+            schema.eventParticipants.eventId,
+            events.map((e) => e.id),
+          ),
+        )
+    : [];
 
   // 旅程から日付タブを生成
   const days: { key: string; label: string }[] = [];
@@ -82,7 +99,8 @@ export default async function SchedulePage() {
           tripStartMs={trip.startsAt.getTime()}
           tripEndMs={trip.endsAt.getTime()}
           isMultiDay={jstDateKey(trip.startsAt) !== jstDateKey(trip.endsAt)}
-          members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+          members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}
+          participants={participants}
           selfId={user.id}
         />
       )}
