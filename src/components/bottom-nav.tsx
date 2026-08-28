@@ -11,7 +11,7 @@ import {
 } from "./icons";
 
 const tabs = [
-  { href: "/", label: "ホーム", icon: IconHome },
+  { href: "/home", label: "ホーム", icon: IconHome },
   { href: "/schedule", label: "予定表", icon: IconCalendar },
   { href: "/items", label: "買い出し", icon: IconList },
   { href: "/expenses", label: "費用", icon: IconMoney },
@@ -28,7 +28,7 @@ export function BottomNav() {
       <div className="mx-auto flex max-w-md px-1 pt-1.5 pb-2">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            pathname.startsWith(href);
           return (
             <Link
               key={href}

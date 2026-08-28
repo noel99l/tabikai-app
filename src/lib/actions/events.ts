@@ -104,7 +104,7 @@ export async function createEvent(formData: FormData) {
 
   // モーダルからの作成なので遷移せず、予定表を再検証して反映する
   revalidatePath("/schedule");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 export async function joinEvent(eventId: string) {
@@ -304,7 +304,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   );
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/schedule");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // イベントのドラッグ移動(会場・開始時刻の変更、所要時間は維持)。主催者・管理者のみ。
@@ -355,7 +355,7 @@ export async function moveEvent(
     },
   );
   revalidatePath("/schedule");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // リマインド通知(開始5分前・デフォルトオン)の個人オン/オフ
@@ -405,5 +405,5 @@ export async function deleteEvent(eventId: string) {
     },
   );
   revalidatePath("/schedule");
-  revalidatePath("/");
+  revalidatePath("/home");
 }

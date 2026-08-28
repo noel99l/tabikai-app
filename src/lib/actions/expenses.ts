@@ -150,7 +150,7 @@ export async function createExpense(formData: FormData) {
   }
   revalidatePath("/expenses");
   revalidatePath("/approvals");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 export async function approveShare(expenseId: string) {
@@ -307,7 +307,7 @@ export async function updateExpense(formData: FormData) {
   }
   revalidatePath("/expenses");
   revalidatePath("/approvals");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // 費用の削除。作成者・立替者・管理者のみ。
@@ -323,7 +323,7 @@ export async function deleteExpense(expenseId: string) {
   await db.delete(schema.expenses).where(eq(schema.expenses.id, expenseId));
   revalidatePath("/expenses");
   revalidatePath("/approvals");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // 送金回数が最少になる精算リストを算出(貪欲法)
@@ -413,7 +413,7 @@ export async function closeExpenses() {
   );
   revalidatePath("/manage/expenses");
   revalidatePath("/expenses");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // 締めを解除して精算リストを取り消す(管理者のみ)
@@ -427,5 +427,5 @@ export async function reopenExpenses() {
     .where(eq(schema.trips.id, trip.id));
   revalidatePath("/manage/expenses");
   revalidatePath("/expenses");
-  revalidatePath("/");
+  revalidatePath("/home");
 }

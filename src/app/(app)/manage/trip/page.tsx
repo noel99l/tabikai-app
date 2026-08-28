@@ -15,7 +15,7 @@ import { requireTripContext } from "@/lib/session";
 
 export default async function TripSettingsPage() {
   const { trip, isAdmin } = await requireTripContext();
-  if (!isAdmin) redirect("/");
+  if (!isAdmin) redirect("/home");
 
   return (
     <>

@@ -18,7 +18,7 @@ import { requireTripContext } from "@/lib/session";
 // 管理者コンソール(ハブ)。管理者のみアクセス可能。
 export default async function ManagePage() {
   const { trip, db, isAdmin } = await requireTripContext();
-  if (!isAdmin) redirect("/");
+  if (!isAdmin) redirect("/home");
 
   const [pending] = await db
     .select({ value: count() })
@@ -74,7 +74,7 @@ export default async function ManagePage() {
     <>
       <AppHeader title="管理者コンソール" />
       <Link
-        href="/"
+        href="/home"
         className="mb-2 flex items-center gap-1 text-[13px] font-bold text-primary"
       >
         <IconBack className="h-4 w-4" />

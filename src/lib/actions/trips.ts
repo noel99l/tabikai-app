@@ -67,7 +67,7 @@ export async function createTrip(formData: FormData) {
     );
   }
   await setTripCookie(trip.id);
-  redirect("/");
+  redirect("/home");
 }
 
 // 招待リンク(/join/[tripId])からの参加リクエスト
@@ -148,7 +148,7 @@ export async function updateTripDates(formData: FormData) {
     .where(eq(schema.trips.id, trip.id));
   revalidatePath("/manage/trip");
   revalidatePath("/schedule");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // 企画名の更新
@@ -159,7 +159,7 @@ export async function updateTripName(formData: FormData) {
   if (!name) return;
   await db.update(schema.trips).set({ name }).where(eq(schema.trips.id, trip.id));
   revalidatePath("/manage/trip");
-  revalidatePath("/");
+  revalidatePath("/home");
 }
 
 // イベントロゴの登録・削除。クライアントで128px正方形にリサイズ済みの data URL を受け取る。
@@ -176,7 +176,7 @@ export async function updateTripLogo(dataUrl: string | null) {
     .set({ logoUrl: dataUrl })
     .where(eq(schema.trips.id, trip.id));
   revalidatePath("/manage/trip");
-  revalidatePath("/");
+  revalidatePath("/home");
   revalidatePath("/trips");
 }
 

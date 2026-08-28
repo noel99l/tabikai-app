@@ -12,7 +12,7 @@ import { requireTripContext } from "@/lib/session";
 
 export default async function VenuesPage() {
   const { trip, db, isAdmin } = await requireTripContext();
-  if (!isAdmin) redirect("/");
+  if (!isAdmin) redirect("/home");
 
   const venues = await db
     .select({

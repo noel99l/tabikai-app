@@ -12,7 +12,7 @@ import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 export default async function ManageExpensesPage() {
   const { trip, db, isAdmin } = await requireTripContext();
-  if (!isAdmin) redirect("/");
+  if (!isAdmin) redirect("/home");
 
   const members = await getApprovedMembers();
   const nameOf = (id: string) =>

@@ -16,7 +16,7 @@ import { requireTripContext } from "@/lib/session";
 // メンバー参加承認(管理者のみ)。PC管理画面はフェーズ4で拡張予定。
 export default async function MembersPage() {
   const { trip, db, isAdmin } = await requireTripContext();
-  if (!isAdmin) redirect("/");
+  if (!isAdmin) redirect("/home");
 
   const rows = await db
     .select({
