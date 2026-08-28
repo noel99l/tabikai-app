@@ -56,31 +56,6 @@ function IllustOpenInBrowser() {
   );
 }
 
-// Safari: 下部ツールバーの共有ボタン
-function IllustSafariShare() {
-  return (
-    <div className={illustFrame}>
-      <svg viewBox="0 0 300 72" className="w-full" aria-hidden>
-        {/* アドレスバー+下部バー */}
-        <rect x="4" y="6" width="292" height="24" rx="8" fill="#fff" stroke="#1b1b1b" strokeWidth="2" />
-        <text x="150" y="22" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#8a8a8a">tabikai.app</text>
-        <rect x="4" y="38" width="292" height="28" rx="8" fill="#fff" stroke="#1b1b1b" strokeWidth="2" />
-        <text x="40" y="58" fontSize="14" fontWeight="bold" fill="#8a8a8a">‹</text>
-        <text x="90" y="58" fontSize="14" fontWeight="bold" fill="#8a8a8a">›</text>
-        {/* 共有ボタンを強調 */}
-        <circle cx="150" cy="52" r="12" fill="#ffe9e4" stroke="#ff4d2e" strokeWidth="2.5" />
-        <g stroke="#ff4d2e" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M150 45.5v8M150 45.5l-3 3M150 45.5l3 3" />
-          <path d="M145 51.5v5.5h10v-5.5" />
-        </g>
-        <rect x="200" y="45" width="14" height="14" rx="3" fill="none" stroke="#8a8a8a" strokeWidth="2" />
-        <rect x="248" y="45" width="14" height="14" rx="3" fill="none" stroke="#8a8a8a" strokeWidth="2" />
-        <rect x="252" y="41" width="14" height="14" rx="3" fill="#fff" stroke="#8a8a8a" strokeWidth="2" />
-      </svg>
-    </div>
-  );
-}
-
 // Android Chrome: 「⋮」メニュー → ホーム画面に追加
 function IllustAndroidMenu() {
   return (
@@ -246,44 +221,52 @@ export function InstallPrompt() {
               画面右上(または右下)の<b>「…」メニュー</b>から
               <b>「ブラウザで開く」(Safariで開く)</b>を選ぶ
             </Step>
-            <Step n={2} illust={<IllustSafariShare />}>
-              ブラウザで開いたら<b>共有メニュー</b>を開く(Safariは画面下の共有ボタン、Chromeなどは「…」→「共有」)
+            <Step n={2} illust={<GuideShot src="/guide/safari-step2-share.png" alt="メニューの共有" height={489} />}>
+              ブラウザで開いたら、アドレスバー横の<b>「…」メニュー</b>から<b>「共有」</b>をタップ
             </Step>
-            <Step n={3} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
+            <Step n={3} illust={<GuideShot src="/guide/safari-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
               <b>「ホーム画面に追加」</b>をタップ
             </Step>
-            <Step n={4} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
+            <Step n={4} illust={<GuideShot src="/guide/safari-step4-add.png" alt="右上の追加をタップ" height={476} />}>
               右上の<b>「追加」</b>をタップして完了
             </Step>
           </ol>
         )}
 
         {platform === "ios-safari" && (
-          <ol className="space-y-4">
-            <Step n={1} illust={<IllustSafariShare />}>
-              画面下(またはアドレスバー)の<b>共有ボタン</b>をタップ
-            </Step>
-            <Step n={2} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
-              メニューを下にスクロールして<b>「ホーム画面に追加」</b>をタップ
-            </Step>
-            <Step n={3} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
-              右上の<b>「追加」</b>をタップして完了
-            </Step>
-          </ol>
+          <>
+            <ol className="space-y-4">
+              <Step n={1} illust={<GuideShot src="/guide/safari-step1-menu.png" alt="アドレスバー横のメニューボタン" height={234} />}>
+                アドレスバー横の<b>「…」メニュー</b>をタップ
+              </Step>
+              <Step n={2} illust={<GuideShot src="/guide/safari-step2-share.png" alt="メニューの共有" height={489} />}>
+                <b>「共有」</b>をタップ
+              </Step>
+              <Step n={3} illust={<GuideShot src="/guide/safari-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
+                <b>「ホーム画面に追加」</b>をタップ
+              </Step>
+              <Step n={4} illust={<GuideShot src="/guide/safari-step4-add.png" alt="右上の追加をタップ" height={476} />}>
+                右上の<b>「追加」</b>をタップして完了
+              </Step>
+            </ol>
+            <p className="mt-3 text-[11.5px] text-muted">
+              古いバージョンのiOSでは、画面下中央の共有ボタン(四角に上矢印)から共有メニューを開けます。
+            </p>
+          </>
         )}
 
         {platform === "ios-browser" && (
           <ol className="space-y-4">
-            <Step n={1} illust={<GuideShot src="/guide/ios-step1-menu.png" alt="アドレスバー横のメニューボタン" height={234} />}>
-              アドレスバー横の<b>「…」メニュー</b>(または共有ボタン)をタップ
+            <Step n={1} illust={<GuideShot src="/guide/chrome-step1-share.png" alt="アドレスバー右の共有ボタン" height={140} />}>
+              アドレスバー右の<b>共有ボタン</b>をタップ
             </Step>
-            <Step n={2} illust={<GuideShot src="/guide/ios-step2-share.png" alt="メニューの共有" height={489} />}>
-              <b>「共有」</b>をタップ
+            <Step n={2} illust={<GuideShot src="/guide/chrome-step2-more.png" alt="共有メニューのもっと見る" height={333} />}>
+              共有メニューの<b>「もっと見る」</b>をタップ
             </Step>
-            <Step n={3} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
+            <Step n={3} illust={<GuideShot src="/guide/chrome-step3-a2hs.png" alt="ホーム画面に追加" height={406} />}>
               <b>「ホーム画面に追加」</b>をタップ
             </Step>
-            <Step n={4} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
+            <Step n={4} illust={<GuideShot src="/guide/chrome-step4-add.png" alt="右上の追加をタップ" height={476} />}>
               右上の<b>「追加」</b>をタップして完了
             </Step>
           </ol>

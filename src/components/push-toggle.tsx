@@ -19,8 +19,13 @@ type State = "loading" | "unsupported" | "off" | "on" | "denied";
 export function PushToggle() {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
+    setIsIos(
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+        (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1),
+    );
     if (
       typeof window === "undefined" ||
       !("serviceWorker" in navigator) ||
@@ -114,18 +119,25 @@ export function PushToggle() {
             通知をオンにする
           </button>
         ) : (
-          <span className="shrink-0 text-[11.5px] text-muted">
+          <span className="shrink-0 rounded-full border-2 border-line bg-screen px-2.5 py-1 text-[11px] font-bold text-muted">
             {state === "loading"
               ? "確認中…"
               : state === "denied"
-                ? "ブラウザ設定で拒否中"
-                : "この端末は非対応"}
+                ? "拒否中"
+                : "利用できません"}
           </span>
         )}
       </div>
       {state === "denied" && (
-        <p className="mt-2 text-[11px] text-muted">
-          ブラウザのサイト設定で通知を「許可」に変更してください。iPhoneはホーム画面に追加したアプリから開く必要があります。
+        <p className="mt-2.5 rounded-xl border-2 border-pend bg-pend-soft px-3 py-2.5 text-[11.5px] font-semibold text-pend">
+          通知がブラウザ設定で拒否されています。ブラウザのサイト設定で通知を「許可」に変更してください。iPhoneはホーム画面に追加したアプリから開く必要があります。
+        </p>
+      )}
+      {state === "unsupported" && (
+        <p className="mt-2.5 rounded-xl border-2 border-pend bg-pend-soft px-3 py-2.5 text-[11.5px] font-semibold text-pend">
+          {isIos
+            ? "このブラウザからは通知を受け取れません。「ホーム画面に追加」したアプリから開き直すと、ここで通知をオンにできます(iOS 16.4以降)。追加のやり方はホーム画面のバナー「方法を見る」からご覧いただけます。"
+            : "このブラウザはプッシュ通知に対応していません。ChromeやEdgeなどの対応ブラウザでお試しください。"}
         </p>
       )}
     </div>

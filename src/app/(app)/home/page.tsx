@@ -90,12 +90,6 @@ export default async function DashboardPage() {
         <div className="text-xs text-muted">
           {fmtDateTime(trip.startsAt)} – {fmtDateTime(trip.endsAt)} · 参加{members.length}人
         </div>
-        <Link
-          href="/trips"
-          className="mt-2.5 rounded-lg bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary"
-        >
-          イベントを切り替え
-        </Link>
       </Card>
 
       {isAdmin && pendingMembers.value > 0 && (
