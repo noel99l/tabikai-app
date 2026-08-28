@@ -46,6 +46,8 @@ export default async function EventsPage() {
     : [];
 
   const venueName = (id: string) => venues.find((v) => v.id === id)?.name ?? "";
+  // 予定表でデフォルト非表示の会場(個室・お風呂など)のイベントは一覧に出さない
+  const venueShown = (id: string) => venues.find((v) => v.id === id)?.showInSchedule ?? true;
 
   // 旅程から日付タブを生成(予定表と同じロジック)
   const days: { key: string; label: string }[] = [];
@@ -71,6 +73,7 @@ export default async function EventsPage() {
           allDay: e.allDay,
           color: e.color,
           icon: e.icon,
+          venueShown: venueShown(e.venueId),
           participants: participants.filter((p) => p.eventId === e.id),
         }))}
         members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}

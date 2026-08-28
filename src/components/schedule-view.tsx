@@ -216,10 +216,14 @@ export function ScheduleView({
   }, [participants]);
   const memberStatus = (userId: string, eventId: string) =>
     partOf.get(userId)?.get(eventId);
-  const eventInCol = (e: { id: string; venueId: string }, c: Col) =>
-    c.kind === "venue"
-      ? e.venueId === c.id
-      : memberStatus(c.id, e.id) === "joined" || memberStatus(c.id, e.id) === "invited";
+  const venueShownById = new Map(allVenues.map((v) => [v.id, v.defaultShow]));
+  const eventInCol = (e: { id: string; venueId: string }, c: Col) => {
+    if (c.kind === "venue") return e.venueId === c.id;
+    const st = memberStatus(c.id, e.id);
+    if (st !== "joined" && st !== "invited") return false;
+    // 非表示会場(個室等)のイベントは、本人(自分)の列でのみ表示する
+    return (venueShownById.get(e.venueId) ?? true) || c.id === selfId;
+  };
 
   // ===== アクティブ日のデータ =====
   const activeDay = days[dayIdx] ?? days[0];

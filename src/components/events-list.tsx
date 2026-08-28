@@ -17,6 +17,8 @@ type Ev = {
   allDay: boolean;
   color: string | null;
   icon: string | null;
+  // 予定表での表示がOFFの会場(個室等)のイベントは、自分が関わるものを除き一覧に出さない
+  venueShown: boolean;
   participants: { userId: string; status: string }[];
 };
 
@@ -116,13 +118,19 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
 
   // 日ごとにまとめる(すべて縦積み)
   const byDay = useMemo(() => {
+    // 非表示会場のイベントは、自分が参加/招待されているものだけ表示(他人の個室利用等を露出させない)
+    const visible = events.filter((e) => {
+      if (e.venueShown) return true;
+      const st = myStatus(e);
+      return st === "joined" || st === "invited";
+    });
     const base =
       view === "mine"
-        ? events.filter((e) => {
+        ? visible.filter((e) => {
             const st = myStatus(e);
             return st === "joined" || st === "invited";
           })
-        : events;
+        : visible;
     return days.map((d) => ({
       day: d,
       timed: base
