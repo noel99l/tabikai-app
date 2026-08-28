@@ -43,23 +43,22 @@ export function PushNudge() {
           リマインドやお知らせを受け取るにはオンにしてください。
         </p>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <Link
-          href="/settings"
-          className="rounded-full border-2 border-line bg-primary px-3 py-1.5 text-[11.5px] font-bold text-white"
-        >
-          設定する
-        </Link>
-        <button
-          onClick={() => {
-            localStorage.setItem(DISMISS_KEY, String(Date.now()));
-            setShow(false);
-          }}
-          className="text-[10.5px] font-bold text-muted"
-        >
-          あとで
-        </button>
-      </div>
+      <Link
+        href="/settings"
+        className="shrink-0 rounded-full border-2 border-line bg-primary px-3 py-1.5 text-[11.5px] font-bold text-white"
+      >
+        設定する
+      </Link>
+      <button
+        onClick={() => {
+          localStorage.setItem(DISMISS_KEY, String(Date.now()));
+          setShow(false);
+        }}
+        aria-label="閉じる"
+        className="shrink-0 text-muted"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="h-4 w-4" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
     </div>
   );
 }

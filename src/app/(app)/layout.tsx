@@ -1,3 +1,4 @@
+import { AutoRefresh } from "@/components/auto-refresh";
 import { BottomNav } from "@/components/bottom-nav";
 import { requireTripContext } from "@/lib/session";
 
@@ -9,6 +10,7 @@ export default async function AppLayout({
   await requireTripContext();
   return (
     <div className="mx-auto min-h-dvh max-w-md px-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <AutoRefresh />
       {children}
       {modal}
       <BottomNav />

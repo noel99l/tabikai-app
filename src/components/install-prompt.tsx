@@ -73,17 +73,15 @@ export function InstallPrompt() {
             アプリのように使え、プッシュ通知も受け取れます。
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <button
-            onClick={platform === "android" ? installAndroid : () => setIosOpen(true)}
-            className="rounded-full border-2 border-line bg-primary px-3 py-1.5 text-[11.5px] font-bold text-white"
-          >
-            {platform === "android" ? "追加する" : "方法を見る"}
-          </button>
-          <button onClick={dismiss} className="text-[10.5px] font-bold text-muted">
-            あとで
-          </button>
-        </div>
+        <button
+          onClick={platform === "android" ? installAndroid : () => setIosOpen(true)}
+          className="shrink-0 rounded-full border-2 border-line bg-primary px-3 py-1.5 text-[11.5px] font-bold text-white"
+        >
+          {platform === "android" ? "追加する" : "方法を見る"}
+        </button>
+        <button onClick={dismiss} aria-label="閉じる" className="shrink-0 text-muted">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="h-4 w-4" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
       </div>
 
       <Modal open={iosOpen} onClose={() => setIosOpen(false)} title="ホーム画面に追加">
