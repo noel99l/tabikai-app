@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Modal } from "./modal";
 import { IconSuitcase } from "./icons";
@@ -80,44 +81,6 @@ function IllustSafariShare() {
   );
 }
 
-// iOS版Chrome等: アドレスバー右の共有ボタン
-function IllustChromeShare() {
-  return (
-    <div className={illustFrame}>
-      <svg viewBox="0 0 300 44" className="w-full" aria-hidden>
-        <rect x="4" y="6" width="292" height="32" rx="16" fill="#fff" stroke="#1b1b1b" strokeWidth="2" />
-        <text x="130" y="27" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#8a8a8a">tabikai.app</text>
-        {/* 共有ボタンを強調 */}
-        <circle cx="264" cy="22" r="13" fill="#ffe9e4" stroke="#ff4d2e" strokeWidth="2.5" />
-        <g stroke="#ff4d2e" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M264 15v8M264 15l-3 3M264 15l3 3" />
-          <path d="M259 21v5.5h10V21" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-// 共有メニュー内の「ホーム画面に追加」
-function IllustAddToHome() {
-  return (
-    <div className={illustFrame}>
-      <svg viewBox="0 0 300 78" className="w-full" aria-hidden>
-        <rect x="4" y="4" width="292" height="70" rx="12" fill="#fff" stroke="#1b1b1b" strokeWidth="2" />
-        {/* コピー行(グレー) */}
-        <text x="20" y="26" fontSize="11" fontWeight="bold" fill="#8a8a8a">コピー</text>
-        <rect x="262" y="14" width="16" height="16" rx="3" fill="none" stroke="#8a8a8a" strokeWidth="2" />
-        <line x1="12" y1="38" x2="288" y2="38" stroke="#eee5cf" strokeWidth="2" />
-        {/* ホーム画面に追加を強調 */}
-        <rect x="10" y="42" width="280" height="26" rx="7" fill="#ffe9e4" stroke="#ff4d2e" strokeWidth="2" />
-        <text x="20" y="59" fontSize="11.5" fontWeight="bold" fill="#ff4d2e">ホーム画面に追加</text>
-        <rect x="262" y="47" width="16" height="16" rx="4" fill="none" stroke="#ff4d2e" strokeWidth="2" />
-        <path d="M270 51v8M266 55h8" stroke="#ff4d2e" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
-}
-
 // Android Chrome: 「⋮」メニュー → ホーム画面に追加
 function IllustAndroidMenu() {
   return (
@@ -139,6 +102,20 @@ function IllustAndroidMenu() {
         <path d="M256 50 l7 -1 M256 50 l1 -7" stroke="#ff4d2e" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
     </div>
+  );
+}
+
+
+// 実機スクリーンショット(public/guide/ 以下、赤枠でタップ箇所を強調済み)
+function GuideShot({ src, alt, height }: { src: string; alt: string; height: number }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={720}
+      height={height}
+      className="w-full rounded-xl border-2 border-line"
+    />
   );
 }
 
@@ -270,12 +247,12 @@ export function InstallPrompt() {
               <b>「ブラウザで開く」(Safariで開く)</b>を選ぶ
             </Step>
             <Step n={2} illust={<IllustSafariShare />}>
-              Safariで開いたら、画面下の<b>共有ボタン</b>をタップ
+              ブラウザで開いたら<b>共有メニュー</b>を開く(Safariは画面下の共有ボタン、Chromeなどは「…」→「共有」)
             </Step>
-            <Step n={3} illust={<IllustAddToHome />}>
-              メニューを下にスクロールして<b>「ホーム画面に追加」</b>をタップ
+            <Step n={3} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
+              <b>「ホーム画面に追加」</b>をタップ
             </Step>
-            <Step n={4}>
+            <Step n={4} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
               右上の<b>「追加」</b>をタップして完了
             </Step>
           </ol>
@@ -286,10 +263,10 @@ export function InstallPrompt() {
             <Step n={1} illust={<IllustSafariShare />}>
               画面下(またはアドレスバー)の<b>共有ボタン</b>をタップ
             </Step>
-            <Step n={2} illust={<IllustAddToHome />}>
+            <Step n={2} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
               メニューを下にスクロールして<b>「ホーム画面に追加」</b>をタップ
             </Step>
-            <Step n={3}>
+            <Step n={3} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
               右上の<b>「追加」</b>をタップして完了
             </Step>
           </ol>
@@ -297,14 +274,17 @@ export function InstallPrompt() {
 
         {platform === "ios-browser" && (
           <ol className="space-y-4">
-            <Step n={1} illust={<IllustChromeShare />}>
-              アドレスバー横の<b>共有ボタン</b>をタップ(ChromeやEdgeでも追加できます)
+            <Step n={1} illust={<GuideShot src="/guide/ios-step1-menu.png" alt="アドレスバー横のメニューボタン" height={234} />}>
+              アドレスバー横の<b>「…」メニュー</b>(または共有ボタン)をタップ
             </Step>
-            <Step n={2} illust={<IllustAddToHome />}>
-              メニューから<b>「ホーム画面に追加」</b>をタップ
+            <Step n={2} illust={<GuideShot src="/guide/ios-step2-share.png" alt="メニューの共有" height={489} />}>
+              <b>「共有」</b>をタップ
             </Step>
-            <Step n={3}>
-              <b>「追加」</b>をタップして完了
+            <Step n={3} illust={<GuideShot src="/guide/ios-step3-a2hs.png" alt="共有メニューのホーム画面に追加" height={577} />}>
+              <b>「ホーム画面に追加」</b>をタップ
+            </Step>
+            <Step n={4} illust={<GuideShot src="/guide/ios-step4-add.png" alt="右上の追加をタップ" height={476} />}>
+              右上の<b>「追加」</b>をタップして完了
             </Step>
           </ol>
         )}
