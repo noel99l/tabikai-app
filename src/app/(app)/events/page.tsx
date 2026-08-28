@@ -25,6 +25,7 @@ export default async function EventsPage() {
         allDay: schema.events.allDay,
         color: schema.events.color,
         icon: schema.events.icon,
+        hostId: schema.events.hostId,
       })
       .from(schema.events)
       .where(eq(schema.events.tripId, trip.id)),
@@ -46,8 +47,22 @@ export default async function EventsPage() {
     : [];
 
   const venueName = (id: string) => venues.find((v) => v.id === id)?.name ?? "";
-  // 予定表でデフォルト非表示の会場(個室・お風呂など)のイベントは一覧に出さない
-  const venueShown = (id: string) => venues.find((v) => v.id === id)?.showInSchedule ?? true;
+
+  // 非表示会場(個室等)とプライバシー保護会場のイベントは、
+  // 自分が関わるもの(主催/参加/招待)を除きサーバー側で除外する(タイトル等を配信しない)
+  const isMine = (e: { id: string; hostId: string }) =>
+    e.hostId === user.id ||
+    participants.some(
+      (p) =>
+        p.eventId === e.id &&
+        p.userId === user.id &&
+        (p.status === "joined" || p.status === "invited"),
+    );
+  const visibleEvents = events.filter((e) => {
+    const v = venues.find((x) => x.id === e.venueId);
+    const open = (v?.showInSchedule ?? true) && !(v?.isPrivate ?? false);
+    return open || isMine(e);
+  });
 
   // 旅程から日付タブを生成(予定表と同じロジック)
   const days: { key: string; label: string }[] = [];
@@ -64,7 +79,7 @@ export default async function EventsPage() {
     <>
       <AppHeader title="イベント" />
       <EventsList
-        events={events.map((e) => ({
+        events={visibleEvents.map((e) => ({
           id: e.id,
           title: e.title,
           venueName: venueName(e.venueId),
@@ -73,7 +88,6 @@ export default async function EventsPage() {
           allDay: e.allDay,
           color: e.color,
           icon: e.icon,
-          venueShown: venueShown(e.venueId),
           participants: participants.filter((p) => p.eventId === e.id),
         }))}
         members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}

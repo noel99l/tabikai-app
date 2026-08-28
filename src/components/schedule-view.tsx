@@ -26,6 +26,7 @@ export type ViewEvent = {
   joined: number;
   mine: boolean; // 自分が参加登録済み
   canManage: boolean; // 主催者 or 管理者(ドラッグ移動可)
+  masked?: boolean; // プライバシー保護会場: 「予約中」の枠だけ見せる
 };
 
 type Props = {
@@ -718,7 +719,15 @@ export function ScheduleView({
                   <div key={c.key} className="border-l-2 border-line p-1">
                     {allDayVisible
                       .filter((e) => eventInCol(e, c))
-                      .map((e) => (
+                      .map((e) =>
+                        e.masked ? (
+                          <span
+                            key={e.id}
+                            className="mb-1 block truncate rounded-lg border-2 border-dashed border-line bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-muted"
+                          >
+                            予約中
+                          </span>
+                        ) : (
                         <Link
                           key={e.id}
                           href={`/events/${e.id}`}
@@ -729,7 +738,8 @@ export function ScheduleView({
                           <EventIcon icon={e.icon} className="mr-0.5 inline h-3 w-3 align-[-2px]" />
                           {e.title}
                         </Link>
-                      ))}
+                        ),
+                      )}
                   </div>
                 ))}
               </div>
@@ -830,6 +840,25 @@ export function ScheduleView({
                   const faded = highlightMine && !e.mine;
                   // メンバー列で招待に未回答のものは薄く表示
                   const invitedHere = c.kind === "member" && memberStatus(c.id, e.id) === "invited";
+                  if (e.masked) {
+                    // プライバシー保護会場: 枠(予約中)のみ。詳細リンク・移動なし
+                    return (
+                      <span
+                        key={`${c.key}:${e.id}`}
+                        className="relative overflow-hidden rounded-[10px] border-2 border-dashed border-line bg-white px-1.5 py-1 text-left text-[10px] leading-tight font-bold text-muted"
+                        style={{
+                          gridColumn: col + 2,
+                          gridRow: `${rowOf(e.clipStartMin)} / ${rowOf(e.clipEndMin)}`,
+                          width: `calc(${100 / lane.lanes}% - 4px)`,
+                          marginLeft: `calc(${(lane.lane * 100) / lane.lanes}% + 2px)`,
+                          marginTop: 2,
+                          marginBottom: 2,
+                        }}
+                      >
+                        予約中
+                      </span>
+                    );
+                  }
                   return (
                     <Link
                       key={`${c.key}:${e.id}`}

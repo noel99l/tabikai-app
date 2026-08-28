@@ -22,6 +22,7 @@ export default async function VenuesPage() {
       openFrom: schema.venues.openFrom,
       openTo: schema.venues.openTo,
       showInSchedule: schema.venues.showInSchedule,
+      isPrivate: schema.venues.isPrivate,
       eventCount: count(schema.events.id),
     })
     .from(schema.venues)
@@ -86,6 +87,13 @@ export default async function VenuesPage() {
             />
             予定表にデフォルトで表示する
           </label>
+          <label className="mt-2.5 flex items-center gap-2.5 text-[13px] font-semibold">
+            <input type="checkbox" name="isPrivate" className="h-5 w-5 accent-primary" />
+            プライバシー保護(予約者を表示しない)
+          </label>
+          <p className="mt-1 ml-[30px] text-[11px] text-muted">
+            お風呂や個室向け。予定表には「予約中」の枠だけが表示され、タイトルや誰が使っているかは参加者本人以外に見えません。
+          </p>
           <SubmitButton className={`${btnCls} mt-4 w-full py-3`}>会場を追加</SubmitButton>
         </form>
       </Card>

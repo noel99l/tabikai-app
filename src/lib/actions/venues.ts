@@ -13,6 +13,7 @@ export async function addVenue(formData: FormData) {
   const openFrom = String(formData.get("openFrom") ?? "").trim() || null;
   const openTo = String(formData.get("openTo") ?? "").trim() || null;
   const showInSchedule = formData.get("showInSchedule") !== null; // 未指定=非表示
+  const isPrivate = formData.get("isPrivate") !== null;
   if (!name) return;
   const [{ max }] = await db
     .select({ max: sql<number>`coalesce(max(${schema.venues.sortOrder}), -1)` })
@@ -25,10 +26,25 @@ export async function addVenue(formData: FormData) {
     openFrom,
     openTo,
     showInSchedule,
+    isPrivate,
     sortOrder: Number(max) + 1,
   });
   revalidatePath("/manage/venues");
   revalidatePath("/schedule");
+  revalidatePath("/events");
+}
+
+// プライバシー保護(予約者を表示しない)の切替
+export async function toggleVenuePrivate(venueId: string, value: boolean) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db
+    .update(schema.venues)
+    .set({ isPrivate: value })
+    .where(and(eq(schema.venues.id, venueId), eq(schema.venues.tripId, trip.id)));
+  revalidatePath("/manage/venues");
+  revalidatePath("/schedule");
+  revalidatePath("/events");
 }
 
 // 予定表にデフォルト表示するかどうかの切替

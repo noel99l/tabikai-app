@@ -56,6 +56,20 @@ export default async function SchedulePage() {
         )
     : [];
 
+  // プライバシー保護会場: 参加者本人以外にはタイトル・予約者を見せない(サーバー側で匿名化)
+  const privateVenueIds = new Set(venues.filter((v) => v.isPrivate).map((v) => v.id));
+  const myEventIds = new Set(
+    participants
+      .filter(
+        (p) =>
+          p.userId === user.id && (p.status === "joined" || p.status === "invited"),
+      )
+      .map((p) => p.eventId),
+  );
+  const isMasked = (e: { id: string; venueId: string; hostId: string }) =>
+    privateVenueIds.has(e.venueId) && e.hostId !== user.id && !myEventIds.has(e.id);
+  const maskedIds = new Set(events.filter(isMasked).map((e) => e.id));
+
   // 旅程から日付タブを生成
   const days: { key: string; label: string }[] = [];
   for (
@@ -83,24 +97,28 @@ export default async function SchedulePage() {
             name: v.name,
             defaultShow: v.showInSchedule,
           }))}
-          events={events.map((e) => ({
-            id: e.id,
-            title: e.title,
-            venueId: e.venueId,
-            startMs: e.startsAt.getTime(),
-            endMs: e.endsAt.getTime(),
-            allDay: e.allDay,
-            color: e.color,
-            icon: e.icon,
-            joined: e.joined,
-            mine: e.mine,
-            canManage: e.hostId === user.id || isAdmin,
-          }))}
+          events={events.map((e) => {
+            const masked = maskedIds.has(e.id);
+            return {
+              id: e.id,
+              title: masked ? "予約中" : e.title,
+              venueId: e.venueId,
+              startMs: e.startsAt.getTime(),
+              endMs: e.endsAt.getTime(),
+              allDay: e.allDay,
+              color: masked ? null : e.color,
+              icon: masked ? null : e.icon,
+              joined: masked ? 0 : e.joined,
+              mine: masked ? false : e.mine,
+              canManage: !masked && (e.hostId === user.id || isAdmin),
+              masked,
+            };
+          })}
           tripStartMs={trip.startsAt.getTime()}
           tripEndMs={trip.endsAt.getTime()}
           isMultiDay={jstDateKey(trip.startsAt) !== jstDateKey(trip.endsAt)}
           members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}
-          participants={participants}
+          participants={participants.filter((p) => !maskedIds.has(p.eventId))}
           selfId={user.id}
         />
       )}

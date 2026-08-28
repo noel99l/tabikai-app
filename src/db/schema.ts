@@ -126,6 +126,8 @@ export const venues = pgTable("venues", {
   openTo: text("open_to"),
   sortOrder: integer("sort_order").default(0).notNull(),
   showInSchedule: boolean("show_in_schedule").default(true).notNull(), // 予定表にデフォルト表示するか
+  // プライバシー保護: 予定表には枠(予約中)のみ表示し、タイトル・予約者は参加者本人にしか見せない
+  isPrivate: boolean("is_private").default(false).notNull(),
 });
 
 export const events = pgTable("events", {

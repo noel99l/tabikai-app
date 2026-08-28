@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { deleteVenue, toggleVenueVisible, updateVenue } from "@/lib/actions/venues";
+import { deleteVenue, toggleVenuePrivate, toggleVenueVisible, updateVenue } from "@/lib/actions/venues";
 import { Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
@@ -16,6 +16,7 @@ type Props = {
     openFrom: string | null;
     openTo: string | null;
     showInSchedule: boolean;
+    isPrivate: boolean;
     eventCount: number;
   };
 };
@@ -72,6 +73,15 @@ export function VenueRow({ venue: v }: Props) {
         <span className="text-[12px] text-muted">予定表にデフォルト表示</span>
         <form action={toggleVenueVisible.bind(null, v.id, !v.showInSchedule)}>
           <SwitchButton checked={v.showInSchedule} />
+        </form>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2">
+        <span className="text-[12px] text-muted">
+          プライバシー保護
+          <span className="block text-[10px]">予定の有無のみ表示し、予約者は見せない</span>
+        </span>
+        <form action={toggleVenuePrivate.bind(null, v.id, !v.isPrivate)}>
+          <SwitchButton checked={v.isPrivate} />
         </form>
       </div>
 
