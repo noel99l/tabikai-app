@@ -12,7 +12,7 @@ import {
 import { moveEvent } from "@/lib/actions/events";
 import { EventIcon, eventColorClass } from "./event-icons";
 import { EventForm } from "./event-form";
-import { Fab, Modal } from "./modal";
+import { Modal } from "./modal";
 
 export type ViewEvent = {
   id: string;
@@ -815,13 +815,7 @@ export function ScheduleView({
         </div>
       </div>
 
-      <Fab
-        onClick={() => {
-          setPrefill(undefined);
-          setModalOpen(true);
-        }}
-        label="会場を予約してイベントを作成"
-      />
+      {/* 作成FABはイベントタブへ移動。空き枠タップからの作成は継続 */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="イベントを作成">
         <EventForm
           venues={venues}

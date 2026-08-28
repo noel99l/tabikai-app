@@ -64,7 +64,7 @@ async function redistributeShares(
         type: "expense_assigned",
         title: notice.title,
         body: notice.body,
-        link: "/approvals",
+        link: "/expenses?tab=approvals",
         senderId: actorId,
       },
     );
@@ -143,13 +143,13 @@ export async function createExpense(formData: FormData) {
         type: "expense_assigned",
         title: `「${title}」の割り勘対象になりました`,
         body: `${payerName} さんが立替 · 合計 ${yen(amount)}`,
-        link: "/approvals",
+        link: "/expenses?tab=approvals",
         senderId: user.id,
       },
     );
   }
   revalidatePath("/expenses");
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/home");
 }
 
@@ -165,7 +165,7 @@ export async function approveShare(expenseId: string) {
         eq(schema.expenseShares.status, "pending"),
       ),
     );
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/expenses");
 }
 
@@ -203,10 +203,10 @@ export async function rejectShare(expenseId: string) {
     type: "expense_assigned",
     title: `「${expense.title}」が否認されました`,
     body: `${user.name} さんが否認 · 承認画面から確定または対象から外せます`,
-    link: "/approvals",
+    link: "/expenses?tab=approvals",
     senderId: user.id,
   });
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/expenses");
 }
 
@@ -258,7 +258,7 @@ export async function resolveShare(formData: FormData) {
       body: "対象から外れたメンバーの分を残りで割り直しました · 再度ご確認ください",
     });
   }
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/expenses");
 }
 
@@ -306,7 +306,7 @@ export async function updateExpense(formData: FormData) {
     );
   }
   revalidatePath("/expenses");
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/home");
 }
 
@@ -322,7 +322,7 @@ export async function deleteExpense(expenseId: string) {
   }
   await db.delete(schema.expenses).where(eq(schema.expenses.id, expenseId));
   revalidatePath("/expenses");
-  revalidatePath("/approvals");
+  revalidatePath("/expenses");
   revalidatePath("/home");
 }
 

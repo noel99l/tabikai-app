@@ -206,8 +206,8 @@ export default async function DashboardPage() {
         <Card>
           <p className="text-center text-[12.5px] text-muted">
             今後の予定はありません。
-            <Link href="/schedule" className="font-bold text-primary">
-              予定表からイベントを作成
+            <Link href="/events" className="font-bold text-primary">
+              イベントを作成
             </Link>
             しましょう。
           </p>
@@ -226,7 +226,7 @@ export default async function DashboardPage() {
       )}
       {pendingCount > 0 && (
         <TaskRow
-          href="/approvals"
+          href="/expenses?tab=approvals"
           icon={<IconMoney className="h-[18px] w-[18px] text-primary" />}
           iconBg="bg-primary-soft"
           title={`費用の承認 ${pendingCount}件`}
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
       )}
       {invitedCount > 0 && (
         <TaskRow
-          href="/schedule"
+          href="/events"
           icon={<IconMail className="h-[18px] w-[18px] text-violet" />}
           iconBg="bg-violet-soft"
           title={`イベントの招待 ${invitedCount}件`}
@@ -272,8 +272,8 @@ export default async function DashboardPage() {
         <>
           <div className="mx-0.5 mt-4 mb-2 flex items-baseline justify-between">
             <h3 className="text-[13px] font-bold text-muted">この後の予定</h3>
-            <Link href="/schedule" className="text-[11px] font-bold text-primary">
-              予定表へ ›
+            <Link href="/events" className="text-[11px] font-bold text-primary">
+              一覧へ ›
             </Link>
           </div>
           <div className="-mx-3.5 flex gap-2.5 overflow-x-auto px-3.5 pb-1.5">

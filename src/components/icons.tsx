@@ -80,6 +80,13 @@ export const IconMegaphone = (p: SVGProps<SVGSVGElement>) => (
   </Svg>
 );
 
+export const IconFlag = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M5 21V4" />
+    <path d="M5 4h13l-3 4 3 4H5" />
+  </Svg>
+);
+
 export const IconClock = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />

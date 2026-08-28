@@ -4,21 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconCalendar,
-  IconCheck,
   IconHome,
   IconList,
+  IconFlag,
   IconMoney,
 } from "./icons";
 
 const tabs = [
   { href: "/home", label: "ホーム", icon: IconHome },
+  { href: "/events", label: "イベント", icon: IconFlag },
   { href: "/schedule", label: "予定表", icon: IconCalendar },
   { href: "/items", label: "買い出し", icon: IconList },
   { href: "/expenses", label: "費用", icon: IconMoney },
-  { href: "/approvals", label: "承認", icon: IconCheck },
 ];
 
-export function BottomNav() {
+// expenseBadge: 費用タブに載せる承認待ちバッジ(サーバー側で件数を取得して渡す)
+export function BottomNav({ expenseBadge }: { expenseBadge?: React.ReactNode }) {
   const pathname = usePathname();
   return (
     <nav
@@ -40,7 +41,10 @@ export function BottomNav() {
                 active ? "bg-ink font-bold text-screen" : "text-muted"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <span className="relative">
+                <Icon className="h-5 w-5" />
+                {href === "/expenses" && expenseBadge}
+              </span>
               {label}
             </Link>
           );

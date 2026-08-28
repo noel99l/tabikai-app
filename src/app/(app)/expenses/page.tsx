@@ -1,13 +1,16 @@
-import { and, eq, inArray } from "drizzle-orm";
+import Link from "next/link";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
+import { ApprovalsContent } from "@/components/approvals-content";
 import { ExpenseCreateFab } from "@/components/expense-create";
 import { ExpenseRow } from "@/components/expense-row";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
-export default async function ExpensesPage() {
+// 費用一覧(既存の費用ページ本体)
+async function ExpensesList() {
   const { user, trip, db, isAdmin } = await requireTripContext();
   const [expenses, members, tripEvents] = await Promise.all([
     db.query.expenses.findMany({
@@ -64,8 +67,6 @@ export default async function ExpensesPage() {
 
   return (
     <>
-      <AppHeader title="費用" />
-
       <div className="mb-3 grid grid-cols-2 gap-2">
         <Card className="p-3">
           <div className="text-[11px] text-muted">グループ合計</div>
@@ -159,6 +160,57 @@ export default async function ExpensesPage() {
         }))}
         selfId={user.id}
       />
+    </>
+  );
+}
+
+// 費用ページ: [一覧 | 承認] セグメントで切替(承認は旧 /approvals を統合)
+export default async function ExpensesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
+  const showApprovals = tab === "approvals";
+  const { user, trip, db } = await requireTripContext();
+  // セグメントのバッジ用: 自分の承認待ち件数
+  const pendingRows = await db
+    .select({ value: count() })
+    .from(schema.expenseShares)
+    .innerJoin(schema.expenses, eq(schema.expenses.id, schema.expenseShares.expenseId))
+    .where(
+      and(
+        eq(schema.expenses.tripId, trip.id),
+        eq(schema.expenseShares.userId, user.id),
+        eq(schema.expenseShares.status, "pending"),
+      ),
+    );
+  const pendingCount = Number(pendingRows[0]?.value ?? 0);
+
+  const segCls = (on: boolean) =>
+    `flex flex-1 items-center justify-center gap-1.5 rounded-[9px] py-2 text-[12.5px] font-bold ${
+      on ? "bg-ink text-screen" : "text-muted"
+    }`;
+
+  return (
+    <>
+      <AppHeader title="費用" />
+
+      <div className="mb-3 flex gap-1.5 rounded-[13px] border-2 border-line bg-white p-1 shadow-[3px_3px_0_var(--color-line)]">
+        <Link href="/expenses" className={segCls(!showApprovals)}>
+          一覧
+        </Link>
+        <Link href="/expenses?tab=approvals" className={segCls(showApprovals)}>
+          承認
+          {pendingCount > 0 && (
+            <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-bold text-white">
+              {pendingCount}
+            </span>
+          )}
+        </Link>
+      </div>
+
+      {showApprovals ? <ApprovalsContent /> : <ExpensesList />}
     </>
   );
 }
