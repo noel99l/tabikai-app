@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     await notify(db, expense.tripId, [s.userId], {
       type: "approval_nudge",
       title: `「${expense.title}」が24時間未承認です`,
-      body: `あなたの負担 ${yen(s.amount)} · 内容を確認して承認してください`,
+      body: `あなたの負担予定 ${yen(s.amount)} · 内容を確認して承認してください`,
       link: "/approvals",
     });
 

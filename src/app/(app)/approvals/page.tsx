@@ -113,7 +113,10 @@ export default async function ApprovalsPage() {
               </div>
             )}
             <div className="my-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
-              あなたの負担: <b className="tabular-nums">{yen(s.amount)}</b>
+              あなたの負担予定: <b className="tabular-nums">{yen(s.amount)}</b>
+              <div className="mt-0.5 text-[10.5px] text-muted">
+                他のメンバーの否認などで割り直された場合、金額が変わることがあります
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <form action={approveShare.bind(null, s.expenseId)} className="flex-1">
@@ -145,7 +148,7 @@ export default async function ApprovalsPage() {
                   <div>
                     <div className="text-sm font-bold">{x.title}</div>
                     <div className="text-[11.5px] text-muted">
-                      未承認: {nameOf(s.userId)} · 負担 {yen(s.amount)}
+                      未承認: {nameOf(s.userId)} · 負担予定 {yen(s.amount)}
                     </div>
                     {ev && (
                       <div className="text-[11.5px] text-muted">
@@ -189,7 +192,7 @@ export default async function ApprovalsPage() {
                 <div>
                   <div className="text-sm font-bold">{x.title}</div>
                   <div className="text-[11.5px] text-muted">
-                    立替: {nameOf(x.paidBy)} · あなたの負担 {yen(s.amount)}
+                    立替: {nameOf(x.paidBy)} · あなたの負担予定 {yen(s.amount)}
                   </div>
                 </div>
                 {s.status === "rejected" ? (

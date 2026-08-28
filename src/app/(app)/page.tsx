@@ -184,7 +184,7 @@ export default async function DashboardPage() {
             <div key={s.expenseId} className="mb-2.5 flex items-center justify-between gap-2">
               <div>
                 <div className="text-[13.5px] font-bold">{s.title}</div>
-                <div className="text-[11.5px] text-muted">あなたの負担 {yen(s.amount)}</div>
+                <div className="text-[11.5px] text-muted">あなたの負担予定 {yen(s.amount)}</div>
               </div>
               <Pill tone="pend">承認待ち</Pill>
             </div>
