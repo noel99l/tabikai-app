@@ -5,11 +5,14 @@ import { IconBack } from "@/components/icons";
 import { LogoUpload } from "@/components/logo-upload";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, SectionTitle, btnCls, inputCls, labelCls } from "@/components/ui";
+import { SwitchButton } from "@/components/switch";
 import {
+  updateNotifySetting,
   updateReminderMinutes,
   updateTripDates,
   updateTripName,
 } from "@/lib/actions/trips";
+import { NOTIFY_CATEGORIES } from "@/lib/notify";
 import { jstDateKey, fmtTime } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
 
@@ -61,6 +64,30 @@ export default async function TripSettingsPage() {
           <span className="shrink-0 text-[13px] whitespace-nowrap text-muted">分前</span>
           <SubmitButton className={`${btnCls} ml-auto shrink-0`}>保存</SubmitButton>
         </form>
+      </Card>
+
+      <SectionTitle>プッシュ通知(機能ごと)</SectionTitle>
+      <Card>
+        <p className="mb-1 text-[11.5px] text-muted">
+          オフにした機能はプッシュ通知を送りません(ベルのお知らせには残ります)。全メンバーに適用されます。
+        </p>
+        {NOTIFY_CATEGORIES.map((c) => {
+          const enabled = trip.notifySettings?.[c.key] !== false;
+          return (
+            <div
+              key={c.key}
+              className="flex items-center justify-between gap-2 border-t border-line py-2.5 first:border-t-0 last:pb-0"
+            >
+              <div className="min-w-0">
+                <div className="text-[13px] font-bold">{c.label}</div>
+                <div className="text-[10.5px] text-muted">{c.desc}</div>
+              </div>
+              <form action={updateNotifySetting.bind(null, c.key, !enabled)}>
+                <SwitchButton checked={enabled} />
+              </form>
+            </div>
+          );
+        })}
       </Card>
 
       <SectionTitle>旅程(開始・終了日時)</SectionTitle>

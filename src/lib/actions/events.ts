@@ -270,7 +270,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       trip.id,
       toRemove.filter((id2) => id2 !== user.id),
       {
-        type: "announce",
+        type: "event_update",
         title: `「${title}」の参加者から外れました`,
         body: `${user.name} さんが変更しました`,
         link: `/events/${eventId}`,
@@ -397,7 +397,7 @@ export async function deleteEvent(eventId: string) {
     event.tripId,
     participants.map((p) => p.userId),
     {
-      type: "announce",
+      type: "event_update",
       title: `「${event.title}」は中止になりました`,
       body: `${fmtDateTime(event.startsAt)} の予定が削除されました。`,
       link: "/schedule",

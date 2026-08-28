@@ -101,14 +101,14 @@ export async function requestJoin(tripId: string) {
     admins.map((a) => a.userId).filter((id) => id !== user.id),
     autoApprove
       ? {
-          type: "announce",
+          type: "member_request",
           title: `${user.name ?? user.email} さんが参加しました`,
           body: "自動承認モードにより承認済みです。",
           link: "/manage/members",
           senderId: user.id,
         }
       : {
-          type: "announce",
+          type: "member_request",
           title: `${user.name ?? user.email} さんが参加をリクエストしました`,
           body: "メンバー管理から承認してください。",
           link: "/manage/members",
@@ -117,6 +117,19 @@ export async function requestJoin(tripId: string) {
   );
   await setTripCookie(tripId);
   redirect(autoApprove ? "/home" : "/trips/pending");
+}
+
+// 機能ごとのプッシュ通知オン/オフ(管理者のみ)
+export async function updateNotifySetting(key: string, enabled: boolean) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const { NOTIFY_CATEGORIES } = await import("@/lib/notify");
+  if (!NOTIFY_CATEGORIES.some((c) => c.key === key)) throw new Error("不明な通知カテゴリです");
+  await db
+    .update(schema.trips)
+    .set({ notifySettings: { ...trip.notifySettings, [key]: enabled } })
+    .where(eq(schema.trips.id, trip.id));
+  revalidatePath("/manage/trip");
 }
 
 // 参加リクエストの自動承認モードの切替(管理者のみ)
@@ -230,7 +243,7 @@ export async function approveMember(formData: FormData) {
     );
   if (action === "approve") {
     await notify(db, trip.id, [userId], {
-      type: "announce",
+      type: "member_request",
       title: `「${trip.name}」への参加が承認されました`,
       body: "アプリの全機能が利用できます。",
       link: "/",
@@ -255,7 +268,7 @@ export async function grantAdmin(userId: string) {
       ),
     );
   await notify(db, trip.id, [userId], {
-    type: "announce",
+    type: "member_request",
     title: `「${trip.name}」の管理者になりました`,
     body: `${user.name} さんが権限を付与しました。管理者コンソールが利用できます。`,
     link: "/manage",

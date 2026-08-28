@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/auth";
-import { safeNext } from "@/lib/session";
+import { signIn } from "@/auth";
+import { getSessionUser, safeNext } from "@/lib/session";
 import { IconSuitcase } from "@/components/icons";
 import { Card } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
@@ -16,8 +16,10 @@ export default async function LoginPage({
 }) {
   // 招待リンク等から来た場合、ログイン後にその場所へ戻す
   const next = safeNext((await searchParams).next, "/home");
-  const session = await auth();
-  if (session?.user) redirect(next);
+  // auth()のJWT判定だけだと、DBから削除されたユーザーのセッションが残っている場合に
+  // /home との間で無限リダイレクトになるため、DB上のユーザー存在まで確認する
+  const user = await getSessionUser();
+  if (user) redirect(next);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pb-20">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EventForm } from "./event-form";
 import { EventIcon, eventColorClass } from "./event-icons";
 import { IconCalendar } from "./icons";
@@ -99,6 +99,9 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
   const [view, setView] = useState<"all" | "mine">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [nowTick, setNowTick] = useState<number | null>(null);
+  // 初回表示時、現在時刻ラインが画面上部に来るよう一度だけ自動スクロール
+  const nowRef = useRef<HTMLDivElement>(null);
+  const autoScrolled = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(VIEW_KEY);
@@ -107,6 +110,12 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
     const t = setInterval(() => setNowTick(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+  useEffect(() => {
+    if (!nowTick || autoScrolled.current || !nowRef.current) return;
+    autoScrolled.current = true;
+    nowRef.current.scrollIntoView({ block: "start" });
+  }, [nowTick, view]);
+
   const switchView = (v: "all" | "mine") => {
     setView(v);
     localStorage.setItem(VIEW_KEY, v);
@@ -145,7 +154,8 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
       })
     : "";
   const NowLine = (
-    <div className="mb-2.5 ml-[54px] flex items-center gap-2">
+    // scroll-mt: 固定表示の日付見出しに隠れないための上余白
+    <div ref={nowRef} className="mb-2.5 ml-[54px] scroll-mt-16 flex items-center gap-2">
       <span className="rounded-full border-2 border-line bg-primary px-2 py-px text-[9.5px] font-bold text-white">
         {nowLabel}
       </span>
@@ -219,7 +229,7 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
                 />
               </div>
             ))}
-            {timed.length > 0 && nowLineIdx === -1 && isToday && NowLine}
+            {timed.length > 0 && nowTick !== null && nowLineIdx === -1 && isToday && NowLine}
           </section>
         );
       })}

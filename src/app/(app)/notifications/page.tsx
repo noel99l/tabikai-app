@@ -3,12 +3,14 @@ import { and, desc, eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import {
+  IconCalendar,
   IconCheck,
   IconClock,
   IconList,
   IconMail,
   IconMegaphone,
   IconMoney,
+  IconUsers,
 } from "@/components/icons";
 import { MarkRead } from "@/components/mark-read";
 import { Card, Pill, btnCls, inputCls } from "@/components/ui";
@@ -26,6 +28,8 @@ const typeMeta = {
   approval_nudge: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
   approval_escalation: { icon: IconClock, cls: "bg-pend-soft text-pend", label: "承認催促", tone: "pend" as const },
   settlement: { icon: IconMoney, cls: "bg-ok-soft text-ok", label: "精算", tone: "ok" as const },
+  member_request: { icon: IconUsers, cls: "bg-pend-soft text-pend", label: "メンバー", tone: "pend" as const },
+  event_update: { icon: IconCalendar, cls: "bg-violet-soft text-violet", label: "イベント", tone: "violet" as const },
   item_update: { icon: IconList, cls: "bg-primary-soft text-primary", label: "買い出し", tone: "info" as const },
 };
 

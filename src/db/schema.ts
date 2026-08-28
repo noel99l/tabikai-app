@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -40,6 +41,8 @@ export const notificationType = pgEnum("notification_type", [
   "approval_escalation", // 24h未承認のエスカレーション(主催者/管理者向け)
   "settlement", // 精算確定
   "item_update", // 持ち物の引き受け・購入完了・取り消し(掲載者向け)
+  "member_request", // 参加申請・承認・管理者付与(メンバー関連)
+  "event_update", // イベントの変更・中止・参加者から外れた
 ]);
 
 // ============ users / auth ============
@@ -76,6 +79,11 @@ export const trips = pgTable("trips", {
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
   reminderMinutes: integer("reminder_minutes").default(5).notNull(), // イベント開始何分前にリマインド
   autoApprove: boolean("auto_approve").default(false).notNull(), // 参加リクエストの自動承認モード
+  // 機能カテゴリごとのプッシュ通知設定(未指定=オン)。キーは lib/notify.ts の NOTIFY_CATEGORIES
+  notifySettings: jsonb("notify_settings")
+    .$type<Record<string, boolean>>()
+    .default({})
+    .notNull(),
   expensesClosedAt: timestamp("expenses_closed_at", { withTimezone: true }), // 経費入力の締め
   createdBy: uuid("created_by")
     .notNull()

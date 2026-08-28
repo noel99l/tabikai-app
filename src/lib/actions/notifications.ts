@@ -54,6 +54,8 @@ export async function sendAnnouncement(formData: FormData) {
       link: "/notifications",
       senderId: user.id,
     },
+    // 自分が送ったアナウンスも自分のお知らせに残す(既読扱い・プッシュなし)
+    { recordOnlyFor: [user.id] },
   );
   revalidatePath("/notifications");
 }

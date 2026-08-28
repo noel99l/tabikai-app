@@ -1,6 +1,33 @@
+import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { schema } from "@/db";
 import { sendPushToUsers } from "./push";
+
+// 管理者が機能ごとにプッシュ通知をオン/オフできる区分。
+// オフでもアプリ内のお知らせ(ベル)には常に残る。
+export const NOTIFY_CATEGORIES = [
+  { key: "event", label: "イベントの招待・変更", desc: "招待、参加者の追加/削除、時間変更、中止" },
+  { key: "reminder", label: "イベントのリマインド", desc: "開始前の自動リマインド" },
+  { key: "expense", label: "費用・承認・精算", desc: "割り勘の割り当て、確定、精算" },
+  { key: "item", label: "買い出しリスト", desc: "引き受け・購入完了などの更新" },
+  { key: "announce", label: "全体アナウンス", desc: "メンバーが送る全体アナウンス" },
+  { key: "member", label: "参加申請・メンバー", desc: "参加リクエスト、承認、管理者付与" },
+  { key: "nudge", label: "未承認の催促", desc: "24時間未承認の催促・エスカレーション" },
+] as const;
+
+const TYPE_TO_CATEGORY: Record<string, (typeof NOTIFY_CATEGORIES)[number]["key"]> = {
+  event_invite: "event",
+  event_update: "event",
+  event_reminder: "reminder",
+  expense_assigned: "expense",
+  expense_confirmed: "expense",
+  settlement: "expense",
+  item_update: "item",
+  announce: "announce",
+  member_request: "member",
+  approval_nudge: "nudge",
+  approval_escalation: "nudge",
+};
 
 type NotifyInput = {
   type: (typeof schema.notificationType.enumValues)[number];
@@ -16,11 +43,21 @@ export async function notify(
   tripId: string,
   userIds: string[],
   input: NotifyInput,
+  // recordOnlyFor: お知らせ行だけ残す相手(既読扱い・プッシュなし)。
+  // 送信者本人が自分のアナウンスを履歴で確認できるようにする用途
+  opts?: { recordOnlyFor?: string[] },
 ) {
   const targets = [...new Set(userIds)];
-  if (targets.length === 0) return;
+  const recordOnly = [...new Set(opts?.recordOnlyFor ?? [])].filter(
+    (id) => !targets.includes(id),
+  );
+  if (targets.length === 0 && recordOnly.length === 0) return;
+  const now = new Date();
   await db.insert(schema.notifications).values(
-    targets.map((userId) => ({
+    [
+      ...targets.map((userId) => ({ userId, readAt: null as Date | null })),
+      ...recordOnly.map((userId) => ({ userId, readAt: now as Date | null })),
+    ].map(({ userId, readAt }) => ({
       tripId,
       userId,
       type: input.type,
@@ -28,8 +65,19 @@ export async function notify(
       body: input.body ?? null,
       link: input.link ?? null,
       senderId: input.senderId ?? null,
+      readAt,
     })),
   );
+  if (targets.length === 0) return;
+  // 管理者設定で当該カテゴリのプッシュがオフならお知らせのみ(プッシュは送らない)
+  const cat = TYPE_TO_CATEGORY[input.type];
+  if (cat) {
+    const [t] = await db
+      .select({ ns: schema.trips.notifySettings })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, tripId));
+    if (t?.ns?.[cat] === false) return;
+  }
   // プッシュ送信は失敗してもお知らせ作成は成功扱いにする
   try {
     await sendPushToUsers(db, targets, {
