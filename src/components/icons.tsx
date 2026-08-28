@@ -75,8 +75,8 @@ export const IconBack = (p: SVGProps<SVGSVGElement>) => (
 
 export const IconMegaphone = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
-    <path d="M4 9.5L18 4v16L4 14.5v-5z" />
-    <path d="M8 15.5V20" />
+    <path d="M3 11l18-5v12L3 14v-3z" />
+    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
   </Svg>
 );
 
