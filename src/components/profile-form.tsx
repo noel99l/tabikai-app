@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
+import { FormError } from "./form-error";
 import { Avatar, btnCls, inputCls, labelCls } from "./ui";
 
 const EMOJI_CHOICES = [
@@ -105,11 +106,7 @@ export function ProfileForm({
         ))}
       </div>
 
-      {error && (
-        <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-[12.5px] font-bold text-accent">
-          {error}
-        </p>
-      )}
+      <FormError message={error} />
 
       <SubmitButton className={`${btnCls} mt-5 w-full py-3.5`}>{submitLabel}</SubmitButton>
     </form>

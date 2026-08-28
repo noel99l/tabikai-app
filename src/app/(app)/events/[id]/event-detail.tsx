@@ -163,6 +163,11 @@ export async function EventDetail({ id }: { id: string }) {
             eventId={id}
             venues={venues.map((v) => ({ id: v.id, name: v.name }))}
             days={days}
+            members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+            participantIds={participants
+              .filter((p) => p.status !== "declined")
+              .map((p) => p.userId)}
+            hostId={event.hostId}
             defaults={{
               title: event.title,
               description: event.description ?? "",

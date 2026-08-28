@@ -11,6 +11,7 @@ import {
 } from "./event-icons";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
+import { FormError } from "./form-error";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -48,6 +49,11 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
     <form
       action={async (formData) => {
         if (submitting.current) return;
+        // 送信前のバリデーション(原因がわかるメッセージを表示)
+        if (inviteMode === "members" && invitees.size === 0) {
+          setError("招待するメンバーを選択してください(「全員を招待」も選べます)");
+          return;
+        }
         submitting.current = true;
         setError(null);
         try {
@@ -233,11 +239,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         参加者には開始前に自動でリマインド通知が届きます(各自オフ可)。
       </p>
 
-      {error && (
-        <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-[12.5px] font-bold text-accent">
-          {error}
-        </p>
-      )}
+      <FormError message={error} />
 
       <SubmitButton className={`${btnCls} mt-3 w-full py-3.5`}>
         会場を予約してイベントを作成

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { schema } from "@/db";
@@ -215,6 +215,70 @@ export async function updateEvent(eventId: string, formData: FormData) {
       ...(timeChanged ? { reminderSentAt: null } : {}),
     })
     .where(eq(schema.events.id, eventId));
+
+  // ===== 参加メンバーの同期(主催者は常に維持) =====
+  const memberIds = formData.getAll("memberIds").map(String);
+  const desired = new Set(memberIds);
+  desired.add(event.hostId);
+  const currentParts = await db.query.eventParticipants.findMany({
+    where: eq(schema.eventParticipants.eventId, eventId),
+  });
+  const currentIds = new Set(
+    currentParts.filter((p) => p.status !== "declined").map((p) => p.userId),
+  );
+  const toAdd = [...desired].filter((id2) => !currentIds.has(id2));
+  const toRemove = currentParts
+    .filter((p) => !desired.has(p.userId) && p.userId !== event.hostId)
+    .map((p) => p.userId);
+  if (toAdd.length > 0) {
+    await db
+      .insert(schema.eventParticipants)
+      .values(
+        toAdd.map((userId) => ({
+          eventId,
+          userId,
+          status: userId === event.hostId ? ("joined" as const) : ("invited" as const),
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [schema.eventParticipants.eventId, schema.eventParticipants.userId],
+        set: { status: "invited" },
+      });
+    await notify(
+      db,
+      trip.id,
+      toAdd.filter((id2) => id2 !== user.id && id2 !== event.hostId),
+      {
+        type: "event_invite",
+        title: `「${title}」に招待されました`,
+        body: `${user.name} さんから · ${fmtDateTime(startsAt)}`,
+        link: `/events/${eventId}`,
+        senderId: user.id,
+      },
+    );
+  }
+  if (toRemove.length > 0) {
+    await db
+      .delete(schema.eventParticipants)
+      .where(
+        and(
+          eq(schema.eventParticipants.eventId, eventId),
+          inArray(schema.eventParticipants.userId, toRemove),
+        ),
+      );
+    await notify(
+      db,
+      trip.id,
+      toRemove.filter((id2) => id2 !== user.id),
+      {
+        type: "announce",
+        title: `「${title}」の参加者から外れました`,
+        body: `${user.name} さんが変更しました`,
+        link: `/events/${eventId}`,
+        senderId: user.id,
+      },
+    );
+  }
 
   // 参加登録者(操作者以外)へ変更を通知
   const venue = await db.query.venues.findFirst({

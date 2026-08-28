@@ -5,6 +5,7 @@ import { createExpense } from "@/lib/actions/expenses";
 import { fmtEventSpan } from "@/lib/format";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
+import { FormError } from "./form-error";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 export type ExpenseEventOption = {
@@ -63,6 +64,11 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
     <form
       action={async (formData) => {
         if (submitting.current) return;
+        // 送信前のバリデーション(原因がわかるメッセージを表示)
+        if (mode !== "all" && selected.size === 0) {
+          setError("負担するメンバーを1人以上選択してください");
+          return;
+        }
         submitting.current = true;
         setError(null);
         try {
@@ -204,11 +210,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
         </>
       )}
 
-      {error && (
-        <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-[12.5px] font-bold text-accent">
-          {error}
-        </p>
-      )}
+      <FormError message={error} />
 
       <SubmitButton className={`${btnCls} mt-4 w-full py-3.5`}>登録する</SubmitButton>
     </form>

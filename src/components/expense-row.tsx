@@ -7,6 +7,7 @@ import { Modal } from "./modal";
 import { Pill, btnCls, inputCls, labelCls } from "./ui";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
+import { FormError } from "./form-error";
 
 type ShareInfo = { userId: string; name: string; amount: number; status: string };
 
@@ -194,11 +195,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
             <p className="mx-0.5 mt-2 text-[11px] text-muted">
               金額を変更すると割り勘額が再計算され、個別割り勘は対象者の再承認が必要になります。
             </p>
-            {error && (
-              <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-[12.5px] font-bold text-accent">
-                {error}
-              </p>
-            )}
+            <FormError message={error} />
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
