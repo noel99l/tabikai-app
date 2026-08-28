@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deleteVenue, toggleVenueVisible, updateVenue } from "@/lib/actions/venues";
 import { Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { SwitchButton } from "./switch";
 import { btnCls, inputCls, labelCls } from "./ui";
 
@@ -21,6 +22,7 @@ type Props = {
 
 export function VenueRow({ venue: v }: Props) {
   const [open, setOpen] = useState(false);
+  const toast = useToast();
 
   return (
     <div className="mb-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
@@ -70,6 +72,7 @@ export function VenueRow({ venue: v }: Props) {
         <form
           action={async (formData) => {
             await updateVenue(formData);
+            toast.show("保存しました");
             setOpen(false);
           }}
         >

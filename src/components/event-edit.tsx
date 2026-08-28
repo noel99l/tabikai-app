@@ -11,6 +11,7 @@ import {
 } from "./event-icons";
 import { Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { btnCls, btnGhostCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -39,6 +40,7 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
   const [icon, setIcon] = useState<string | null>(defaults.icon);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+  const toast = useToast();
 
   return (
     <>
@@ -57,6 +59,7 @@ export function EventEdit({ eventId, venues, days, defaults }: Props) {
               if (res?.error) {
                 setError(res.error);
               } else {
+                toast.show("変更を保存しました");
                 setOpen(false);
               }
             } catch {

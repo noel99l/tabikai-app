@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PwaRegister } from "@/components/pwa-register";
+import { ToastProvider } from "@/components/toast";
 
 export const metadata: Metadata = {
   title: "突然の旅会アプリ",
@@ -35,7 +36,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className="font-sans">
         <PwaRegister />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

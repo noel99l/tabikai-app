@@ -10,6 +10,7 @@ import {
   eventSwatchClass,
 } from "./event-icons";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -32,6 +33,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
   const [icon, setIcon] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+  const toast = useToast();
 
   const toggleInvitee = (id: string) => {
     setInvitees((prev) => {
@@ -54,6 +56,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
             setError(res.error);
             submitting.current = false;
           } else {
+            toast.show("イベントを作成しました");
             onSuccess?.();
           }
         } catch {

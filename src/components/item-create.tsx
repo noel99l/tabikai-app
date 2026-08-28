@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addItem } from "@/lib/actions/items";
 import { Fab, Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 // 持ち物リストの右下FAB → モーダルで必要なものを追加
 export function ItemCreateFab({ events }: Props) {
   const [open, setOpen] = useState(false);
+  const toast = useToast();
   return (
     <>
       <Fab onClick={() => setOpen(true)} label="必要なものを追加" />
@@ -20,6 +22,7 @@ export function ItemCreateFab({ events }: Props) {
         <form
           action={async (formData) => {
             await addItem(formData);
+            toast.show("追加しました");
             setOpen(false);
           }}
         >

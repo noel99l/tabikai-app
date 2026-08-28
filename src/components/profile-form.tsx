@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { Avatar, btnCls, inputCls, labelCls } from "./ui";
 
 const EMOJI_CHOICES = [
@@ -27,6 +28,7 @@ export function ProfileForm({
   const [emoji, setEmoji] = useState<string | null>(defaultEmoji ?? null);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+  const toast = useToast();
 
   return (
     <form
@@ -39,8 +41,11 @@ export function ProfileForm({
           if (res?.error) {
             setError(res.error);
             submitting.current = false;
+          } else {
+            toast.show("保存しました");
+            submitting.current = false;
           }
-          // 成功時は action 内で redirect / revalidate される
+          // 成功時は action 内で redirect / revalidate される(onboarding)
         } catch (err) {
           // 成功時の redirect は例外として伝播するため、失敗と誤表示しない
           if (

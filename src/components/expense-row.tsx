@@ -6,6 +6,7 @@ import { yen } from "@/lib/format";
 import { Modal } from "./modal";
 import { Pill, btnCls, inputCls, labelCls } from "./ui";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 
 type ShareInfo = { userId: string; name: string; amount: number; status: string };
 
@@ -36,6 +37,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+  const toast = useToast();
 
   const active = shares.filter((s) => s.status !== "excluded");
   const done = active.filter((s) => s.status === "approved" || s.status === "forced");
@@ -151,6 +153,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
                   setError(res.error);
                   submitting.current = false;
                 } else {
+                  toast.show("保存しました");
                   setOpen(false);
                 }
               } catch {

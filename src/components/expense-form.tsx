@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
 import { fmtEventSpan } from "@/lib/format";
 import { SubmitButton } from "./submit-button";
+import { useToast } from "./toast";
 import { btnCls, inputCls, labelCls } from "./ui";
 
 export type ExpenseEventOption = {
@@ -35,6 +36,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
   const [mode, setMode] = useState<PickMode>("all");
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false); // 二重送信防止(状態更新前の連打を弾く)
+  const toast = useToast();
 
   const [eventId, setEventId] = useState("");
   const [selected, setSelected] = useState<Set<string>>(() => new Set([selfId]));
@@ -69,6 +71,7 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
             setError(res.error);
             submitting.current = false;
           } else {
+            toast.show("費用を登録しました");
             onSuccess?.();
           }
         } catch {
