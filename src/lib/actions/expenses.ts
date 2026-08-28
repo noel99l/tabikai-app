@@ -64,7 +64,7 @@ async function redistributeShares(
         type: "expense_assigned",
         title: notice.title,
         body: notice.body,
-        link: "/expenses?tab=approvals",
+        link: "/expenses/approvals",
         senderId: actorId,
       },
     );
@@ -143,13 +143,13 @@ export async function createExpense(formData: FormData) {
         type: "expense_assigned",
         title: `「${title}」の割り勘対象になりました`,
         body: `${payerName} さんが立替 · 合計 ${yen(amount)}`,
-        link: "/expenses?tab=approvals",
+        link: "/expenses/approvals",
         senderId: user.id,
       },
     );
   }
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }
 
@@ -166,7 +166,7 @@ export async function approveShare(expenseId: string) {
       ),
     );
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
 }
 
 // 本人による否認。対象からは外れず、主催者/管理者が最終判断する(承認として確定 or 対象から外す)
@@ -203,11 +203,11 @@ export async function rejectShare(expenseId: string) {
     type: "expense_assigned",
     title: `「${expense.title}」が否認されました`,
     body: `${user.name} さんが否認 · 承認画面から確定または対象から外せます`,
-    link: "/expenses?tab=approvals",
+    link: "/expenses/approvals",
     senderId: user.id,
   });
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
 }
 
 // 主催者/管理者による操作: 承認として確定(forced) or 割り勘対象から外す(excluded)
@@ -259,7 +259,7 @@ export async function resolveShare(formData: FormData) {
     });
   }
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
 }
 
 // 費用の編集(内容・金額・立替者)。作成者・立替者・管理者のみ。
@@ -306,7 +306,7 @@ export async function updateExpense(formData: FormData) {
     );
   }
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }
 
@@ -322,7 +322,7 @@ export async function deleteExpense(expenseId: string) {
   }
   await db.delete(schema.expenses).where(eq(schema.expenses.id, expenseId));
   revalidatePath("/expenses");
-  revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }
 
@@ -413,6 +413,7 @@ export async function closeExpenses() {
   );
   revalidatePath("/manage/expenses");
   revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }
 
@@ -427,5 +428,6 @@ export async function reopenExpenses() {
     .where(eq(schema.trips.id, trip.id));
   revalidatePath("/manage/expenses");
   revalidatePath("/expenses");
+  revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }

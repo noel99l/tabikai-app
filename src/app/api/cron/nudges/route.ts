@@ -37,7 +37,7 @@ export async function GET(req: Request) {
       type: "approval_nudge",
       title: `「${expense.title}」が24時間未承認です`,
       body: `あなたの負担予定 ${yen(s.amount)} · 内容を確認して承認してください`,
-      link: "/expenses?tab=approvals",
+      link: "/expenses/approvals",
     });
 
     // 主催者(関連イベントがある場合)+管理者へエスカレーション
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
         type: "approval_escalation",
         title: `「${expense.title}」が24時間未承認です`,
         body: "承認状況を操作できます(承認として確定/対象から外す)",
-        link: "/expenses?tab=approvals",
+        link: "/expenses/approvals",
       });
     }
 

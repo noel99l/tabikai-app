@@ -50,6 +50,7 @@ const colorClasses = [
 ];
 
 const ROW_H = 26; // 30分 = 1行
+const COLS_KEY = "schedule-cols"; // 表示列の選択を端末に記憶
 const LABEL_W = 38;
 const LONG_PRESS_MS = 320;
 const MOVE_CANCEL_PX = 10;
@@ -138,6 +139,37 @@ export function ScheduleView({
   const [visibleMemberIds, setVisibleMemberIds] = useState<Set<string>>(
     () => new Set(),
   );
+  // 前回の表示列を復元(SSRとの不一致を避けるためマウント後に反映)
+  const colsRestored = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COLS_KEY) ?? "null") as {
+        v?: string[];
+        m?: string[];
+      } | null;
+      if (saved) {
+        // 別の企画で保存した列や削除済みの列は無視する
+        const v = (saved.v ?? []).filter((id) => allVenues.some((x) => x.id === id));
+        const m = (saved.m ?? []).filter((id) => members.some((x) => x.userId === id));
+        if (v.length > 0 || m.length > 0) {
+          setVisibleIds(new Set(v));
+          setVisibleMemberIds(new Set(m));
+        }
+      }
+    } catch {
+      /* 破損データは無視 */
+    }
+    colsRestored.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // 選択変更を保存(復元完了前のデフォルト値では上書きしない)
+  useEffect(() => {
+    if (!colsRestored.current) return;
+    localStorage.setItem(
+      COLS_KEY,
+      JSON.stringify({ v: [...visibleIds], m: [...visibleMemberIds] }),
+    );
+  }, [visibleIds, visibleMemberIds]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [highlightMine, setHighlightMine] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
