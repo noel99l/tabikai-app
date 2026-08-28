@@ -2,7 +2,6 @@
 
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { schema } from "@/db";
 import { fmtDateTime, jstDate } from "@/lib/format";
 import { notify } from "@/lib/notify";
@@ -379,7 +378,9 @@ export async function deleteEvent(eventId: string) {
   const event = await db.query.events.findFirst({
     where: eq(schema.events.id, eventId),
   });
-  if (!event) redirect("/schedule");
+  // モーダル(インターセプトルート)内から redirect すると画面が固まるため、
+  // 遷移はクライアント側(EventDelete)で行う
+  if (!event) return;
   if (event.hostId !== user.id && !isAdmin) {
     throw new Error("主催者または管理者のみ削除できます");
   }
@@ -403,5 +404,6 @@ export async function deleteEvent(eventId: string) {
       senderId: user.id,
     },
   );
-  redirect("/schedule");
+  revalidatePath("/schedule");
+  revalidatePath("/");
 }

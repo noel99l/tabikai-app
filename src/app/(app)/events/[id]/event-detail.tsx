@@ -5,11 +5,11 @@ import { IconPlus } from "@/components/icons";
 import { Avatar, Card, Pill, btnCls, btnGhostCls } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
+import { EventDelete } from "@/components/event-delete";
 import { EventEdit } from "@/components/event-edit";
 import { EventIcon } from "@/components/event-icons";
 import {
   addParticipants,
-  deleteEvent,
   joinEvent,
   toggleReminder,
 } from "@/lib/actions/events";
@@ -186,11 +186,7 @@ export async function EventDetail({ id }: { id: string }) {
               icon: event.icon,
             }}
           />
-          <form action={deleteEvent.bind(null, id)} className="mt-4 pb-2 text-center">
-            <SubmitButton spinner={false} className="text-[12px] font-bold text-accent">
-              このイベントを削除する(参加者にお知らせが届きます)
-            </SubmitButton>
-          </form>
+          <EventDelete eventId={id} />
         </>
       )}
     </>

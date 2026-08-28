@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+const RouteModalContext = createContext(false);
+// 子コンポーネントが「モーダル内表示か」を知るためのフック
+export function useInRouteModal() {
+  return useContext(RouteModalContext);
+}
 
 // インターセプトルート用のモーダル。閉じる=router.back() で元のページへ戻る。
 // パネルは下から飛び出してくるポップアニメーション(globals.css の pop-in)付き。
@@ -28,6 +34,7 @@ export function RouteModal({
   }, [close]);
 
   return (
+    <RouteModalContext.Provider value={true}>
     <div
       className="fixed inset-0 z-[25] flex items-end justify-center sm:items-center sm:p-4"
       role="dialog"
@@ -52,5 +59,6 @@ export function RouteModal({
         {children}
       </div>
     </div>
+    </RouteModalContext.Provider>
   );
 }

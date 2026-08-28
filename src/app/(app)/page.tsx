@@ -4,6 +4,7 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { IconSettings, IconUsers } from "@/components/icons";
 import { InstallPrompt } from "@/components/install-prompt";
+import { PushNudge } from "@/components/push-nudge";
 import { TripLogo } from "@/components/trip-logo";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fmtDateTime, fmtTime, untilLabel, yen } from "@/lib/format";
@@ -80,6 +81,7 @@ export default async function DashboardPage() {
       <AppHeader title="ホーム" />
 
       <InstallPrompt />
+      <PushNudge />
 
       <Card className="flex flex-col items-center py-5 text-center">
         <TripLogo logoUrl={trip.logoUrl} size={72} radius={20} />
