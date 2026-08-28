@@ -14,7 +14,7 @@ function firstEmoji(s: string): string | null {
 }
 
 // 初回オンボーディング: 表示名+アイコンを設定して完了フラグを立てる
-export async function completeOnboarding(formData: FormData) {
+export async function completeOnboarding(next: string | null, formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const name = String(formData.get("name") ?? "").trim();
@@ -25,7 +25,8 @@ export async function completeOnboarding(formData: FormData) {
     .update(schema.users)
     .set({ name, avatarEmoji: emoji, onboardedAt: new Date() })
     .where(eq(schema.users.id, session.user.id));
-  redirect("/trips");
+  // アプリ内パスのみ許可(オープンリダイレクト防止)
+  redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/trips");
 }
 
 // 設定画面からのプロフィール編集(表示名+アイコン)

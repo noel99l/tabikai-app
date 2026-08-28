@@ -35,11 +35,19 @@ export const getSessionUser = cache(async (): Promise<AppUser | null> => {
   };
 });
 
+// アプリ内パスのみ許可する(オープンリダイレクト防止)
+export function safeNext(raw: string | undefined | null, fallback: string) {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : fallback;
+}
+
 // ログイン必須。表示名未設定なら /onboarding へ誘導する。
-export const requireUser = cache(async (): Promise<AppUser> => {
+// next を渡すと、ログイン・初回設定をまたいでも最後にそのパスへ戻れる
+// (招待リンク /join/[tripId] などで使用)。
+export const requireUser = cache(async (next?: string): Promise<AppUser> => {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (!user.onboardedAt) redirect("/onboarding");
+  const q = next ? `?next=${encodeURIComponent(next)}` : "";
+  if (!user) redirect(`/login${q}`);
+  if (!user.onboardedAt) redirect(`/onboarding${q}`);
   return user;
 });
 

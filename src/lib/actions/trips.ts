@@ -28,7 +28,7 @@ export async function selectTrip(tripId: string) {
   });
   if (!member) redirect("/trips");
   await setTripCookie(tripId);
-  redirect(member.status === "approved" ? "/" : "/trips/pending");
+  redirect(member.status === "approved" ? "/home" : "/trips/pending");
 }
 
 export async function createTrip(formData: FormData) {
@@ -116,7 +116,7 @@ export async function requestJoin(tripId: string) {
         },
   );
   await setTripCookie(tripId);
-  redirect(autoApprove ? "/" : "/trips/pending");
+  redirect(autoApprove ? "/home" : "/trips/pending");
 }
 
 // 参加リクエストの自動承認モードの切替(管理者のみ)

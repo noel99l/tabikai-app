@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
+import { safeNext } from "@/lib/session";
 import { IconSuitcase } from "@/components/icons";
 import { Card } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
@@ -8,9 +9,15 @@ const hasGoogle =
   !!(process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID) &&
   !!(process.env.AUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT_SECRET);
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  // 招待リンク等から来た場合、ログイン後にその場所へ戻す
+  const next = safeNext((await searchParams).next, "/home");
   const session = await auth();
-  if (session?.user) redirect("/home");
+  if (session?.user) redirect(next);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pb-20">
@@ -24,7 +31,7 @@ export default async function LoginPage() {
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/home" });
+            await signIn("google", { redirectTo: next });
           }}
           className="mb-4"
         >
@@ -50,7 +57,7 @@ export default async function LoginPage() {
               await signIn("dev", {
                 name: formData.get("name"),
                 email: formData.get("email"),
-                redirectTo: "/home",
+                redirectTo: next,
               });
             }}
             className="flex flex-col gap-2.5"

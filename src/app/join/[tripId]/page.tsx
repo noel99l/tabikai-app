@@ -15,7 +15,8 @@ export default async function JoinPage({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  const user = await requireUser();
+  // 未ログイン・初回設定を経由しても招待リンクへ戻ってこられるようにする
+  const user = await requireUser(`/join/${tripId}`);
   const db = await getDb();
   const trip = await db.query.trips.findFirst({
     where: eq(schema.trips.id, tripId),

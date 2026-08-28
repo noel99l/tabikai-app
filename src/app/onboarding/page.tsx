@@ -2,13 +2,18 @@ import { redirect } from "next/navigation";
 import { IconSuitcase } from "@/components/icons";
 import { ProfileForm } from "@/components/profile-form";
 import { completeOnboarding } from "@/lib/actions/profile";
-import { getSessionUser } from "@/lib/session";
+import { getSessionUser, safeNext } from "@/lib/session";
 
 // Googleログイン直後の初回設定。表示名とアイコンを決める。
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const next = safeNext((await searchParams).next, "/trips");
   const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (user.onboardedAt) redirect("/trips");
+  if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (user.onboardedAt) redirect(next);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pb-16">
@@ -20,7 +25,7 @@ export default async function OnboardingPage() {
         </p>
       </div>
       <ProfileForm
-        action={completeOnboarding}
+        action={completeOnboarding.bind(null, next)}
         defaultName={user.name}
         defaultEmoji={user.avatarEmoji}
         submitLabel="はじめる"
