@@ -43,6 +43,7 @@ export function LogoUpload({ logoUrl }: { logoUrl: string | null }) {
   };
 
   const remove = async () => {
+    if (!window.confirm("ロゴ画像を削除しますか?")) return;
     setBusy(true);
     setError(null);
     try {

@@ -43,7 +43,14 @@ export function VenueRow({ venue: v }: Props) {
             編集
           </button>
           {v.eventCount === 0 ? (
-            <form action={deleteVenue.bind(null, v.id)}>
+            <form
+              action={deleteVenue.bind(null, v.id)}
+              onSubmit={(e) => {
+                if (!window.confirm(`会場「${v.name}」を削除しますか?`)) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <SubmitButton
                 spinner={false}
                 className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-accent"

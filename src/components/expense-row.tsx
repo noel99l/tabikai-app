@@ -130,7 +130,13 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
                 <form
                   action={deleteExpense.bind(null, expense.id)}
                   className="flex-1"
-                  onSubmit={() => setOpen(false)}
+                  onSubmit={(e) => {
+                    if (!window.confirm(`費用「${expense.title}」を削除しますか?`)) {
+                      e.preventDefault();
+                      return;
+                    }
+                    setOpen(false);
+                  }}
                 >
                   <SubmitButton
                     spinner={false}
