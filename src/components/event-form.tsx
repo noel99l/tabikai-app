@@ -26,8 +26,8 @@ type Props = {
 };
 
 export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
-  // 招待: デフォルトは「個別に招待」
-  const [inviteMode, setInviteMode] = useState<"members" | "all">("members");
+  // 招待: デフォルトは「個別に招待」。solo = 自分だけの予定(お風呂の単独利用など)
+  const [inviteMode, setInviteMode] = useState<"members" | "all" | "solo">("members");
   const [invitees, setInvitees] = useState<Set<string>>(() => new Set());
   const [allDay, setAllDay] = useState(false);
   const [color, setColor] = useState("red");
@@ -51,7 +51,9 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         if (submitting.current) return;
         // 送信前のバリデーション(原因がわかるメッセージを表示)
         if (inviteMode === "members" && invitees.size === 0) {
-          setError("招待するメンバーを選択してください(「全員を招待」も選べます)");
+          setError(
+            "招待するメンバーを選択してください(ひとりで使う場合は「自分のみ」を選べます)",
+          );
           return;
         }
         submitting.current = true;
@@ -179,7 +181,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
 
       {/* 招待(費用の「選び方」と同じセグメントUI。デフォルトは個別に招待) */}
       <label className={labelCls}>招待するメンバー</label>
-      <div className="grid grid-cols-2 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-[10px] border-2 border-line bg-white p-1">
         <button
           type="button"
           onClick={() => setInviteMode("members")}
@@ -198,11 +200,22 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         >
           全員を招待
         </button>
+        <button
+          type="button"
+          onClick={() => setInviteMode("solo")}
+          className={`rounded-lg py-2 text-center text-[12.5px] font-bold ${
+            inviteMode === "solo" ? "bg-ink text-screen" : "text-muted"
+          }`}
+        >
+          自分のみ
+        </button>
       </div>
       <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
         {inviteMode === "all"
           ? "承認済みメンバー全員に招待のお知らせ+通知が届きます。"
-          : "選んだメンバーにだけ招待が届きます(あとから参加者の追加もできます)。"}
+          : inviteMode === "solo"
+            ? "誰も招待せず、自分だけの予定として登録します(お風呂の単独利用など。あとから招待もできます)。"
+            : "選んだメンバーにだけ招待が届きます(あとから参加者の追加もできます)。"}
       </p>
       {inviteMode === "all" && <input type="hidden" name="inviteAll" value="on" />}
 
