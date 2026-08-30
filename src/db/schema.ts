@@ -43,6 +43,7 @@ export const notificationType = pgEnum("notification_type", [
   "item_update", // 持ち物の引き受け・購入完了・取り消し(掲載者向け)
   "member_request", // 参加申請・承認・管理者付与(メンバー関連)
   "event_update", // イベントの変更・中止・参加者から外れた
+  "event_comment", // イベントのコメント
 ]);
 
 // ============ users / auth ============
@@ -233,6 +234,20 @@ export const settlements = pgTable("settlements", {
     .notNull()
     .references(() => users.id),
   amount: integer("amount").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ============ event_comments (イベントのコメント欄) ============
+
+export const eventComments = pgTable("event_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

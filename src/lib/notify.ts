@@ -13,6 +13,7 @@ export const NOTIFY_CATEGORIES = [
   { key: "announce", label: "全体アナウンス", desc: "メンバーが送る全体アナウンス" },
   { key: "member", label: "参加申請・メンバー", desc: "参加リクエスト、承認、管理者付与" },
   { key: "nudge", label: "未承認の催促", desc: "24時間未承認の催促・エスカレーション" },
+  { key: "comment", label: "イベントのコメント", desc: "参加イベントへの新しいコメント" },
 ] as const;
 
 const TYPE_TO_CATEGORY: Record<string, (typeof NOTIFY_CATEGORIES)[number]["key"]> = {
@@ -27,6 +28,7 @@ const TYPE_TO_CATEGORY: Record<string, (typeof NOTIFY_CATEGORIES)[number]["key"]
   member_request: "member",
   approval_nudge: "nudge",
   approval_escalation: "nudge",
+  event_comment: "comment",
 };
 
 type NotifyInput = {

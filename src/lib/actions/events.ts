@@ -189,6 +189,53 @@ export async function declineEvent(eventId: string) {
   revalidatePath("/events");
 }
 
+// イベントへのコメント投稿。参加者(参加/招待)+主催者へお知らせ+通知
+export async function addEventComment(eventId: string, formData: FormData) {
+  const { user, trip, db } = await requireTripContext();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { error: "コメントを入力してください" };
+  if (body.length > 500) return { error: "コメントは500文字までです" };
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event || event.tripId !== trip.id) return { error: "イベントが見つかりません" };
+
+  await db.insert(schema.eventComments).values({ eventId, userId: user.id, body });
+
+  const participants = await db.query.eventParticipants.findMany({
+    where: eq(schema.eventParticipants.eventId, eventId),
+  });
+  const targets = [
+    ...new Set([
+      event.hostId,
+      ...participants
+        .filter((p) => p.status === "joined" || p.status === "invited")
+        .map((p) => p.userId),
+    ]),
+  ].filter((id) => id !== user.id);
+  await notify(db, trip.id, targets, {
+    type: "event_comment",
+    title: `「${event.title}」に ${user.name} さんがコメント`,
+    body: body.length > 60 ? `${body.slice(0, 60)}…` : body,
+    link: `/events/${eventId}`,
+    senderId: user.id,
+  });
+  revalidatePath(`/events/${eventId}`);
+}
+
+// 自分のコメントの削除
+export async function deleteEventComment(commentId: string) {
+  const { user, db, isAdmin } = await requireTripContext();
+  const comment = await db.query.eventComments.findFirst({
+    where: eq(schema.eventComments.id, commentId),
+  });
+  if (!comment) return;
+  if (comment.userId !== user.id && !isAdmin)
+    throw new Error("自分のコメントのみ削除できます");
+  await db.delete(schema.eventComments).where(eq(schema.eventComments.id, commentId));
+  revalidatePath(`/events/${comment.eventId}`);
+}
+
 // 参加受付を今すぐ〆切る/再開する(主催者・管理者)
 export async function setSignupClosed(eventId: string, close: boolean) {
   const { user, db, isAdmin } = await requireTripContext();

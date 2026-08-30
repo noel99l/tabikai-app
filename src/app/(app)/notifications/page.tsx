@@ -30,6 +30,7 @@ const typeMeta = {
   settlement: { icon: IconMoney, cls: "bg-ok-soft text-ok", label: "精算", tone: "ok" as const },
   member_request: { icon: IconUsers, cls: "bg-pend-soft text-pend", label: "メンバー", tone: "pend" as const },
   event_update: { icon: IconCalendar, cls: "bg-violet-soft text-violet", label: "イベント", tone: "violet" as const },
+  event_comment: { icon: IconMegaphone, cls: "bg-violet-soft text-violet", label: "コメント", tone: "violet" as const },
   item_update: { icon: IconList, cls: "bg-primary-soft text-primary", label: "買い出し", tone: "info" as const },
 };
 

@@ -8,6 +8,7 @@ import { SwitchButton } from "@/components/switch";
 import { EventEdit } from "@/components/event-edit";
 import { EventIcon } from "@/components/event-icons";
 import { ConfirmForm } from "@/components/confirm-form";
+import { EventComments } from "@/components/event-comments";
 import {
   addParticipants,
   declineEvent,
@@ -16,7 +17,7 @@ import {
   setSignupClosed,
   toggleReminder,
 } from "@/lib/actions/events";
-import { fmtDateLabel, fmtTime, jstDateKey } from "@/lib/format";
+import { fmtDateLabel, fmtDateTime, fmtTime, jstDateKey } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 // イベント詳細の本体。/events/[id] ページと、予定表からのモーダル表示で共用する。
@@ -28,7 +29,7 @@ export async function EventDetail({ id }: { id: string }) {
   });
   if (!event) notFound();
 
-  const [venues, host, participants, members] = await Promise.all([
+  const [venues, host, participants, members, comments] = await Promise.all([
     db.query.venues.findMany({
       where: eq(schema.venues.tripId, trip.id),
       orderBy: (v, { asc }) => [asc(v.sortOrder)],
@@ -45,6 +46,19 @@ export async function EventDetail({ id }: { id: string }) {
       .innerJoin(schema.users, eq(schema.users.id, schema.eventParticipants.userId))
       .where(and(eq(schema.eventParticipants.eventId, id))),
     getApprovedMembers(),
+    db
+      .select({
+        id: schema.eventComments.id,
+        userId: schema.eventComments.userId,
+        body: schema.eventComments.body,
+        createdAt: schema.eventComments.createdAt,
+        name: schema.users.name,
+        emoji: schema.users.avatarEmoji,
+      })
+      .from(schema.eventComments)
+      .innerJoin(schema.users, eq(schema.users.id, schema.eventComments.userId))
+      .where(eq(schema.eventComments.eventId, id))
+      .orderBy(schema.eventComments.createdAt),
   ]);
 
   const joined = participants.filter((p) => p.status === "joined");
@@ -155,6 +169,20 @@ export async function EventDetail({ id }: { id: string }) {
           </details>
         )}
       </Card>
+
+      <EventComments
+        eventId={id}
+        selfId={user.id}
+        isAdmin={isAdmin}
+        comments={comments.map((c) => ({
+          id: c.id,
+          userId: c.userId,
+          name: c.name ?? "?",
+          emoji: c.emoji,
+          body: c.body,
+          timeLabel: fmtDateTime(c.createdAt),
+        }))}
+      />
 
       {mine?.status !== "joined" ? (
         signupClosed ? (
