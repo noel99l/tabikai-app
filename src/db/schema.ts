@@ -157,6 +157,8 @@ export const events = pgTable("events", {
     .notNull()
     .references(() => users.id),
   inviteAll: boolean("invite_all").default(true).notNull(),
+  // 参加〆切(null=なし)。〆切後は参加登録・取り消し不可(不参加の返事と主催者の追加は可)
+  signupDeadline: timestamp("signup_deadline", { withTimezone: true }),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

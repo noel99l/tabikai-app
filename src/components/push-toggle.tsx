@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sendTestPush } from "@/lib/actions/notifications";
+import { useToast } from "./toast";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -20,6 +22,9 @@ export function PushToggle() {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  // オンにできなかった理由(Android等での原因切り分け用)
+  const [enableError, setEnableError] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     setIsIos(
@@ -48,13 +53,23 @@ export function PushToggle() {
 
   const enable = async () => {
     setBusy(true);
+    setEnableError(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setState(permission === "denied" ? "denied" : "off");
+        if (permission !== "denied") {
+          setEnableError("通知の許可がキャンセルされました。もう一度お試しください。");
+        }
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
+      // SW登録に失敗していると ready が永遠に解決せず固まるため、タイムアウトを設ける
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error("通知の準備がタイムアウトしました。再読み込み後にお試しください")), 10000),
+        ),
+      ]);
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY!),
@@ -64,9 +79,30 @@ export function PushToggle() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub),
       });
+      if (!res.ok) {
+        setEnableError(`登録に失敗しました(HTTP ${res.status})。時間をおいて再度お試しください。`);
+      }
       setState(res.ok ? "on" : "off");
-    } catch {
+    } catch (err) {
+      // 失敗理由を表示する(不具合報告時の切り分けに使う)
+      const e = err as Error;
+      setEnableError(`オンにできませんでした: ${e.name}: ${e.message}`);
       setState("off");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 到達確認: 自分の端末へテスト通知を送る
+  const sendTest = async () => {
+    setBusy(true);
+    try {
+      const { subs } = await sendTestPush();
+      toast.show(
+        subs > 0
+          ? `テスト通知を送信しました(この端末を含む${subs}件の登録へ)`
+          : "この端末の通知登録が見つかりません。一度オフ→オンし直してください。",
+      );
     } finally {
       setBusy(false);
     }
@@ -128,6 +164,20 @@ export function PushToggle() {
           </span>
         )}
       </div>
+      {enableError && (
+        <p className="mt-2.5 rounded-xl border-2 border-pend bg-pend-soft px-3 py-2.5 text-[11.5px] font-semibold text-pend">
+          {enableError}
+        </p>
+      )}
+      {state === "on" && (
+        <button
+          onClick={sendTest}
+          disabled={busy}
+          className="mt-2.5 w-full rounded-[10px] border-2 border-line bg-white py-2.5 text-[12px] font-bold text-primary disabled:opacity-50"
+        >
+          テスト通知を送る(この端末で受信確認)
+        </button>
+      )}
       {state === "denied" && (
         <p className="mt-2.5 rounded-xl border-2 border-pend bg-pend-soft px-3 py-2.5 text-[11.5px] font-semibold text-pend">
           通知がブラウザ設定で拒否されています。ブラウザのサイト設定で通知を「許可」に変更してください。iPhoneはホーム画面に追加したアプリから開く必要があります。

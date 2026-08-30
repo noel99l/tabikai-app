@@ -51,8 +51,14 @@ export async function sendPushToUsers(
         );
       } catch (err) {
         const code = (err as { statusCode?: number }).statusCode;
-        if (code === 404 || code === 410) expired.push(s.endpoint);
-        // それ以外の一時エラーは無視(次回配信で再送される想定)
+        if (code === 404 || code === 410) {
+          expired.push(s.endpoint);
+          return;
+        }
+        // 一時エラーは無視するが、原因調査のためログには残す(Vercelのログで確認)
+        console.error(
+          `[push] send failed: status=${code ?? "?"} host=${new URL(s.endpoint).host} user=${s.userId}`,
+        );
       }
     }),
   );

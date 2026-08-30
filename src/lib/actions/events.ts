@@ -107,8 +107,17 @@ export async function createEvent(formData: FormData) {
   revalidatePath("/home");
 }
 
+const isSignupClosed = (e: { signupDeadline: Date | null }) =>
+  e.signupDeadline !== null && e.signupDeadline.getTime() <= Date.now();
+
 export async function joinEvent(eventId: string) {
   const { user, db } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) throw new Error("イベントが見つかりません");
+  // 〆切後は参加登録不可(人数が確定している企画を守る)
+  if (isSignupClosed(event)) throw new Error("参加受付は〆切られています");
   await db
     .insert(schema.eventParticipants)
     .values({ eventId, userId: user.id, status: "joined" })
@@ -117,6 +126,84 @@ export async function joinEvent(eventId: string) {
       set: { status: "joined" },
     });
   revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  revalidatePath("/schedule");
+}
+
+// 参加の取り消し(joined→declined)。〆切後は不可。主催者は取り消せない(削除か主催変更が必要)
+export async function leaveEvent(eventId: string) {
+  const { user, trip, db } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) throw new Error("イベントが見つかりません");
+  if (event.hostId === user.id) throw new Error("主催者は参加を取り消せません");
+  if (isSignupClosed(event)) throw new Error("参加受付が〆切られているため取り消せません");
+  await db
+    .update(schema.eventParticipants)
+    .set({ status: "declined" })
+    .where(
+      and(
+        eq(schema.eventParticipants.eventId, eventId),
+        eq(schema.eventParticipants.userId, user.id),
+      ),
+    );
+  // 人数把握のため主催者へ知らせる
+  await notify(db, trip.id, [event.hostId].filter((id) => id !== user.id), {
+    type: "event_update",
+    title: `「${event.title}」の参加が取り消されました`,
+    body: `${user.name} さんが参加を取り消しました。`,
+    link: `/events/${eventId}`,
+    senderId: user.id,
+  });
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  revalidatePath("/schedule");
+}
+
+// 招待への不参加の返事(invited→declined)。行けない連絡なので〆切後も可
+export async function declineEvent(eventId: string) {
+  const { user, trip, db } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) throw new Error("イベントが見つかりません");
+  await db
+    .update(schema.eventParticipants)
+    .set({ status: "declined" })
+    .where(
+      and(
+        eq(schema.eventParticipants.eventId, eventId),
+        eq(schema.eventParticipants.userId, user.id),
+        eq(schema.eventParticipants.status, "invited"),
+      ),
+    );
+  await notify(db, trip.id, [event.hostId].filter((id) => id !== user.id), {
+    type: "event_update",
+    title: `「${event.title}」に不参加の返事がありました`,
+    body: `${user.name} さんは不参加です。`,
+    link: `/events/${eventId}`,
+    senderId: user.id,
+  });
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+}
+
+// 参加受付を今すぐ〆切る/再開する(主催者・管理者)
+export async function setSignupClosed(eventId: string, close: boolean) {
+  const { user, db, isAdmin } = await requireTripContext();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) throw new Error("イベントが見つかりません");
+  if (event.hostId !== user.id && !isAdmin)
+    throw new Error("主催者または管理者のみ操作できます");
+  await db
+    .update(schema.events)
+    .set({ signupDeadline: close ? new Date() : null })
+    .where(eq(schema.events.id, eventId));
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
 }
 
 // 主催者・管理者がメンバーを参加者として追加
@@ -176,6 +263,10 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const end = String(formData.get("end") ?? "");
   const allDay = formData.get("allDay") === "on";
   const description = String(formData.get("description") ?? "").trim() || null;
+  // 参加〆切(任意): 日付なし=〆切解除
+  const deadlineDate = String(formData.get("deadlineDate") ?? "");
+  const deadlineTime = String(formData.get("deadlineTime") ?? "") || "23:59";
+  const signupDeadline = deadlineDate ? jstDate(deadlineDate, deadlineTime) : null;
   if (!title || !venueId || !date) {
     return { error: "入力が不足しています" };
   }
@@ -210,6 +301,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       color,
       icon,
       description,
+      signupDeadline,
       // 開始日時が変わった場合はリマインド送信済みフラグを解除して再送対象にする
       ...(timeChanged ? { reminderSentAt: null } : {}),
     })

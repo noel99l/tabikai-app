@@ -41,6 +41,12 @@ export default async function SettingsPage() {
         </div>
         <div className="mt-2.5 flex flex-col gap-2">
           <Link
+            href="/members"
+            className="rounded-lg bg-primary-soft px-3 py-2.5 text-center text-[13px] font-bold text-primary"
+          >
+            メンバー一覧を見る
+          </Link>
+          <Link
             href="/trips"
             className="rounded-lg bg-primary-soft px-3 py-2.5 text-center text-[13px] font-bold text-primary"
           >

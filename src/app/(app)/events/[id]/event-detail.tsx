@@ -7,9 +7,13 @@ import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
 import { EventEdit } from "@/components/event-edit";
 import { EventIcon } from "@/components/event-icons";
+import { ConfirmForm } from "@/components/confirm-form";
 import {
   addParticipants,
+  declineEvent,
   joinEvent,
+  leaveEvent,
+  setSignupClosed,
   toggleReminder,
 } from "@/lib/actions/events";
 import { fmtDateLabel, fmtTime, jstDateKey } from "@/lib/format";
@@ -46,6 +50,8 @@ export async function EventDetail({ id }: { id: string }) {
   const joined = participants.filter((p) => p.status === "joined");
   const mine = participants.find((p) => p.userId === user.id);
   const canManage = event.hostId === user.id || isAdmin;
+  const signupClosed =
+    event.signupDeadline !== null && event.signupDeadline.getTime() <= Date.now();
   const nonParticipants = members.filter(
     (m) => !joined.some((p) => p.userId === m.userId),
   );
@@ -88,6 +94,15 @@ export async function EventDetail({ id }: { id: string }) {
             <div className="flex justify-between gap-4 border-b border-line py-2 text-[13px]">
               <dt className="shrink-0 text-muted">説明</dt>
               <dd className="text-right font-semibold">{event.description}</dd>
+            </div>
+          )}
+          {event.signupDeadline && (
+            <div className="flex items-center justify-between border-b border-line py-2 text-[13px]">
+              <dt className="text-muted">参加〆切</dt>
+              <dd className="flex items-center gap-1.5 font-semibold">
+                {fmtDateLabel(event.signupDeadline)} {fmtTime(event.signupDeadline)}
+                {signupClosed && <Pill tone="pend">〆切済み</Pill>}
+              </dd>
             </div>
           )}
           <div className="flex items-center justify-between py-2 text-[13px]">
@@ -142,18 +157,81 @@ export async function EventDetail({ id }: { id: string }) {
       </Card>
 
       {mine?.status !== "joined" ? (
-        <form action={joinEvent.bind(null, id)} className="mt-3">
-          <SubmitButton className={`${btnCls} w-full py-3.5`}>
-            このイベントに参加登録する
-          </SubmitButton>
-          <p className="mt-1.5 text-center text-[11px] text-muted">
-            参加登録すると開始前にプッシュ通知でリマインドされます
+        signupClosed ? (
+          <p className="mt-3 rounded-[14px] border-2 border-line bg-white p-3.5 text-center text-[12.5px] text-muted shadow-[3px_3px_0_var(--color-line)]">
+            参加受付は〆切られました。参加したい場合は主催者に連絡してください。
           </p>
-        </form>
+        ) : (
+          <div className="mt-3">
+            <form action={joinEvent.bind(null, id)}>
+              <SubmitButton className={`${btnCls} w-full py-3.5`}>
+                このイベントに参加登録する
+              </SubmitButton>
+              <p className="mt-1.5 text-center text-[11px] text-muted">
+                参加登録すると開始前にプッシュ通知でリマインドされます
+              </p>
+            </form>
+            {mine?.status === "invited" && (
+              <ConfirmForm
+                action={declineEvent.bind(null, id)}
+                message="このイベントに不参加の返事をしますか?(主催者に通知されます)"
+                className="mt-2"
+              >
+                <SubmitButton
+                  spinner={false}
+                  className="w-full rounded-[10px] border-2 border-line bg-white py-2.5 text-[12px] font-bold text-muted"
+                >
+                  不参加にする
+                </SubmitButton>
+              </ConfirmForm>
+            )}
+          </div>
+        )
       ) : (
-        <p className="mt-3 text-center">
-          <Pill tone="ok">参加登録済み</Pill>
-        </p>
+        <div className="mt-3">
+          <p className="text-center">
+            <Pill tone="ok">参加登録済み</Pill>
+          </p>
+          {event.hostId !== user.id &&
+            (signupClosed ? (
+              <p className="mt-2 text-center text-[11px] text-muted">
+                参加受付が〆切られているため取り消せません。都合が悪くなった場合は主催者に連絡してください。
+              </p>
+            ) : (
+              <ConfirmForm
+                action={leaveEvent.bind(null, id)}
+                message="参加を取り消しますか?(主催者に通知されます)"
+                className="mt-2"
+              >
+                <SubmitButton
+                  spinner={false}
+                  className="w-full rounded-[10px] border-2 border-line bg-white py-2.5 text-[12px] font-bold text-muted"
+                >
+                  参加を取り消す
+                </SubmitButton>
+              </ConfirmForm>
+            ))}
+        </div>
+      )}
+
+      {/* 主催者・管理者: 参加受付の手動〆切/再開 */}
+      {canManage && (
+        <ConfirmForm
+          action={setSignupClosed.bind(null, id, !signupClosed)}
+          message={
+            signupClosed
+              ? "参加受付を再開しますか?"
+              : "参加受付を今すぐ〆切りますか?(以後、参加登録と取り消しができなくなります)"
+          }
+          className="mt-2.5"
+        >
+          <SubmitButton
+            spinner={false}
+            className="w-full rounded-[10px] border-2 border-dashed border-line bg-white py-2.5 text-[12px] font-bold text-pend"
+          >
+            {signupClosed ? "参加受付を再開する(主催者・管理者)" : "参加受付を〆切る(主催者・管理者)"}
+          </SubmitButton>
+        </ConfirmForm>
       )}
 
       {canManage && (
@@ -168,6 +246,8 @@ export async function EventDetail({ id }: { id: string }) {
               .map((p) => p.userId)}
             hostId={event.hostId}
             defaults={{
+              deadlineDate: event.signupDeadline ? jstDateKey(event.signupDeadline) : undefined,
+              deadlineTime: event.signupDeadline ? fmtTime(event.signupDeadline) : undefined,
               title: event.title,
               description: event.description ?? "",
               venueId: event.venueId,

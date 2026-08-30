@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { notify } from "@/lib/notify";
+import { sendPushToUsers } from "@/lib/push";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 // 個別のお知らせを既読にする(ベルのモーダルでタップしたとき)
@@ -35,6 +36,22 @@ export async function markAllRead() {
       ),
     );
   revalidatePath("/", "layout");
+}
+
+// 自分の端末へのテスト通知(プッシュ設定の到達確認用)
+export async function sendTestPush(): Promise<{ subs: number }> {
+  const { user, db } = await requireTripContext();
+  const subs = await db.query.pushSubscriptions.findMany({
+    where: eq(schema.pushSubscriptions.userId, user.id),
+  });
+  if (subs.length > 0) {
+    await sendPushToUsers(db, [user.id], {
+      title: "テスト通知",
+      body: "この通知が見えていれば、プッシュ通知の設定は正常です。",
+      link: "/settings",
+    });
+  }
+  return { subs: subs.length };
 }
 
 // 全体アナウンス(一般メンバーも送信可能)

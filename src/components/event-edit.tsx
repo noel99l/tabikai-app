@@ -24,6 +24,8 @@ type Props = {
   participantIds: string[]; // 現在の参加者(招待中含む)
   hostId: string; // 主催者は外せない
   defaults: {
+    deadlineDate?: string;
+    deadlineTime?: string;
     title: string;
     description: string;
     venueId: string;
@@ -258,6 +260,32 @@ export function EventEdit({ eventId, venues, days, members, participantIds, host
             defaultValue={defaults.description}
             placeholder="持ち物や集合場所など"
           />
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelCls} htmlFor="e-dl-date">参加〆切日(任意)</label>
+              <input
+                className={inputCls}
+                id="e-dl-date"
+                name="deadlineDate"
+                type="date"
+                defaultValue={defaults.deadlineDate}
+              />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="e-dl-time">〆切時刻</label>
+              <input
+                className={inputCls}
+                id="e-dl-time"
+                name="deadlineTime"
+                type="time"
+                defaultValue={defaults.deadlineTime ?? "23:59"}
+              />
+            </div>
+          </div>
+          <p className="mx-0.5 mt-1 text-[11px] text-muted">
+            〆切を過ぎると参加登録・参加の取り消しができなくなります(日付を空にすると〆切なし)。
+          </p>
 
           <p className="mx-0.5 mt-3 text-[11px] text-muted">
             保存すると参加登録済みのメンバーへ変更のお知らせ+通知が届きます。

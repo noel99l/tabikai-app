@@ -161,7 +161,7 @@ export default async function DashboardPage() {
       <AppHeader
         title={trip.name}
         leading={
-          <Link href="/trips" aria-label="イベントを切り替え" className="shrink-0">
+          <Link href="/members" aria-label="メンバー一覧" className="shrink-0">
             <TripLogo logoUrl={trip.logoUrl} size={34} radius={11} />
           </Link>
         }
