@@ -99,9 +99,6 @@ export function EventComments({
         </SubmitButton>
       </form>
       {error && <p className="mt-1.5 text-[11.5px] font-bold text-primary">{error}</p>}
-      <p className="mt-1.5 text-[10.5px] text-muted">
-        コメントはこのイベントの参加者・招待中のメンバーに通知されます。
-      </p>
     </div>
   );
 }
