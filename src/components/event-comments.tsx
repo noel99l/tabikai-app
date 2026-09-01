@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addEventComment, deleteEventComment } from "@/lib/actions/events";
 import { Avatar } from "./ui";
 import { SubmitButton } from "./submit-button";
@@ -27,7 +27,46 @@ export function EventComments({
   isAdmin: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // 書きかけのコメントを端末に保持する(24時間・イベントごと)
+  const DRAFT_TTL = 24 * 60 * 60 * 1000;
+  const draftKey = `comment-draft:${eventId}`;
+  useEffect(() => {
+    try {
+      // 期限切れの下書き(他イベント分も含む)を掃除
+      for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith("comment-draft:")) continue;
+        const d = JSON.parse(localStorage.getItem(key) ?? "{}") as { at?: number };
+        if (!d.at || Date.now() - d.at > DRAFT_TTL) localStorage.removeItem(key);
+      }
+      // このイベントの下書きを復元
+      const saved = JSON.parse(localStorage.getItem(draftKey) ?? "null") as {
+        body?: string;
+        at?: number;
+      } | null;
+      const fresh = saved?.at != null && Date.now() - saved.at <= DRAFT_TTL;
+      if (saved?.body && fresh && textareaRef.current && !textareaRef.current.value) {
+        textareaRef.current.value = saved.body;
+      }
+    } catch {
+      /* 破損データは無視 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
+  const saveDraft = (body: string) => {
+    try {
+      if (body.trim()) {
+        localStorage.setItem(draftKey, JSON.stringify({ body, at: Date.now() }));
+      } else {
+        localStorage.removeItem(draftKey);
+      }
+    } catch {
+      /* 容量超過等は無視 */
+    }
+  };
 
   return (
     <div className="mt-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
@@ -83,14 +122,22 @@ export function EventComments({
             return;
           }
           formRef.current?.reset();
+          // 送信できたら下書きも破棄
+          try {
+            localStorage.removeItem(draftKey);
+          } catch {
+            /* noop */
+          }
         }}
         className="mt-3 flex items-end gap-2"
       >
         <textarea
+          ref={textareaRef}
           name="body"
           required
           maxLength={500}
           rows={1}
+          onChange={(e) => saveDraft(e.target.value)}
           placeholder="コメントを書く…"
           className="min-h-[42px] flex-1 resize-y rounded-[14px] border-2 border-line bg-white px-3.5 py-2.5 text-[12.5px]"
         />
