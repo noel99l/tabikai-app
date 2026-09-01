@@ -132,6 +132,44 @@ export async function updateNotifySetting(key: string, enabled: boolean) {
   revalidatePath("/manage/trip");
 }
 
+// 本人のプッシュ通知設定(企画のデフォルトを上書き)
+export async function updateMyNotifySetting(key: string, enabled: boolean) {
+  const { user, trip, db } = await requireTripContext();
+  const { NOTIFY_CATEGORIES } = await import("@/lib/notify");
+  if (!NOTIFY_CATEGORIES.some((c) => c.key === key)) throw new Error("不明な通知カテゴリです");
+  const member = await db.query.tripMembers.findFirst({
+    where: and(
+      eq(schema.tripMembers.tripId, trip.id),
+      eq(schema.tripMembers.userId, user.id),
+    ),
+  });
+  await db
+    .update(schema.tripMembers)
+    .set({ notifySettings: { ...(member?.notifySettings ?? {}), [key]: enabled } })
+    .where(
+      and(
+        eq(schema.tripMembers.tripId, trip.id),
+        eq(schema.tripMembers.userId, user.id),
+      ),
+    );
+  revalidatePath("/settings");
+}
+
+// 本人の通知設定をすべて企画のデフォルトに戻す
+export async function resetMyNotifySettings() {
+  const { user, trip, db } = await requireTripContext();
+  await db
+    .update(schema.tripMembers)
+    .set({ notifySettings: {} })
+    .where(
+      and(
+        eq(schema.tripMembers.tripId, trip.id),
+        eq(schema.tripMembers.userId, user.id),
+      ),
+    );
+  revalidatePath("/settings");
+}
+
 // 参加リクエストの自動承認モードの切替(管理者のみ)
 export async function setAutoApprove(next: boolean) {
   const { trip, db, isAdmin } = await requireTripContext();

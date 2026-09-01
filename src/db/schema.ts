@@ -103,6 +103,11 @@ export const tripMembers = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     role: memberRole("role").default("member").notNull(),
     status: memberStatus("status").default("pending").notNull(),
+    // 本人のプッシュ通知設定(キー未設定のカテゴリは企画のデフォルト trips.notifySettings に従う)
+    notifySettings: jsonb("notify_settings")
+      .$type<Record<string, boolean>>()
+      .default({})
+      .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [primaryKey({ columns: [t.tripId, t.userId] })],

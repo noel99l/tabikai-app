@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db";
 import { schema } from "@/db";
 import { sendPushToUsers } from "./push";
@@ -71,18 +71,38 @@ export async function notify(
     })),
   );
   if (targets.length === 0) return;
-  // 管理者設定で当該カテゴリのプッシュがオフならお知らせのみ(プッシュは送らない)
+  // プッシュの可否をユーザーごとに解決する:
+  // 本人の設定(trip_members) > 企画のデフォルト(trips・管理者設定) > オン
+  let pushTargets = targets;
   const cat = TYPE_TO_CATEGORY[input.type];
   if (cat) {
-    const [t] = await db
-      .select({ ns: schema.trips.notifySettings })
-      .from(schema.trips)
-      .where(eq(schema.trips.id, tripId));
-    if (t?.ns?.[cat] === false) return;
+    const rows = await db
+      .select({
+        userId: schema.tripMembers.userId,
+        memberNs: schema.tripMembers.notifySettings,
+        tripNs: schema.trips.notifySettings,
+      })
+      .from(schema.tripMembers)
+      .innerJoin(schema.trips, eq(schema.trips.id, schema.tripMembers.tripId))
+      .where(
+        and(
+          eq(schema.tripMembers.tripId, tripId),
+          inArray(schema.tripMembers.userId, targets),
+        ),
+      );
+    pushTargets = targets.filter((uid) => {
+      const row = rows.find((r) => r.userId === uid);
+      const mine = row?.memberNs?.[cat];
+      if (mine !== undefined) return mine;
+      const tripDefault = row?.tripNs?.[cat];
+      if (tripDefault !== undefined) return tripDefault;
+      return true;
+    });
+    if (pushTargets.length === 0) return;
   }
   // プッシュ送信は失敗してもお知らせ作成は成功扱いにする
   try {
-    await sendPushToUsers(db, targets, {
+    await sendPushToUsers(db, pushTargets, {
       title: input.title,
       body: input.body,
       link: input.link,

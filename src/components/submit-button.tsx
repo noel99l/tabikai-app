@@ -37,12 +37,16 @@ export function SubmitButton({
   name,
   value,
   spinner = true,
+  disabled = false,
+  "aria-label": ariaLabel,
 }: {
   children: ReactNode;
   className?: string;
   name?: string;
   value?: string;
   spinner?: boolean;
+  disabled?: boolean;
+  "aria-label"?: string;
 }) {
   const { pending, data } = useFormStatus();
   // name/value 付き(同一フォーム内に複数ボタン)の場合は、押されたボタンだけを
@@ -53,7 +57,8 @@ export function SubmitButton({
     <button
       name={name}
       value={value}
-      disabled={pending}
+      aria-label={ariaLabel}
+      disabled={pending || disabled}
       className={`${className} ${
         isSubmitter ? "animate-pulse opacity-60" : pending ? "opacity-40" : ""
       }`}

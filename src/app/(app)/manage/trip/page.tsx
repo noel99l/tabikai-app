@@ -69,7 +69,7 @@ export default async function TripSettingsPage() {
       <SectionTitle>プッシュ通知(機能ごと)</SectionTitle>
       <Card>
         <p className="mb-1 text-[11.5px] text-muted">
-          オフにした機能はプッシュ通知を送りません(ベルのお知らせには残ります)。全メンバーに適用されます。
+          オフにした機能はプッシュ通知を送りません(ベルのお知らせには残ります)。ここでの設定はメンバーごとの初期値で、各メンバーはアカウント画面から自分用に変更できます。
         </p>
         {NOTIFY_CATEGORIES.map((c) => {
           const enabled = trip.notifySettings?.[c.key] !== false;

@@ -59,6 +59,31 @@ export async function toggleVenueVisible(venueId: string, visible: boolean) {
   revalidatePath("/schedule");
 }
 
+// 会場の表示順を1つ上/下へ移動(予定表・イベントの列順に反映)
+export async function moveVenue(venueId: string, dir: "up" | "down") {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  const venues = await db.query.venues.findMany({
+    where: eq(schema.venues.tripId, trip.id),
+    orderBy: (v, { asc }) => [asc(v.sortOrder)],
+  });
+  const idx = venues.findIndex((v) => v.id === venueId);
+  const swapWith = dir === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapWith < 0 || swapWith >= venues.length) return;
+  // sortOrder が重複していても正しく入れ替わるよう、並びを正規化してから交換する
+  const order = venues.map((v) => v.id);
+  [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
+  for (let i = 0; i < order.length; i++) {
+    await db
+      .update(schema.venues)
+      .set({ sortOrder: i })
+      .where(and(eq(schema.venues.id, order[i]), eq(schema.venues.tripId, trip.id)));
+  }
+  revalidatePath("/manage/venues");
+  revalidatePath("/schedule");
+  revalidatePath("/events");
+}
+
 export async function updateVenue(formData: FormData) {
   const { trip, db, isAdmin } = await requireTripContext();
   if (!isAdmin) throw new Error("管理者のみ操作できます");

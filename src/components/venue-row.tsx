@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { deleteVenue, toggleVenuePrivate, toggleVenueVisible, updateVenue } from "@/lib/actions/venues";
+import { deleteVenue, moveVenue, toggleVenuePrivate, toggleVenueVisible, updateVenue } from "@/lib/actions/venues";
 import { Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
@@ -19,9 +19,12 @@ type Props = {
     isPrivate: boolean;
     eventCount: number;
   };
+  // 表示順の移動可否(先頭は上へ・末尾は下へ動かせない)
+  isFirst: boolean;
+  isLast: boolean;
 };
 
-export function VenueRow({ venue: v }: Props) {
+export function VenueRow({ venue: v, isFirst, isLast }: Props) {
   const [open, setOpen] = useState(false);
   const toast = useToast();
 
@@ -37,6 +40,27 @@ export function VenueRow({ venue: v }: Props) {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {/* 表示順の移動(予定表・イベントの列順) */}
+          <form action={moveVenue.bind(null, v.id, "up")}>
+            <SubmitButton
+              spinner={false}
+              disabled={isFirst}
+              aria-label="表示順を上へ"
+              className="rounded-lg border-2 border-line bg-white px-2 py-1.5 text-[12px] font-bold disabled:opacity-30"
+            >
+              ↑
+            </SubmitButton>
+          </form>
+          <form action={moveVenue.bind(null, v.id, "down")}>
+            <SubmitButton
+              spinner={false}
+              disabled={isLast}
+              aria-label="表示順を下へ"
+              className="rounded-lg border-2 border-line bg-white px-2 py-1.5 text-[12px] font-bold disabled:opacity-30"
+            >
+              ↓
+            </SubmitButton>
+          </form>
           <button
             onClick={() => setOpen(true)}
             className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-primary"

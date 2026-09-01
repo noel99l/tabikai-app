@@ -42,7 +42,7 @@ export default async function VenuesPage() {
         管理者コンソールへ戻る
       </Link>
       <p className="mx-0.5 mb-3 text-[12.5px] text-muted">
-        ここで作成した会場が予定表の列になります。
+        ここで作成した会場が予定表の列になります。↑↓で表示順(予定表・イベントの列順)を変更できます。
       </p>
 
       <SectionTitle>登録済みの会場({venues.length})</SectionTitle>
@@ -51,8 +51,8 @@ export default async function VenuesPage() {
           会場がまだありません。下のフォームから追加してください。
         </p>
       )}
-      {venues.map((v) => (
-        <VenueRow key={v.id} venue={v} />
+      {venues.map((v, i) => (
+        <VenueRow key={v.id} venue={v} isFirst={i === 0} isLast={i === venues.length - 1} />
       ))}
 
       <SectionTitle>会場を追加</SectionTitle>
