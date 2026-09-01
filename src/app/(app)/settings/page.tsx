@@ -47,12 +47,7 @@ export default async function SettingsPage() {
 
       {/* 通知の種類(機能ごと)。初期値は管理者設定、変更は自分にだけ適用 */}
       <details className="mt-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]">
-        <summary className="cursor-pointer text-sm font-bold">
-          通知の種類(機能ごと)
-          <span className="mt-0.5 block text-[11.5px] font-medium text-muted">
-            初期値は管理者の設定です。変更すると自分にだけ適用されます。
-          </span>
-        </summary>
+        <summary className="cursor-pointer text-sm font-bold">通知設定</summary>
         {NOTIFY_CATEGORIES.map((c) => {
           const mine = myNs[c.key];
           const effective = mine ?? tripNs[c.key] ?? true;
