@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
-import { isAuthorizedCron } from "@/lib/cron";
+import { isAuthorizedCron, isWithinReminderWindow } from "@/lib/cron";
 import { fmtTime } from "@/lib/format";
 import { notify } from "@/lib/notify";
 
@@ -13,6 +13,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  // 旅会の開催期間外はDBに接続せず終了(Neonのcomputeを起こさない)
+  if (!isWithinReminderWindow()) {
+    return NextResponse.json({ ok: true, skipped: "outside-window", events: 0, notified: 0 });
   }
   const db = await getDb();
   const now = new Date();
