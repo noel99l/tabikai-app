@@ -3,8 +3,8 @@ import "server-only";
 // 毎分リマインドcronを動かす期間(JST)。旅会の開催期間に合わせて更新する。
 // 期間外はDBに触れずに即returnし、Neonのcomputeを眠らせておく(CU時間の節約)。
 // 開始直後(15:00ちょうど等)のイベントのリマインドは開始時刻に送られる点に注意。
-const REMINDER_WINDOW_FROM = new Date("2026-09-19T15:00:00+09:00");
-const REMINDER_WINDOW_TO = new Date("2026-09-21T12:00:00+09:00");
+const REMINDER_WINDOW_FROM = new Date("2026-09-19T00:00:00+09:00");
+const REMINDER_WINDOW_TO = new Date("2026-09-21T23:59:59+09:00");
 
 export function isWithinReminderWindow(now = new Date()): boolean {
   return now >= REMINDER_WINDOW_FROM && now <= REMINDER_WINDOW_TO;
