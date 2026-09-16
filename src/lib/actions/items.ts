@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { isItemCategory, type ItemCategory } from "@/lib/item-category";
@@ -29,17 +29,6 @@ export async function addItem(formData: FormData) {
     addedBy: user.id,
     sortOrder: Number(max) + 1,
   });
-  revalidatePath("/items");
-}
-
-// カテゴリの変更(メンバー誰でも可。既存分の振り分け直しに使う)
-export async function setItemCategory(itemId: string, category: ItemCategory) {
-  const { trip, db } = await requireTripContext();
-  if (!isItemCategory(category)) return;
-  await db
-    .update(schema.items)
-    .set({ category })
-    .where(and(eq(schema.items.id, itemId), eq(schema.items.tripId, trip.id)));
   revalidatePath("/items");
 }
 

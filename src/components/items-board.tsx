@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { deleteItem, reorderItems, setItemStatus } from "@/lib/actions/items";
 import {
-  deleteItem,
-  reorderItems,
-  setItemCategory,
-  setItemStatus,
-} from "@/lib/actions/items";
-import { ITEM_CATEGORIES, isItemCategory, type ItemCategory } from "@/lib/item-category";
+  ITEM_CATEGORIES,
+  isItemCategory,
+  itemCategoryLabel,
+  type ItemCategory,
+} from "@/lib/item-category";
 import { IconCart, IconCheck, IconGrip } from "./icons";
 import { Modal } from "./modal";
 import { Pill } from "./ui";
@@ -112,13 +112,6 @@ export function ItemsBoard({
   };
   const countOf = (c: ItemCategory | null) =>
     c ? merged.filter((i) => i.category === c).length : merged.length;
-
-  const changeCategory = (item: BoardItem, c: ItemCategory) => {
-    setOverrides((prev) => ({ ...prev, [item.id]: { ...prev[item.id], category: c } }));
-    startTransition(async () => {
-      await setItemCategory(item.id, c);
-    });
-  };
   // 買い出しリスト: 自分が買う予定+このセッションで購入済みにしたもの
   const shopList = merged.filter(
     (i) =>
@@ -260,38 +253,14 @@ export function ItemsBoard({
         </button>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">
-            {i.name} <Pill tone="info">{i.eventTitle}</Pill>
+            {i.name} <Pill tone="violet">{itemCategoryLabel(i.category)}</Pill>{" "}
+            <Pill tone="info">{i.eventTitle}</Pill>
           </div>
           <div className="mt-0.5 text-[11.5px] text-muted">
             {i.note ? `${i.note} · ` : ""}掲載: {i.addedByName}
             {i.assigneeName &&
               ` · ${i.assigneeName} が${i.method === "buy" ? "買い出し" : "持参"}`}
           </div>
-          {/* カテゴリ(タップで変更。既存分の振り分け直し用) */}
-          <label className="mt-1.5 inline-flex items-center gap-1 rounded-full border-2 border-line bg-screen px-2 py-0.5 text-[10.5px] font-bold">
-            <span className="text-muted">カテゴリ</span>
-            <select
-              aria-label={`${i.name} のカテゴリ`}
-              value={i.category}
-              onChange={(e) => {
-                if (isItemCategory(e.target.value)) changeCategory(i, e.target.value);
-              }}
-              className="appearance-none bg-transparent pr-3 font-bold text-ink"
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b1b1b' stroke-width='3' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right center",
-                backgroundSize: "10px",
-              }}
-            >
-              {ITEM_CATEGORIES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
         {/* 掲載の削除は担当が付く前(足りない)のみ。担当が付いた後は
             「取り消す」「足りないに戻す」で戻してから削除する */}
