@@ -66,6 +66,17 @@ async function ExpensesList() {
   const eventTitleOf = (id: string | null) =>
     id ? (tripEvents.find((e) => e.id === id)?.title ?? null) : null;
 
+  // 費用フォーム(登録・編集)の「イベント参加者」選択肢
+  const eventOptions = tripEvents.map((e) => ({
+    id: e.id,
+    title: e.title,
+    startMs: e.startsAt.getTime(),
+    endMs: e.endsAt.getTime(),
+    allDay: e.allDay,
+    participantIds: participants.filter((p) => p.eventId === e.id).map((p) => p.userId),
+  }));
+  const memberOptions = members.map((m) => ({ userId: m.userId, name: m.name }));
+
   const groupTotal = expenses.reduce((s, e) => s + e.amount, 0);
   const myConfirmed = shares
     .filter(
@@ -115,6 +126,7 @@ async function ExpensesList() {
               amount: x.amount,
               paidBy: x.paidBy,
               splitAll: x.splitAll,
+              eventId: x.eventId,
               eventTitle: eventTitleOf(x.eventId),
               receiptId: receipts.find((r) => r.expenseId === x.id)?.id ?? null,
             }}
@@ -124,7 +136,9 @@ async function ExpensesList() {
               amount: s.amount,
               status: s.status,
             }))}
-            members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+            members={memberOptions}
+            events={eventOptions}
+            selfId={user.id}
             canEdit={canEdit}
           />
         );
@@ -165,20 +179,7 @@ async function ExpensesList() {
         </Card>
       )}
 
-      <ExpenseCreateFab
-        members={members.map((m) => ({ userId: m.userId, name: m.name }))}
-        events={tripEvents.map((e) => ({
-          id: e.id,
-          title: e.title,
-          startMs: e.startsAt.getTime(),
-          endMs: e.endsAt.getTime(),
-          allDay: e.allDay,
-          participantIds: participants
-            .filter((p) => p.eventId === e.id)
-            .map((p) => p.userId),
-        }))}
-        selfId={user.id}
-      />
+      <ExpenseCreateFab members={memberOptions} events={eventOptions} selfId={user.id} />
     </>
   );
 }

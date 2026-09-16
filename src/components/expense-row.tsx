@@ -5,6 +5,7 @@ import { deleteExpense, updateExpense } from "@/lib/actions/expenses";
 import { yen } from "@/lib/format";
 import { Modal } from "./modal";
 import { ReceiptInput } from "./receipt-input";
+import { SplitPicker, type ExpenseEventOption, type SplitState } from "./split-picker";
 import { Pill, btnCls, inputCls, labelCls } from "./ui";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
@@ -19,11 +20,14 @@ type Props = {
     amount: number;
     paidBy: string;
     splitAll: boolean;
+    eventId: string | null;
     eventTitle: string | null;
     receiptId: string | null; // 領収書画像(なければnull)
   };
   shares: ShareInfo[];
   members: { userId: string; name: string }[];
+  events: ExpenseEventOption[]; // 編集時の「イベント参加者」選択用
+  selfId: string;
   canEdit: boolean;
 };
 
@@ -35,15 +39,22 @@ const statusLabel: Record<string, { label: string; tone: "ok" | "pend" | "info" 
   rejected: { label: "否認", tone: "pend" },
 };
 
-export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
+export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptLarge, setReceiptLarge] = useState(false); // 領収書の拡大表示
+  const [split, setSplit] = useState<SplitState | null>(null);
   const submitting = useRef(false);
   const toast = useToast();
 
   const active = shares.filter((s) => s.status !== "excluded");
+  // 編集フォームの初期値: 現在の割り勘対象と選び方
+  const initialSplit = {
+    mode: expense.splitAll ? ("all" as const) : expense.eventId ? ("event" as const) : ("members" as const),
+    selected: active.map((s) => s.userId),
+    eventId: expense.eventId,
+  };
   const done = active.filter((s) => s.status === "approved" || s.status === "forced");
   const confirmed = expense.splitAll || done.length === active.length;
   const nameOf = (id: string) => members.find((m) => m.userId === id)?.name ?? "";
@@ -180,17 +191,22 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
           <form
             action={async (formData) => {
               if (submitting.current) return;
+              if (split && split.mode !== "all" && split.count === 0) {
+                setError("負担するメンバーを1人以上選択してください");
+                return;
+              }
               submitting.current = true;
               setError(null);
               try {
                 const res = await updateExpense(formData);
                 if (res?.error) {
                   setError(res.error);
-                  submitting.current = false;
                 } else {
                   toast.show("保存しました");
                   setOpen(false);
                 }
+                // 成功時もリセットしないと、同じ費用の2回目以降の保存が無視される
+                submitting.current = false;
               } catch {
                 setError("更新に失敗しました。");
                 submitting.current = false;
@@ -226,8 +242,16 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
                 <option key={m.userId} value={m.userId}>{m.name}</option>
               ))}
             </select>
+            <SplitPicker
+              members={members}
+              events={events}
+              selfId={selfId}
+              idPrefix={`edit-${expense.id}`}
+              initial={initialSplit}
+              onStateChange={setSplit}
+            />
             <p className="mx-0.5 mt-2 text-[11px] text-muted">
-              金額を変更すると割り勘額が再計算され、個別割り勘は対象者の再承認が必要になります。
+              金額や対象メンバーを変更すると割り勘額が再計算され、個別割り勘は対象者の再承認が必要になります。外したメンバーには通知されます。
             </p>
             <ReceiptInput existingId={expense.receiptId} idPrefix={`edit-${expense.id}`} />
             <FormError message={error} />

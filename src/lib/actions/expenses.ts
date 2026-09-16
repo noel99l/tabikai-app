@@ -307,10 +307,11 @@ export async function resolveShare(formData: FormData) {
   revalidatePath("/expenses/approvals");
 }
 
-// 費用の編集(内容・金額・立替者)。作成者・立替者・管理者のみ。
-// 金額が変わったら割り勘額を再計算し、個別割り勘は再承認のため pending に戻す。
+// 費用の編集(内容・金額・立替者・割り勘対象・領収書)。作成者・立替者・管理者のみ。
+// 金額または対象が変わったら割り勘額を再計算し、個別割り勘は再承認のため pending に戻す。
+// 対象から外したメンバーは excluded にして通知、追加したメンバーは承認待ちで通知する。
 export async function updateExpense(formData: FormData) {
-  const { user, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
   const expenseId = String(formData.get("expenseId"));
   const title = String(formData.get("title") ?? "").trim();
   const amount = Number(String(formData.get("amount") ?? "").replace(/[^\d]/g, ""));
@@ -322,6 +323,9 @@ export async function updateExpense(formData: FormData) {
   if (expense.createdBy !== user.id && expense.paidBy !== user.id && !isAdmin) {
     return { error: "作成者・立替者・管理者のみ編集できます" };
   }
+  if (trip.expensesClosedAt) {
+    return { error: "精算を締めた後は変更できません。管理者が締めを解除すると編集できます" };
+  }
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
@@ -329,11 +333,37 @@ export async function updateExpense(formData: FormData) {
   if (receipt && "error" in receipt) return { error: receipt.error };
   const removeReceipt = formData.get("removeReceipt") === "on";
 
+  // 割り勘対象の指定(splitMode があれば選び方ごと更新する。無ければ従来どおり据え置き)
+  const splitMode = String(formData.get("splitMode") ?? "");
+  let splitAll = expense.splitAll;
+  let eventId = expense.eventId;
+  let targetIds: string[] | null = null;
+  if (splitMode) {
+    const members = await getApprovedMembers();
+    if (splitMode === "all") {
+      splitAll = true;
+      eventId = null;
+      targetIds = members.map((m) => m.userId);
+    } else {
+      splitAll = false;
+      const memberSet = new Set(members.map((m) => m.userId));
+      targetIds = [...new Set(formData.getAll("memberIds").map(String))].filter((id) =>
+        memberSet.has(id),
+      );
+      if (targetIds.length === 0) return { error: "負担するメンバーを選択してください" };
+      eventId = splitMode === "event" ? String(formData.get("eventId") ?? "") || null : null;
+    }
+  }
+
   const amountChanged = amount !== expense.amount;
-  await Promise.all([
+  const newPaidBy = paidBy || expense.paidBy;
+  const [shares] = await Promise.all([
+    db.query.expenseShares.findMany({
+      where: eq(schema.expenseShares.expenseId, expenseId),
+    }),
     db
       .update(schema.expenses)
-      .set({ title, amount, paidBy: paidBy || expense.paidBy })
+      .set({ title, amount, paidBy: newPaidBy, splitAll, eventId })
       .where(eq(schema.expenses.id, expenseId)),
     receipt
       ? saveReceipt(db, expense.tripId, expenseId, receipt)
@@ -344,22 +374,88 @@ export async function updateExpense(formData: FormData) {
         : Promise.resolve(),
   ]);
 
-  if (amountChanged) {
+  // 対象の差分(追加・除外)を反映する
+  let targetsChanged = splitAll !== expense.splitAll;
+  if (targetIds) {
+    const current = new Set(
+      shares.filter((s) => s.status !== "excluded").map((s) => s.userId),
+    );
+    const next = new Set(targetIds);
+    const added = targetIds.filter((id) => !current.has(id));
+    const removed = [...current].filter((id) => !next.has(id));
+    const existing = new Set(shares.map((s) => s.userId));
+    targetsChanged = targetsChanged || added.length > 0 || removed.length > 0;
+
+    const ops: Promise<unknown>[] = [];
+    if (removed.length > 0) {
+      ops.push(
+        db
+          .update(schema.expenseShares)
+          .set({ status: "excluded", resolvedBy: user.id, resolvedAt: new Date() })
+          .where(
+            and(
+              eq(schema.expenseShares.expenseId, expenseId),
+              inArray(schema.expenseShares.userId, removed),
+            ),
+          ),
+      );
+    }
+    // 以前 excluded だった人を戻す(金額・状態は後段の割り直しで確定)
+    const reAdded = added.filter((id) => existing.has(id));
+    if (reAdded.length > 0) {
+      ops.push(
+        db
+          .update(schema.expenseShares)
+          .set({ status: "pending", resolvedBy: null, resolvedAt: null })
+          .where(
+            and(
+              eq(schema.expenseShares.expenseId, expenseId),
+              inArray(schema.expenseShares.userId, reAdded),
+            ),
+          ),
+      );
+    }
+    const brandNew = added.filter((id) => !existing.has(id));
+    if (brandNew.length > 0) {
+      ops.push(
+        db.insert(schema.expenseShares).values(
+          brandNew.map((userId) => ({ expenseId, userId, amount: 0, status: "pending" as const })),
+        ),
+      );
+    }
+    if (removed.length > 0) {
+      ops.push(
+        notify(
+          db,
+          expense.tripId,
+          removed.filter((id) => id !== user.id),
+          {
+            type: "expense_confirmed",
+            title: `「${title}」の割り勘対象から外されました`,
+            body: `${user.name} さんが対象メンバーを変更しました`,
+            link: "/expenses",
+            senderId: user.id,
+          },
+        ),
+      );
+    }
+    await Promise.all(ops);
+  }
+
+  if (amountChanged || targetsChanged) {
     await redistributeShares(
       db,
-      {
-        id: expenseId,
-        tripId: expense.tripId,
-        title,
-        amount,
-        paidBy: paidBy || expense.paidBy,
-        splitAll: expense.splitAll,
-      },
+      { id: expenseId, tripId: expense.tripId, title, amount, paidBy: newPaidBy, splitAll },
       user.id,
-      {
-        title: `「${title}」の金額が変更されました`,
-        body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
-      },
+      targetsChanged
+        ? {
+            title: `「${title}」の割り勘対象が変更されました`,
+            body: `合計 ${yen(amount)} を${targetIds?.length ?? ""}人で割り直し · 再度ご確認ください`,
+          }
+        : {
+            title: `「${title}」の金額が変更されました`,
+            body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
+          },
     );
   }
   revalidatePath("/expenses");
