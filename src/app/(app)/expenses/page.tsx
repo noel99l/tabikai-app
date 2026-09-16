@@ -23,8 +23,8 @@ async function ExpensesList() {
       orderBy: (e, { asc }) => [asc(e.startsAt)],
     }),
   ]);
-  // shares と参加者は互いに独立なので並列で取得(Neonの往復削減)
-  const [shares, participants] = await Promise.all([
+  // shares・領収書の有無・参加者は互いに独立なので並列で取得(Neonの往復削減)
+  const [shares, receipts, participants] = await Promise.all([
     expenses.length
       ? db.query.expenseShares.findMany({
           where: inArray(
@@ -32,6 +32,21 @@ async function ExpensesList() {
             expenses.map((e) => e.id),
           ),
         })
+      : Promise.resolve([]),
+    // 画像本体は載せずIDだけ(表示は /api/receipts/[id] から)
+    expenses.length
+      ? db
+          .select({
+            id: schema.expenseReceipts.id,
+            expenseId: schema.expenseReceipts.expenseId,
+          })
+          .from(schema.expenseReceipts)
+          .where(
+            inArray(
+              schema.expenseReceipts.expenseId,
+              expenses.map((e) => e.id),
+            ),
+          )
       : Promise.resolve([]),
     // 費用フォームの「イベントの参加者から選択」用に参加登録者を取得
     tripEvents.length
@@ -101,6 +116,7 @@ async function ExpensesList() {
               paidBy: x.paidBy,
               splitAll: x.splitAll,
               eventTitle: eventTitleOf(x.eventId),
+              receiptId: receipts.find((r) => r.expenseId === x.id)?.id ?? null,
             }}
             shares={xs.map((s) => ({
               userId: s.userId,

@@ -5,7 +5,47 @@ import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { yen } from "@/lib/format";
 import { notify } from "@/lib/notify";
+import { RECEIPT_HARD_LIMIT_BYTES } from "@/lib/receipt-image";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
+
+const RECEIPT_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+// フォームの領収書(端末側で圧縮済みのbase64)を検証してバイナリにする。
+// 添付なしは null、不正な場合は error を返す
+function parseReceipt(
+  formData: FormData,
+): { bytes: Buffer; mime: string } | null | { error: string } {
+  const data = String(formData.get("receiptData") ?? "");
+  if (!data) return null;
+  const mime = String(formData.get("receiptMime") ?? "");
+  if (!RECEIPT_MIMES.has(mime)) return { error: "領収書はJPEG/PNG/WebP画像のみ添付できます" };
+  // base64長からおおよそのサイズを先に見て、巨大な入力をデコード前に弾く
+  if (data.length > (RECEIPT_HARD_LIMIT_BYTES * 4) / 3 + 4) {
+    return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+  }
+  const bytes = Buffer.from(data, "base64");
+  if (bytes.length === 0 || bytes.length > RECEIPT_HARD_LIMIT_BYTES) {
+    return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+  }
+  return { bytes, mime };
+}
+
+async function saveReceipt(
+  db: Awaited<ReturnType<typeof requireTripContext>>["db"],
+  tripId: string,
+  expenseId: string,
+  receipt: { bytes: Buffer; mime: string },
+) {
+  // 差し替えは削除→新規(IDが変わるので配信側の長期キャッシュと相性が良い)
+  await db.delete(schema.expenseReceipts).where(eq(schema.expenseReceipts.expenseId, expenseId));
+  await db.insert(schema.expenseReceipts).values({
+    expenseId,
+    tripId,
+    mime: receipt.mime,
+    bytes: receipt.bytes,
+    size: receipt.bytes.length,
+  });
+}
 
 // 均等割り(端数は先頭から1円ずつ負担)
 function splitAmount(total: number, n: number): number[] {
@@ -82,6 +122,8 @@ export async function createExpense(formData: FormData) {
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
+  const receipt = parseReceipt(formData);
+  if (receipt && "error" in receipt) return { error: receipt.error };
 
   const members = await getApprovedMembers();
   let targetIds: string[];
@@ -109,15 +151,18 @@ export async function createExpense(formData: FormData) {
     .returning();
 
   const amounts = splitAmount(amount, targetIds.length);
-  await db.insert(schema.expenseShares).values(
-    targetIds.map((userId, i) => ({
-      expenseId: expense.id,
-      userId,
-      amount: amounts[i],
-      // 全員割り勘は承認不要で確定 / 個別でも立替者本人は承認済み扱い
-      status: splitAll || userId === paidBy ? ("approved" as const) : ("pending" as const),
-    })),
-  );
+  await Promise.all([
+    db.insert(schema.expenseShares).values(
+      targetIds.map((userId, i) => ({
+        expenseId: expense.id,
+        userId,
+        amount: amounts[i],
+        // 全員割り勘は承認不要で確定 / 個別でも立替者本人は承認済み扱い
+        status: splitAll || userId === paidBy ? ("approved" as const) : ("pending" as const),
+      })),
+    ),
+    receipt ? saveReceipt(db, trip.id, expense.id, receipt) : Promise.resolve(),
+  ]);
 
   const payerName = members.find((m) => m.userId === paidBy)?.name ?? "";
   // (通知送信後にモーダルを閉じるだけで反映されるよう、遷移せずrevalidateする)
@@ -280,12 +325,24 @@ export async function updateExpense(formData: FormData) {
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
+  const receipt = parseReceipt(formData);
+  if (receipt && "error" in receipt) return { error: receipt.error };
+  const removeReceipt = formData.get("removeReceipt") === "on";
 
   const amountChanged = amount !== expense.amount;
-  await db
-    .update(schema.expenses)
-    .set({ title, amount, paidBy: paidBy || expense.paidBy })
-    .where(eq(schema.expenses.id, expenseId));
+  await Promise.all([
+    db
+      .update(schema.expenses)
+      .set({ title, amount, paidBy: paidBy || expense.paidBy })
+      .where(eq(schema.expenses.id, expenseId)),
+    receipt
+      ? saveReceipt(db, expense.tripId, expenseId, receipt)
+      : removeReceipt
+        ? db
+            .delete(schema.expenseReceipts)
+            .where(eq(schema.expenseReceipts.expenseId, expenseId))
+        : Promise.resolve(),
+  ]);
 
   if (amountChanged) {
     await redistributeShares(

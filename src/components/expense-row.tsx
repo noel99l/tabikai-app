@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { deleteExpense, updateExpense } from "@/lib/actions/expenses";
 import { yen } from "@/lib/format";
 import { Modal } from "./modal";
+import { ReceiptInput } from "./receipt-input";
 import { Pill, btnCls, inputCls, labelCls } from "./ui";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
@@ -19,6 +20,7 @@ type Props = {
     paidBy: string;
     splitAll: boolean;
     eventTitle: string | null;
+    receiptId: string | null; // 領収書画像(なければnull)
   };
   shares: ShareInfo[];
   members: { userId: string; name: string }[];
@@ -37,6 +39,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receiptLarge, setReceiptLarge] = useState(false); // 領収書の拡大表示
   const submitting = useRef(false);
   const toast = useToast();
 
@@ -68,6 +71,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
           <div className="text-[11.5px] text-muted">
             立替: {nameOf(expense.paidBy)} · 対象{active.length}人
             {expense.eventTitle ? ` · ${expense.eventTitle}` : ""}
+            {expense.receiptId && " · 領収書あり"}
           </div>
         </div>
         <div className="shrink-0 text-base font-extrabold tabular-nums">
@@ -100,6 +104,30 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
                 </div>
               )}
             </div>
+
+            {expense.receiptId && (
+              <>
+                <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">領収書</h3>
+                <button
+                  type="button"
+                  onClick={() => setReceiptLarge((v) => !v)}
+                  aria-label={receiptLarge ? "領収書を縮小" : "領収書を拡大"}
+                  className="block w-full rounded-[14px] border-2 border-line bg-white p-2 shadow-[3px_3px_0_var(--color-line)]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/receipts/${expense.receiptId}`}
+                    alt={`${expense.title} の領収書`}
+                    className={`mx-auto rounded-lg object-contain ${
+                      receiptLarge ? "w-full" : "max-h-40"
+                    }`}
+                  />
+                  <span className="mt-1.5 block text-[11px] text-muted">
+                    {receiptLarge ? "タップで縮小" : "タップで拡大"}
+                  </span>
+                </button>
+              </>
+            )}
 
             <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">
               内訳({active.length}人)
@@ -201,6 +229,7 @@ export function ExpenseRow({ expense, shares, members, canEdit }: Props) {
             <p className="mx-0.5 mt-2 text-[11px] text-muted">
               金額を変更すると割り勘額が再計算され、個別割り勘は対象者の再承認が必要になります。
             </p>
+            <ReceiptInput existingId={expense.receiptId} idPrefix={`edit-${expense.id}`} />
             <FormError message={error} />
             <div className="mt-4 flex gap-2">
               <button

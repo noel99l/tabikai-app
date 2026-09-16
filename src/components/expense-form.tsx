@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
 import { fmtEventSpan } from "@/lib/format";
+import { ReceiptInput } from "./receipt-input";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
 import { FormError } from "./form-error";
@@ -209,6 +210,8 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
           )}
         </>
       )}
+
+      <ReceiptInput idPrefix="new-expense" />
 
       <FormError message={error} />
 

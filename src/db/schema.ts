@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   pgEnum,
@@ -9,6 +10,21 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// bytea(画像などのバイナリ)。Neon HTTPドライバはBufferをそのまま往復できるが、
+// 環境によっては "\x..." の16進文字列で返るため両対応にしておく
+const bytea = customType<{ data: Buffer; driverData: Buffer | string }>({
+  dataType() {
+    return "bytea";
+  },
+  toDriver(value) {
+    return value;
+  },
+  fromDriver(value) {
+    if (typeof value === "string") return Buffer.from(value.replace(/^\\x/, ""), "hex");
+    return Buffer.from(value);
+  },
+});
 
 // ============ enums ============
 
@@ -225,6 +241,24 @@ export const expenseShares = pgTable(
   },
   (t) => [primaryKey({ columns: [t.expenseId, t.userId] })],
 );
+
+// 費用の領収書画像。端末側で圧縮したJPEGをそのまま保存する。
+// 一覧クエリ(expenses.findMany)に画像が乗らないよう別テーブルにしている
+export const expenseReceipts = pgTable("expense_receipts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  expenseId: uuid("expense_id")
+    .notNull()
+    .references(() => expenses.id, { onDelete: "cascade" }),
+  tripId: uuid("trip_id")
+    .notNull()
+    .references(() => trips.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  bytes: bytea("bytes").notNull(),
+  size: integer("size").notNull(), // バイト数
+  width: integer("width"),
+  height: integer("height"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 // 締め後に生成される精算リスト(送金回数最少)
 export const settlements = pgTable("settlements", {
