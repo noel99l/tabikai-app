@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addItem } from "@/lib/actions/items";
+import { ITEM_CATEGORIES } from "@/lib/item-category";
 import { Fab, Modal } from "./modal";
 import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
@@ -30,6 +31,12 @@ export function ItemCreateFab({ events }: Props) {
           <input className={inputCls} id="item-name" name="name" required placeholder="炭(3kg)" />
           <label className={labelCls} htmlFor="item-note">数量・補足(任意)</label>
           <input className={inputCls} id="item-note" name="note" placeholder="30人分 など" />
+          <label className={labelCls} htmlFor="item-category">カテゴリ</label>
+          <select className={inputCls} id="item-category" name="category" defaultValue="food">
+            {ITEM_CATEGORIES.map((c) => (
+              <option key={c.key} value={c.key}>{c.label}</option>
+            ))}
+          </select>
           <label className={labelCls} htmlFor="item-event">関連イベント(任意)</label>
           <select className={inputCls} id="item-event" name="eventId" defaultValue="">
             <option value="">全体(特定イベントなし)</option>

@@ -1,8 +1,9 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
+import { isItemCategory, type ItemCategory } from "@/lib/item-category";
 import { notify } from "@/lib/notify";
 import { requireTripContext } from "@/lib/session";
 
@@ -11,6 +12,8 @@ export async function addItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
   const eventId = String(formData.get("eventId") ?? "") || null;
+  const rawCategory = formData.get("category");
+  const category: ItemCategory = isItemCategory(rawCategory) ? rawCategory : "food";
   if (!name) return;
   // 新規は一番下(優先度低)に追加
   const [{ max }] = await db
@@ -22,9 +25,21 @@ export async function addItem(formData: FormData) {
     eventId,
     name,
     note,
+    category,
     addedBy: user.id,
     sortOrder: Number(max) + 1,
   });
+  revalidatePath("/items");
+}
+
+// カテゴリの変更(メンバー誰でも可。既存分の振り分け直しに使う)
+export async function setItemCategory(itemId: string, category: ItemCategory) {
+  const { trip, db } = await requireTripContext();
+  if (!isItemCategory(category)) return;
+  await db
+    .update(schema.items)
+    .set({ category })
+    .where(and(eq(schema.items.id, itemId), eq(schema.items.tripId, trip.id)));
   revalidatePath("/items");
 }
 

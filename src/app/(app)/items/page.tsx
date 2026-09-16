@@ -32,6 +32,7 @@ export default async function ItemsPage() {
           id: i.id,
           name: i.name,
           note: i.note,
+          category: i.category,
           eventTitle: eventOf(i.eventId),
           addedByName: nameOf(i.addedBy),
           assigneeId: i.assigneeId,

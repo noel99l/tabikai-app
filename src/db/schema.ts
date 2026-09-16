@@ -47,6 +47,8 @@ export const shareStatus = pgEnum("share_status", [
   "rejected", // 本人が否認(主催者/管理者が最終判断する)
 ]);
 export const itemMethod = pgEnum("item_method", ["bring", "buy"]); // 持参 / 買い出し
+// 食材 / 調理器具 / 遊び道具 / 消耗品(ラベルは src/lib/item-category.ts)
+export const itemCategory = pgEnum("item_category", ["food", "cookware", "play", "consumable"]);
 export const notificationType = pgEnum("notification_type", [
   "announce", // 全体アナウンス
   "event_invite", // イベント招待・参加者追加
@@ -300,6 +302,7 @@ export const items = pgTable("items", {
   eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }), // null = 全体
   name: text("name").notNull(),
   note: text("note"), // 数量・補足
+  category: itemCategory("category").default("food").notNull(),
   addedBy: uuid("added_by")
     .notNull()
     .references(() => users.id),

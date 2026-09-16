@@ -1,7 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
-import { deleteItem, reorderItems, setItemStatus } from "@/lib/actions/items";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  deleteItem,
+  reorderItems,
+  setItemCategory,
+  setItemStatus,
+} from "@/lib/actions/items";
+import { ITEM_CATEGORIES, isItemCategory, type ItemCategory } from "@/lib/item-category";
 import { IconCart, IconCheck, IconGrip } from "./icons";
 import { Modal } from "./modal";
 import { Pill } from "./ui";
@@ -10,6 +16,7 @@ export type BoardItem = {
   id: string;
   name: string;
   note: string | null;
+  category: ItemCategory;
   eventTitle: string;
   addedByName: string;
   assigneeId: string | null;
@@ -38,6 +45,27 @@ export function ItemsBoard({
   selfName: string;
 }) {
   const [tab, setTab] = useState<Status>("missing");
+  // カテゴリの絞り込み(null=すべて)。前回の選択を端末に保持する
+  const [category, setCategory] = useState<ItemCategory | null>(null);
+  const categoryRestored = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("items-category");
+      if (isItemCategory(saved)) setCategory(saved);
+    } catch {
+      /* noop */
+    }
+    categoryRestored.current = true;
+  }, []);
+  const pickCategory = (c: ItemCategory | null) => {
+    setCategory(c);
+    try {
+      if (c) localStorage.setItem("items-category", c);
+      else localStorage.removeItem("items-category");
+    } catch {
+      /* noop */
+    }
+  };
   const [shopOpen, setShopOpen] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, Partial<BoardItem>>>({});
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -75,10 +103,21 @@ export function ItemsBoard({
     );
   }, [items, overrides, removed, orderIds]);
 
+  // カテゴリ絞り込み後の一覧(タブの件数もこの範囲で数える)
+  const filtered = category ? merged.filter((i) => i.category === category) : merged;
   const lists: Record<Status, BoardItem[]> = {
-    missing: merged.filter((i) => i.status === "missing"),
-    planned: merged.filter((i) => i.status === "planned"),
-    ready: merged.filter((i) => i.status === "ready"),
+    missing: filtered.filter((i) => i.status === "missing"),
+    planned: filtered.filter((i) => i.status === "planned"),
+    ready: filtered.filter((i) => i.status === "ready"),
+  };
+  const countOf = (c: ItemCategory | null) =>
+    c ? merged.filter((i) => i.category === c).length : merged.length;
+
+  const changeCategory = (item: BoardItem, c: ItemCategory) => {
+    setOverrides((prev) => ({ ...prev, [item.id]: { ...prev[item.id], category: c } }));
+    startTransition(async () => {
+      await setItemCategory(item.id, c);
+    });
   };
   // 買い出しリスト: 自分が買う予定+このセッションで購入済みにしたもの
   const shopList = merged.filter(
@@ -228,6 +267,31 @@ export function ItemsBoard({
             {i.assigneeName &&
               ` · ${i.assigneeName} が${i.method === "buy" ? "買い出し" : "持参"}`}
           </div>
+          {/* カテゴリ(タップで変更。既存分の振り分け直し用) */}
+          <label className="mt-1.5 inline-flex items-center gap-1 rounded-full border-2 border-line bg-screen px-2 py-0.5 text-[10.5px] font-bold">
+            <span className="text-muted">カテゴリ</span>
+            <select
+              aria-label={`${i.name} のカテゴリ`}
+              value={i.category}
+              onChange={(e) => {
+                if (isItemCategory(e.target.value)) changeCategory(i, e.target.value);
+              }}
+              className="appearance-none bg-transparent pr-3 font-bold text-ink"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b1b1b' stroke-width='3' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right center",
+                backgroundSize: "10px",
+              }}
+            >
+              {ITEM_CATEGORIES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {/* 掲載の削除は担当が付く前(足りない)のみ。担当が付いた後は
             「取り消す」「足りないに戻す」で戻してから削除する */}
@@ -297,14 +361,44 @@ export function ItemsBoard({
     </div>
   );
 
-  const emptyText: Record<Status, string> = {
-    missing: "足りないものはありません。右下の＋から掲載できます。",
-    planned: "調達予定のものはありません。",
-    ready: "準備OKのものはまだありません。",
-  };
+  const emptyText: Record<Status, string> = category
+    ? {
+        missing: "このカテゴリで足りないものはありません。",
+        planned: "このカテゴリで調達予定のものはありません。",
+        ready: "このカテゴリで準備OKのものはまだありません。",
+      }
+    : {
+        missing: "足りないものはありません。右下の＋から掲載できます。",
+        planned: "調達予定のものはありません。",
+        ready: "準備OKのものはまだありません。",
+      };
 
   return (
     <>
+      {/* カテゴリの絞り込み */}
+      <div className="-mx-3.5 mb-2.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5">
+        {[null, ...ITEM_CATEGORIES.map((c) => c.key)].map((key) => {
+          const active = category === key;
+          const label = key ? ITEM_CATEGORIES.find((c) => c.key === key)!.label : "すべて";
+          return (
+            <button
+              key={key ?? "all"}
+              type="button"
+              onClick={() => pickCategory(key)}
+              aria-pressed={active}
+              className={`shrink-0 rounded-full border-2 border-line px-3 py-1.5 text-[12px] font-bold whitespace-nowrap ${
+                active
+                  ? "bg-ink text-screen shadow-[2px_2px_0_var(--color-line)]"
+                  : "bg-white text-ink"
+              }`}
+            >
+              {label}{" "}
+              <span className={active ? "text-screen/80" : "text-muted"}>{countOf(key)}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ステータスタブ */}
       <div className="grid grid-cols-3 gap-1 rounded-xl border-2 border-line bg-white p-1 shadow-[3px_3px_0_var(--color-line)]">
         {tabMeta.map((t) => (
