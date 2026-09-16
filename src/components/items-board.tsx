@@ -24,7 +24,7 @@ type Status = BoardItem["status"];
 const tabMeta: { key: Status; label: string; countCls: string }[] = [
   { key: "missing", label: "足りない", countCls: "text-pend" },
   { key: "planned", label: "調達予定", countCls: "text-primary" },
-  { key: "ready", label: "準備OK", countCls: "text-ok" },
+  { key: "ready", label: "準備OK(備品)", countCls: "text-ok" },
 ];
 
 // 持ち物ボード: ステータスタブ+買い出しリスト+掲載者への通知連携
@@ -205,7 +205,7 @@ export function ItemsBoard({
         drag?.id === i.id
           ? "border-primary shadow-[5px_5px_0_var(--color-primary)]"
           : "border-line shadow-[3px_3px_0_var(--color-line)]"
-      } ${i.status === "ready" && drag?.id !== i.id ? "opacity-70" : ""}`}
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         {/* 優先度の並び替え用グリップ(上下にドラッグ) */}

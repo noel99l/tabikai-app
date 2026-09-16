@@ -14,7 +14,7 @@ const tabs = [
   { href: "/home", label: "ホーム", icon: IconHome },
   { href: "/events", label: "イベント", icon: IconFlag },
   { href: "/schedule", label: "予定表", icon: IconCalendar },
-  { href: "/items", label: "買い出し", icon: IconList },
+  { href: "/items", label: "買物 / 備品", icon: IconList },
   { href: "/expenses", label: "費用", icon: IconMoney },
 ];
 
