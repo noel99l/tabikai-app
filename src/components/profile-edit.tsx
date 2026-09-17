@@ -8,9 +8,11 @@ import { ProfileForm } from "./profile-form";
 export function ProfileEditButton({
   name,
   emoji,
+  image,
 }: {
   name: string;
   emoji: string | null;
+  image: string | null;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -30,6 +32,7 @@ export function ProfileEditButton({
           }}
           defaultName={name}
           defaultEmoji={emoji}
+          defaultImage={image}
           submitLabel="保存する"
         />
       </Modal>

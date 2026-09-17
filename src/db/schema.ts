@@ -73,6 +73,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(), // 表示名(初回に本人が設定)
   image: text("image"), // Googleのプロフィール画像URL
   avatarEmoji: text("avatar_emoji"), // アイコンとして使う絵文字(任意)
+  avatarImage: text("avatar_image"), // 本人が選んだアイコン画像(128px正方形の data URL・任意)。絵文字より優先
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }), // 表示名設定完了。null=未設定
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

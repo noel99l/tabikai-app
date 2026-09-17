@@ -28,6 +28,7 @@ export default async function OnboardingPage({
         action={completeOnboarding.bind(null, next)}
         defaultName={user.name}
         defaultEmoji={user.avatarEmoji}
+        defaultImage={user.avatarImage}
         submitLabel="はじめる"
       />
     </div>

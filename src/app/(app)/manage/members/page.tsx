@@ -26,6 +26,7 @@ export default async function MembersPage() {
       name: schema.users.name,
       email: schema.users.email,
       avatarEmoji: schema.users.avatarEmoji,
+      avatarImage: schema.users.avatarImage,
     })
     .from(schema.tripMembers)
     .innerJoin(schema.users, eq(schema.users.id, schema.tripMembers.userId))
@@ -84,7 +85,7 @@ export default async function MembersPage() {
       {pending.map((m) => (
         <Card key={m.userId} className="mb-2.5">
           <div className="flex items-center gap-3">
-            <Avatar name={m.name} emoji={m.avatarEmoji} size={34} />
+            <Avatar name={m.name} emoji={m.avatarEmoji} image={m.avatarImage} size={34} />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold">{m.name}</div>
               <div className="truncate text-[11.5px] text-muted">{m.email}</div>
@@ -113,7 +114,7 @@ export default async function MembersPage() {
       <SectionTitle>メンバー({approved.length})</SectionTitle>
       {approved.map((m) => (
         <Card key={m.userId} className="mb-2 flex items-center gap-3 py-2.5">
-          <Avatar name={m.name} emoji={m.avatarEmoji} size={30} />
+          <Avatar name={m.name} emoji={m.avatarEmoji} image={m.avatarImage} size={30} />
           <div className="min-w-0 flex-1">
             <span className="text-[13.5px] font-bold">{m.name}</span>
           </div>

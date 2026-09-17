@@ -13,17 +13,29 @@ function firstEmoji(s: string): string | null {
   return [...t][0] ?? null;
 }
 
+// アイコン画像。クライアントで128px正方形にリサイズ済みの data URL のみ受け付ける
+// (企画ロゴと同じ方式)。サイズ上限(~200KB)で肥大化を防ぐ。
+function parseAvatarImage(raw: string): { image: string | null } | { error: string } {
+  const v = raw.trim();
+  if (!v) return { image: null };
+  if (!v.startsWith("data:image/")) return { error: "画像を選択してください" };
+  if (v.length > 200_000) return { error: "画像が大きすぎます" };
+  return { image: v };
+}
+
 // 初回オンボーディング: 表示名+アイコンを設定して完了フラグを立てる
 export async function completeOnboarding(next: string | null, formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const name = String(formData.get("name") ?? "").trim();
   const emoji = firstEmoji(String(formData.get("avatarEmoji") ?? ""));
+  const img = parseAvatarImage(String(formData.get("avatarImage") ?? ""));
   if (!name) return { error: "表示名を入力してください" };
+  if ("error" in img) return { error: img.error };
   const db = await getDb();
   await db
     .update(schema.users)
-    .set({ name, avatarEmoji: emoji, onboardedAt: new Date() })
+    .set({ name, avatarEmoji: emoji, avatarImage: img.image, onboardedAt: new Date() })
     .where(eq(schema.users.id, session.user.id));
   // アプリ内パスのみ許可(オープンリダイレクト防止)
   redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/trips");
@@ -35,11 +47,13 @@ export async function updateProfile(formData: FormData) {
   if (!session?.user?.id) redirect("/login");
   const name = String(formData.get("name") ?? "").trim();
   const emoji = firstEmoji(String(formData.get("avatarEmoji") ?? ""));
+  const img = parseAvatarImage(String(formData.get("avatarImage") ?? ""));
   if (!name) return { error: "表示名を入力してください" };
+  if ("error" in img) return { error: img.error };
   const db = await getDb();
   await db
     .update(schema.users)
-    .set({ name, avatarEmoji: emoji })
+    .set({ name, avatarEmoji: emoji, avatarImage: img.image })
     .where(eq(schema.users.id, session.user.id));
   revalidatePath("/", "layout");
   revalidatePath("/settings");

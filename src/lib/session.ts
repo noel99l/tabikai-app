@@ -13,6 +13,7 @@ export type AppUser = {
   name: string;
   image: string | null;
   avatarEmoji: string | null;
+  avatarImage: string | null;
   onboardedAt: Date | null;
 };
 
@@ -31,6 +32,7 @@ export const getSessionUser = cache(async (): Promise<AppUser | null> => {
     name: u.name,
     image: u.image,
     avatarEmoji: u.avatarEmoji,
+    avatarImage: u.avatarImage,
     onboardedAt: u.onboardedAt,
   };
 });
@@ -87,6 +89,7 @@ export const requireTripContext = cache(async () => {
     name: row.user.name,
     image: row.user.image,
     avatarEmoji: row.user.avatarEmoji,
+    avatarImage: row.user.avatarImage,
     onboardedAt: row.user.onboardedAt,
   };
   return {
@@ -108,6 +111,7 @@ export const getApprovedMembers = cache(async () => {
       name: schema.users.name,
       email: schema.users.email,
       avatarEmoji: schema.users.avatarEmoji,
+      avatarImage: schema.users.avatarImage,
     })
     .from(schema.tripMembers)
     .innerJoin(schema.users, eq(schema.users.id, schema.tripMembers.userId))

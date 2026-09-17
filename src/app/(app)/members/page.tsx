@@ -23,7 +23,7 @@ export default async function MembersPage() {
 
       {members.map((m) => (
         <Card key={m.userId} className="mb-2 flex items-center gap-3 py-2.5">
-          <Avatar name={m.name ?? "?"} emoji={m.avatarEmoji} size={38} />
+          <Avatar name={m.name ?? "?"} emoji={m.avatarEmoji} image={m.avatarImage} size={38} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[13.5px] font-bold">
               <span className="truncate">{m.name}</span>

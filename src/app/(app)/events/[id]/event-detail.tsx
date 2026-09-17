@@ -41,6 +41,8 @@ export async function EventDetail({ id }: { id: string }) {
         status: schema.eventParticipants.status,
         remindOptOut: schema.eventParticipants.remindOptOut,
         name: schema.users.name,
+        emoji: schema.users.avatarEmoji,
+        image: schema.users.avatarImage,
       })
       .from(schema.eventParticipants)
       .innerJoin(schema.users, eq(schema.users.id, schema.eventParticipants.userId))
@@ -54,6 +56,7 @@ export async function EventDetail({ id }: { id: string }) {
         createdAt: schema.eventComments.createdAt,
         name: schema.users.name,
         emoji: schema.users.avatarEmoji,
+        image: schema.users.avatarImage,
       })
       .from(schema.eventComments)
       .innerJoin(schema.users, eq(schema.users.id, schema.eventComments.userId))
@@ -138,11 +141,27 @@ export async function EventDetail({ id }: { id: string }) {
         <h3 className="mb-2 text-sm font-bold">
           参加者 <span className="font-medium text-muted">{joined.length} / {members.length}人</span>
         </h3>
-        <div className="flex flex-wrap gap-1">
-          {joined.map((p) => (
-            <Avatar key={p.userId} name={p.name} />
-          ))}
-        </div>
+        {joined.length === 0 ? (
+          <p className="text-[11.5px] text-muted">まだ参加者はいません。</p>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {joined.map((p) => (
+              <li
+                key={p.userId}
+                className="flex items-center gap-1.5 rounded-full border-2 border-line bg-white py-0.5 pr-2.5 pl-0.5 text-[12.5px] font-bold"
+              >
+                <Avatar name={p.name} emoji={p.emoji} image={p.image} size={24} />
+                <span className="max-w-[9rem] truncate">{p.name}</span>
+                {p.userId === event.hostId && (
+                  <span className="shrink-0 text-[10px] font-bold text-primary">主催</span>
+                )}
+                {p.userId === user.id && (
+                  <span className="shrink-0 text-[10px] font-medium text-muted">(自分)</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
         {canManage && nonParticipants.length > 0 && (
           <details className="mt-3">
             <summary className="flex cursor-pointer items-center gap-1 text-[12.5px] font-bold text-primary">
@@ -179,6 +198,7 @@ export async function EventDetail({ id }: { id: string }) {
           userId: c.userId,
           name: c.name ?? "?",
           emoji: c.emoji,
+          image: c.image,
           body: c.body,
           timeLabel: fmtDateTime(c.createdAt),
         }))}

@@ -79,7 +79,7 @@ async function HeaderIcons() {
         }))}
       />
       <Link href="/settings" aria-label="アカウント">
-        <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} size={30} />
+        <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} image={user.avatarImage} size={30} />
       </Link>
     </div>
   );

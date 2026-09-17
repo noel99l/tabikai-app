@@ -2,23 +2,8 @@
 
 import { useRef, useState } from "react";
 import { updateTripLogo } from "@/lib/actions/trips";
+import { resizeToSquareDataUrl } from "@/lib/square-image";
 import { IconSuitcase } from "./icons";
-
-// 画像を128px正方形にリサイズしてdataURLで保存する
-async function resizeToDataUrl(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-  // 中央クロップして正方形に
-  const scale = Math.max(size / bitmap.width, size / bitmap.height);
-  const w = bitmap.width * scale;
-  const h = bitmap.height * scale;
-  ctx.drawImage(bitmap, (size - w) / 2, (size - h) / 2, w, h);
-  return canvas.toDataURL("image/jpeg", 0.82);
-}
 
 export function LogoUpload({ logoUrl }: { logoUrl: string | null }) {
   const [preview, setPreview] = useState<string | null>(logoUrl);
@@ -31,7 +16,7 @@ export function LogoUpload({ logoUrl }: { logoUrl: string | null }) {
     setBusy(true);
     setError(null);
     try {
-      const dataUrl = await resizeToDataUrl(file);
+      const dataUrl = await resizeToSquareDataUrl(file);
       const res = await updateTripLogo(dataUrl);
       if (res?.error) setError(res.error);
       else setPreview(dataUrl);

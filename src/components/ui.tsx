@@ -41,12 +41,26 @@ export function Avatar({
   name,
   size = 28,
   emoji,
+  image,
 }: {
   name: string;
   size?: number;
   emoji?: string | null;
+  image?: string | null;
 }) {
-  // 絵文字アイコンが設定されていればそれを、なければ頭文字+カラーで表示
+  // 画像 > 絵文字 > 頭文字+カラー の優先順で表示
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt={name}
+        title={name}
+        className="shrink-0 rounded-full border-2 border-line object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   if (emoji) {
     return (
       <span

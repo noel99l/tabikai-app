@@ -10,6 +10,7 @@ type Comment = {
   userId: string;
   name: string;
   emoji: string | null;
+  image: string | null;
   body: string;
   timeLabel: string;
 };
@@ -82,7 +83,7 @@ export function EventComments({
       <div className="flex flex-col gap-2.5">
         {comments.map((c) => (
           <div key={c.id} className="flex items-start gap-2">
-            <Avatar name={c.name} emoji={c.emoji} size={28} />
+            <Avatar name={c.name} emoji={c.emoji} image={c.image} size={28} />
             <div className="min-w-0 flex-1">
               <div className="text-[10.5px] font-bold">
                 {c.name}

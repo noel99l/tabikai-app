@@ -32,7 +32,7 @@ export default async function SettingsPage() {
       <AppHeader title="アカウント" />
 
       <Card className="flex items-center gap-3.5">
-        <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} size={44} />
+        <Avatar name={user.name ?? "?"} emoji={user.avatarEmoji} image={user.avatarImage} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[15px] font-bold">{user.name}</span>
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
           </div>
           <div className="truncate text-[12px] text-muted">{user.email}</div>
         </div>
-        <ProfileEditButton name={user.name} emoji={user.avatarEmoji} />
+        <ProfileEditButton name={user.name} emoji={user.avatarEmoji} image={user.avatarImage} />
       </Card>
 
       <PushToggle />
