@@ -49,7 +49,14 @@ const colorClasses = [
   "bg-ok text-white",
 ];
 
-const ROW_H = 26; // 30分 = 1行
+// グリッドは5分=1行で、イベントは実際の時刻どおりの位置・高さに描く(45分開始なども正確に)。
+// 作成・移動の操作は15分刻みにスナップする
+const SLOT_MIN = 5; // 1行あたりの分
+const HOUR_H = 52; // 1時間の高さ(px)
+const ROW_H = HOUR_H / (60 / SLOT_MIN); // 1行の高さ(px)
+const ROWS_PER_HOUR = 60 / SLOT_MIN;
+const SNAP_ROWS = 15 / SLOT_MIN; // 操作のスナップ単位(15分)
+const DEFAULT_DUR_ROWS = 60 / SLOT_MIN; // タップ作成時の初期の長さ(60分)
 const COLS_KEY = "schedule-cols"; // 表示列の選択を端末に記憶
 const LABEL_W = 38;
 const LONG_PRESS_MS = 320;
@@ -300,21 +307,24 @@ export function ScheduleView({
       endHour = Math.max(endHour, Math.ceil(e.clipEndMin / 60));
     }
   }
-  const totalRows = (endHour - startHour) * 2;
-  const rowOf = (min: number) => Math.round((min - startHour * 60) / 30) + 1;
+  const totalRows = (endHour - startHour) * ROWS_PER_HOUR;
+  const rowOf = (min: number) => Math.round((min - startHour * 60) / SLOT_MIN) + 1;
+  // 操作用: 行を15分刻みに丸める(切り捨て / 四捨五入)
+  const snapDown = (r: number) => Math.floor(r / SNAP_ROWS) * SNAP_ROWS;
+  const snapRound = (r: number) => Math.round(r / SNAP_ROWS) * SNAP_ROWS;
 
   // 予約可能範囲(企画期間内)
   const clampRow = (r: number) => Math.max(0, Math.min(totalRows, r));
   const bookStartMin = Math.max(0, Math.round((tripStartMs - dayStartMs) / 60000));
   const bookEndMin = Math.min(1440, Math.round((tripEndMs - dayStartMs) / 60000));
-  const minRow = clampRow(Math.round((bookStartMin - startHour * 60) / 30));
-  const maxRow = clampRow(Math.round((bookEndMin - startHour * 60) / 30));
+  const minRow = clampRow(Math.round((bookStartMin - startHour * 60) / SLOT_MIN));
+  const maxRow = clampRow(Math.round((bookEndMin - startHour * 60) / SLOT_MIN));
 
   // 現在時刻バー(表示日が今日のとき・マウント後のみ)
   const isToday = activeDay.key === todayKey;
   const hasNow = nowTick !== null;
   const nowMin = hasNow ? Math.round((nowTick - dayStartMs) / 60000) : 0;
-  const nowY = ((nowMin - startHour * 60) / 30) * ROW_H;
+  const nowY = ((nowMin - startHour * 60) / SLOT_MIN) * ROW_H;
   const showNowLine =
     hasNow && isToday && nowMin >= startHour * 60 && nowMin <= endHour * 60;
   const nowLabel = hasNow
@@ -352,7 +362,7 @@ export function ScheduleView({
     if (isToday && !hasNow) return; // 現在時刻の確定を待つ(確定後にhasNowで再実行)
     let target = 0;
     if (showNowLine) target = nowY - 140;
-    else if (startHour === 0) target = 16 * ROW_H - 20;
+    else if (startHour === 0) target = 8 * HOUR_H - 20;
     el.scrollTop = Math.max(0, target);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayIdx, hasNow]);
@@ -428,10 +438,11 @@ export function ScheduleView({
       return;
     }
 
-    // 空き枠: 作成の範囲選択
+    // 空き枠: 作成の範囲選択(15分刻み)
     if (c.row < minRow || c.row >= maxRow) return;
+    const startRow = Math.max(minRow, snapDown(c.row));
     if (e.pointerType === "mouse") {
-      setSel({ col: c.col, a: c.row, b: c.row });
+      setSel({ col: c.col, a: startRow, b: startRow });
       selectingRef.current = true;
       try {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -446,7 +457,7 @@ export function ScheduleView({
       kind: "create",
       mouse: false,
       col: c.col,
-      row: c.row,
+      row: startRow,
     };
     if (lpTimer.current) clearTimeout(lpTimer.current);
     lpTimer.current = setTimeout(() => {
@@ -464,7 +475,7 @@ export function ScheduleView({
       const c = cellFromPoint(e.clientX, e.clientY);
       if (!c) return;
       const m = movingRef.current;
-      const topRow = Math.max(minRow, Math.min(maxRow - m.durRows, c.row - m.grabOffset));
+      const topRow = Math.max(minRow, Math.min(maxRow - m.durRows, snapRound(c.row - m.grabOffset)));
       // メンバー列へは移せない(列は据え置きで時間のみ追従)
       const nextCol = cols[c.col]?.kind === "venue" ? c.col : m.col;
       if (nextCol !== m.col || topRow !== m.topRow) {
@@ -477,7 +488,7 @@ export function ScheduleView({
     if (selectingRef.current && selRef.current) {
       const c = cellFromPoint(e.clientX, e.clientY);
       if (!c) return;
-      const b = Math.max(minRow, Math.min(maxRow - 1, c.row));
+      const b = Math.max(minRow, Math.min(maxRow - 1, snapDown(c.row)));
       if (b !== selRef.current.b) setSel({ ...selRef.current, b });
       if (e.pointerType !== "mouse") e.preventDefault();
       return;
@@ -492,7 +503,7 @@ export function ScheduleView({
         const col = c ? c.col : s.origCol!;
         const topRow = Math.max(
           minRow,
-          Math.min(maxRow - s.durRows!, (c ? c.row : s.origRow!) - s.grabOffset!),
+          Math.min(maxRow - s.durRows!, snapRound((c ? c.row : s.origRow!) - s.grabOffset!)),
         );
         setMoving({
           id: s.eventId!,
@@ -516,7 +527,7 @@ export function ScheduleView({
   };
 
   const toTime = (row: number) => {
-    const m = Math.min(startHour * 60 + row * 30, 24 * 60 - 1);
+    const m = Math.min(startHour * 60 + row * SLOT_MIN, 24 * 60 - 1);
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
 
@@ -526,7 +537,7 @@ export function ScheduleView({
       const m = movingRef.current;
       if (m.col !== m.origCol || m.topRow !== m.origRow) {
         const ev = merged.find((x) => x.id === m.id)!;
-        const newStartMin = startHour * 60 + m.topRow * 30;
+        const newStartMin = startHour * 60 + m.topRow * SLOT_MIN;
         const startMs = dayStartMs + newStartMin * 60000;
         const dur = ev.endMs - ev.startMs;
         const venueId = cols[m.col].id;
@@ -548,8 +559,8 @@ export function ScheduleView({
       const l = Math.max(minRow, Math.min(s.a, s.b));
       const h =
         s.a === s.b
-          ? Math.min(maxRow, l + 2)
-          : Math.min(maxRow, Math.max(s.a, s.b) + 1);
+          ? Math.min(maxRow, l + DEFAULT_DUR_ROWS)
+          : Math.min(maxRow, Math.max(s.a, s.b) + SNAP_ROWS);
       const col = cols[s.col];
       setPrefill({
         venueId: col?.kind === "venue" ? col.id : undefined,
@@ -577,8 +588,8 @@ export function ScheduleView({
   const selLo = sel ? Math.max(minRow, Math.min(sel.a, sel.b)) : 0;
   const selHi = sel
     ? sel.a === sel.b
-      ? Math.min(maxRow, selLo + 2)
-      : Math.min(maxRow, Math.max(sel.a, sel.b) + 1)
+      ? Math.min(maxRow, selLo + DEFAULT_DUR_ROWS)
+      : Math.min(maxRow, Math.max(sel.a, sel.b) + SNAP_ROWS)
     : 0;
 
   const toggleVisible = (id: string) => {
@@ -801,7 +812,7 @@ export function ScheduleView({
                   <div
                     key={i}
                     className="sticky left-0 z-[4] bg-white pr-1.5 text-right text-[9.5px] tabular-nums text-muted"
-                    style={{ gridColumn: 1, gridRow: i * 2 + 1, transform: "translateY(-7px)" }}
+                    style={{ gridColumn: 1, gridRow: i * ROWS_PER_HOUR + 1, transform: "translateY(-7px)" }}
                   >
                     {startHour + i}:00
                   </div>
@@ -821,7 +832,7 @@ export function ScheduleView({
                     className="pointer-events-none border-t-2 border-dashed border-ink/10"
                     style={{
                       gridColumn: `2 / ${cols.length + 2}`,
-                      gridRow: (i + 1) * 2 + 1,
+                      gridRow: (i + 1) * ROWS_PER_HOUR + 1,
                     }}
                   />
                 ))}
