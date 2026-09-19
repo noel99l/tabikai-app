@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THANKS_RESET_HOUR, thanksPeriodStart } from "@/lib/thanks";
 import { IconHeart } from "./icons";
-import { ThanksCharacter } from "./thanks-character";
 
 const SEEN_KEY = "thanks-grant-seen"; // 表示済みの期間開始時刻(ISO)
 export const THANKS_GRANT_PREVIEW_EVENT = "thanks-grant:preview";
+// 4:00 の切り替えと同じ経路(演出+再取得)を任意に起こすデモ用イベント
+export const THANKS_GRANT_CROSS_EVENT = "thanks-grant:cross";
 const AUTO_CLOSE_MS = 6000;
-// この画像が public にあれば SVG の代わりに表示する(差し替え用)
+// キャラクター画像(public/thanks/character.png)。指差しポーズのイラストを置く。
+// 見つからない場合はふきだしと +N pt だけを表示する
 const CHARACTER_IMAGE = "/thanks/character.png";
 
 // 毎朝4:00の手持ちリセット時に、キャラクターが「今日のありがとうポイントを付与するぜ!」と
@@ -71,11 +73,16 @@ export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: nu
     return () => clearInterval(iv);
   }, [endsAtMs, show]);
 
-  // プレビュー(ありがとう画面のボタンから)
+  // プレビュー(ありがとう画面のボタンから)/ 日付切り替えのデモ
   useEffect(() => {
     const onPreview = () => show(false);
+    const onCross = () => show(true);
     window.addEventListener(THANKS_GRANT_PREVIEW_EVENT, onPreview);
-    return () => window.removeEventListener(THANKS_GRANT_PREVIEW_EVENT, onPreview);
+    window.addEventListener(THANKS_GRANT_CROSS_EVENT, onCross);
+    return () => {
+      window.removeEventListener(THANKS_GRANT_PREVIEW_EVENT, onPreview);
+      window.removeEventListener(THANKS_GRANT_CROSS_EVENT, onCross);
+    };
   }, [show]);
 
   useEffect(() => () => {
@@ -127,18 +134,16 @@ export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: nu
           <span className="ml-0.5 text-[13px]">pt</span>
         </div>
 
-        {/* キャラクター */}
-        <div className="thanks-grant-char relative h-[300px] w-[260px]">
-          {imgOk ? (
+        {/* キャラクター(画像が無いときは高さだけ確保) */}
+        <div className="thanks-grant-char relative h-[300px] w-[280px]">
+          {imgOk && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={CHARACTER_IMAGE}
               alt=""
               onError={() => setImgOk(false)}
-              className="h-full w-full object-contain drop-shadow-[0_8px_0_rgba(0,0,0,0.25)]"
+              className="thanks-grant-char-img h-full w-full object-contain drop-shadow-[0_8px_0_rgba(0,0,0,0.25)]"
             />
-          ) : (
-            <ThanksCharacter className="h-full w-full drop-shadow-[0_8px_0_rgba(0,0,0,0.25)]" />
           )}
         </div>
 

@@ -110,14 +110,14 @@ input[type="time"] {
   70% { opacity: 1; transform: translateY(-10px) scale(1.04); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-/* 指差しの腕: 手前に突き出すように脈打つ */
-.thanks-point-arm {
-  transform-origin: 138px 160px;
-  animation: thanks-point 0.9s ease-in-out 0.6s infinite alternate;
+/* キャラクター画像: 着地後は軽く弾む程度(指差しを強調しすぎない) */
+.thanks-grant-char-img {
+  transform-origin: 50% 100%;
+  animation: thanks-char-bob 1.4s ease-in-out 0.7s infinite alternate;
 }
-@keyframes thanks-point {
-  from { transform: scale(1) translate(0, 0); }
-  to { transform: scale(1.14) translate(6px, -2px); }
+@keyframes thanks-char-bob {
+  from { transform: translateY(0) rotate(-1deg); }
+  to { transform: translateY(-6px) rotate(1.5deg); }
 }
 /* ふきだし: キャラクターの後にポンと出る */
 .thanks-grant-bubble {
