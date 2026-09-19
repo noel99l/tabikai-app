@@ -3,6 +3,7 @@ import { and, count, eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BottomNav } from "@/components/bottom-nav";
+import { ThanksGrant } from "@/components/thanks-grant";
 import { requireTripContext } from "@/lib/session";
 
 // 費用タブに載せる承認待ちバッジ(ナビ本体の描画をブロックしないようSuspenseで遅延)
@@ -33,10 +34,12 @@ export default async function AppLayout({
   modal,
 }: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
   // 未ログイン → /login、企画未選択 → /trips、参加承認待ち → /trips/pending
-  await requireTripContext();
+  const { trip } = await requireTripContext();
   return (
     <div className="mx-auto min-h-dvh max-w-md px-3.5 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       <AutoRefresh />
+      {/* 毎朝4:00のありがとうポイント付与の演出(その日の初回表示時) */}
+      <ThanksGrant budget={trip.thanksBudget} endsAtMs={trip.endsAt.getTime()} />
       {children}
       {modal}
       <BottomNav

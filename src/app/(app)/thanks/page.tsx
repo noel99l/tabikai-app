@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ThanksBoard } from "@/components/thanks-board";
+import { ThanksGrantPreviewButton } from "@/components/thanks-grant-preview";
 import { Avatar, Card, Pill } from "@/components/ui";
 import { fmtDateTime, fmtTime, jstDateKey } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
@@ -33,6 +34,11 @@ export default async function ThanksPage() {
   return (
     <>
       <AppHeader title="ありがとう" />
+      {!closed && (
+        <p className="mx-0.5 -mt-1 mb-2 text-right">
+          <ThanksGrantPreviewButton />
+        </p>
+      )}
 
       {/* 受け取った分(常時表示) */}
       <Card className="mb-2.5 border-l-[6px] border-l-violet">

@@ -85,3 +85,64 @@ input[type="time"] {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ===== ありがとうポイント付与の演出(毎朝4:00) ===== */
+.thanks-grant {
+  animation: backdrop-in 0.3s ease-out both;
+}
+.thanks-grant-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    #ffdc4a 0deg 12deg,
+    transparent 12deg 24deg
+  );
+  animation: thanks-rays-spin 24s linear infinite;
+}
+@keyframes thanks-rays-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+/* キャラクター: 下から飛び込んでくる */
+.thanks-grant-char {
+  animation: thanks-char-in 0.6s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+@keyframes thanks-char-in {
+  0% { opacity: 0; transform: translateY(120px) scale(0.6); }
+  70% { opacity: 1; transform: translateY(-10px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* 指差しの腕: 手前に突き出すように脈打つ */
+.thanks-point-arm {
+  transform-origin: 138px 160px;
+  animation: thanks-point 0.9s ease-in-out 0.6s infinite alternate;
+}
+@keyframes thanks-point {
+  from { transform: scale(1) translate(0, 0); }
+  to { transform: scale(1.14) translate(6px, -2px); }
+}
+/* ふきだし: キャラクターの後にポンと出る */
+.thanks-grant-bubble {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) 0.5s both;
+}
+/* +N pt: 少し遅れて弾む */
+.thanks-grant-points {
+  animation: thanks-points-pop 0.6s cubic-bezier(0.22, 1.4, 0.36, 1) 1.2s both,
+    thanks-points-float 1.6s ease-in-out 1.8s infinite alternate;
+}
+@keyframes thanks-points-pop {
+  0% { opacity: 0; transform: scale(0.2) rotate(-12deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-6deg); }
+}
+@keyframes thanks-points-float {
+  from { translate: 0 0; }
+  to { translate: 0 -6px; }
+}
+/* ハート: 下から舞い上がって消える */
+.thanks-grant-heart {
+  opacity: 0;
+  animation: thanks-heart 2.2s ease-out both;
+}
+@keyframes thanks-heart {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-260px) scale(1.2) rotate(20deg); }
+}
