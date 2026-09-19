@@ -181,6 +181,21 @@ export async function setAutoApprove(next: boolean) {
   revalidatePath("/manage/members");
 }
 
+// 「全員で割り勘」の対象から外す/戻す(管理者のみ)。
+// 以後に登録・編集される全員割り勘の対象に反映される(登録済みの費用は変わらない)
+export async function setExcludeFromSplitAll(userId: string, next: boolean) {
+  const { trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  await db
+    .update(schema.tripMembers)
+    .set({ excludeFromSplitAll: next })
+    .where(
+      and(eq(schema.tripMembers.tripId, trip.id), eq(schema.tripMembers.userId, userId)),
+    );
+  revalidatePath("/manage/members");
+  revalidatePath("/expenses");
+}
+
 // 旅程(開始・終了日時)の更新。予定表の日付タブがこの範囲で生成される
 export async function updateTripDates(formData: FormData) {
   const { trip, db, isAdmin } = await requireTripContext();

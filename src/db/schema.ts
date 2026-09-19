@@ -122,6 +122,8 @@ export const tripMembers = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     role: memberRole("role").default("member").notNull(),
     status: memberStatus("status").default("pending").notNull(),
+    // 「全員で割り勘」の対象から外す(管理者設定)。子ども・ゲストなど費用を負担しないメンバー向け
+    excludeFromSplitAll: boolean("exclude_from_split_all").default(false).notNull(),
     // 本人のプッシュ通知設定(キー未設定のカテゴリは企画のデフォルト trips.notifySettings に従う)
     notifySettings: jsonb("notify_settings")
       .$type<Record<string, boolean>>()

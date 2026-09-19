@@ -25,7 +25,7 @@ type Props = {
     receiptId: string | null; // 領収書画像(なければnull)
   };
   shares: ShareInfo[];
-  members: { userId: string; name: string }[];
+  members: { userId: string; name: string; excludedFromAll?: boolean }[];
   events: ExpenseEventOption[]; // 編集時の「イベント参加者」選択用
   selfId: string;
   canEdit: boolean;

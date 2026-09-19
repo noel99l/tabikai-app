@@ -5,7 +5,7 @@ import { ExpenseForm, type ExpenseEventOption } from "./expense-form";
 import { Fab, Modal } from "./modal";
 
 type Props = {
-  members: { userId: string; name: string }[];
+  members: { userId: string; name: string; excludedFromAll?: boolean }[];
   events: ExpenseEventOption[];
   selfId: string;
 };

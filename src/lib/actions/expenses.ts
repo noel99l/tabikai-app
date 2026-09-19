@@ -47,6 +47,11 @@ async function saveReceipt(
   });
 }
 
+// 「全員で割り勘」の対象者。管理者がメンバー管理で対象外にしたメンバーを除く
+function splitAllTargets(members: { userId: string; excludeFromSplitAll: boolean }[]) {
+  return members.filter((m) => !m.excludeFromSplitAll).map((m) => m.userId);
+}
+
 // 均等割り(端数は先頭から1円ずつ負担)
 function splitAmount(total: number, n: number): number[] {
   const base = Math.floor(total / n);
@@ -128,8 +133,11 @@ export async function createExpense(formData: FormData) {
   const members = await getApprovedMembers();
   let targetIds: string[];
   if (splitAll) {
-    // 全員割り勘: イベント紐付けなし・承認なしで確定
-    targetIds = members.map((m) => m.userId);
+    // 全員割り勘: イベント紐付けなし・承認なしで確定。管理者が対象外にしたメンバーは含めない
+    targetIds = splitAllTargets(members);
+    if (targetIds.length === 0) {
+      return { error: "全員で割り勘の対象メンバーがいません(メンバー管理の設定を確認してください)" };
+    }
   } else {
     // 個別割り勘: イベント紐付けは任意(「イベントの参加者」選択時のみ紐付く)。
     // 紐付けがない場合、未承認のエスカレーション先は管理者のみになる
@@ -343,7 +351,10 @@ export async function updateExpense(formData: FormData) {
     if (splitMode === "all") {
       splitAll = true;
       eventId = null;
-      targetIds = members.map((m) => m.userId);
+      targetIds = splitAllTargets(members);
+      if (targetIds.length === 0) {
+        return { error: "全員で割り勘の対象メンバーがいません(メンバー管理の設定を確認してください)" };
+      }
     } else {
       splitAll = false;
       const memberSet = new Set(members.map((m) => m.userId));

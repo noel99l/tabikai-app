@@ -10,7 +10,7 @@ import { IconBack } from "@/components/icons";
 import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
-import { approveMember, setAutoApprove } from "@/lib/actions/trips";
+import { approveMember, setAutoApprove, setExcludeFromSplitAll } from "@/lib/actions/trips";
 import { requireTripContext } from "@/lib/session";
 
 // メンバー参加承認(管理者のみ)。PC管理画面はフェーズ4で拡張予定。
@@ -23,6 +23,7 @@ export default async function MembersPage() {
       userId: schema.tripMembers.userId,
       status: schema.tripMembers.status,
       role: schema.tripMembers.role,
+      excludeFromSplitAll: schema.tripMembers.excludeFromSplitAll,
       name: schema.users.name,
       email: schema.users.email,
       avatarEmoji: schema.users.avatarEmoji,
@@ -34,6 +35,7 @@ export default async function MembersPage() {
 
   const pending = rows.filter((r) => r.status === "pending");
   const approved = rows.filter((r) => r.status === "approved");
+  const excludedCount = approved.filter((r) => r.excludeFromSplitAll).length;
 
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -112,17 +114,40 @@ export default async function MembersPage() {
       ))}
 
       <SectionTitle>メンバー({approved.length})</SectionTitle>
+      <p className="mx-0.5 -mt-1 mb-2 text-[11.5px] text-muted">
+        「全員割り勘の対象」をオフにしたメンバーは、以後に登録・編集される「全員で割り勘」の費用に含まれません(子ども・ゲストなど)。
+        個別に選択する割り勘には影響しません。
+        {excludedCount > 0 && (
+          <span className="font-bold"> 現在 {excludedCount} 人が対象外です。</span>
+        )}
+      </p>
       {approved.map((m) => (
-        <Card key={m.userId} className="mb-2 flex items-center gap-3 py-2.5">
-          <Avatar name={m.name} emoji={m.avatarEmoji} image={m.avatarImage} size={30} />
-          <div className="min-w-0 flex-1">
-            <span className="text-[13.5px] font-bold">{m.name}</span>
+        <Card key={m.userId} className="mb-2 py-2.5">
+          <div className="flex items-center gap-3">
+            <Avatar name={m.name} emoji={m.avatarEmoji} image={m.avatarImage} size={30} />
+            <div className="min-w-0 flex-1">
+              <span className="text-[13.5px] font-bold">{m.name}</span>
+              {m.excludeFromSplitAll && (
+                <span className="ml-1.5 align-middle">
+                  <Pill tone="violet">全員割り勘の対象外</Pill>
+                </span>
+              )}
+            </div>
+            {m.role === "admin" ? (
+              <Pill tone="info">管理者</Pill>
+            ) : (
+              <GrantAdminButton userId={m.userId} name={m.name} />
+            )}
           </div>
-          {m.role === "admin" ? (
-            <Pill tone="info">管理者</Pill>
-          ) : (
-            <GrantAdminButton userId={m.userId} name={m.name} />
-          )}
+          <form
+            action={setExcludeFromSplitAll.bind(null, m.userId, !m.excludeFromSplitAll)}
+            className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2"
+          >
+            <span className="text-[12px] text-muted">
+              全員割り勘の対象{m.excludeFromSplitAll ? "(オフ: 含めない)" : "(オン: 含める)"}
+            </span>
+            <SwitchButton checked={!m.excludeFromSplitAll} />
+          </form>
         </Card>
       ))}
     </>

@@ -12,7 +12,7 @@ import { btnCls, inputCls, labelCls } from "./ui";
 export type { ExpenseEventOption } from "./split-picker";
 
 type Props = {
-  members: { userId: string; name: string }[];
+  members: { userId: string; name: string; excludedFromAll?: boolean }[];
   events: ExpenseEventOption[];
   selfId: string;
   onSuccess?: () => void;

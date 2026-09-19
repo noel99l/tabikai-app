@@ -34,7 +34,8 @@ export function SplitPicker({
   initial,
   onStateChange,
 }: {
-  members: { userId: string; name: string }[];
+  // excludedFromAll: 管理者が「全員で割り勘」の対象外にしたメンバー(表示のみ。判定はサーバー側)
+  members: { userId: string; name: string; excludedFromAll?: boolean }[];
   events: ExpenseEventOption[];
   selfId: string;
   idPrefix: string;
@@ -57,6 +58,7 @@ export function SplitPicker({
     emit(mode, s);
   };
 
+  const excludedFromAll = members.filter((m) => m.excludedFromAll);
   const currentEvent = events.find((e) => e.id === eventId);
   const participantIds = new Set(currentEvent?.participantIds ?? []);
 
@@ -103,6 +105,12 @@ export function SplitPicker({
       </p>
       {/* 全員で割り勘はサーバー側の既存フラグで送る */}
       {mode === "all" && <input type="hidden" name="splitAll" value="on" />}
+      {mode === "all" && excludedFromAll.length > 0 && (
+        <p className="mx-0.5 mt-1.5 rounded-lg bg-screen px-2.5 py-1.5 text-[11px] text-muted">
+          対象外(管理者設定): {excludedFromAll.map((m) => m.name).join("・")}
+          {" "}→ {members.length - excludedFromAll.length}人で割ります
+        </p>
+      )}
 
       {mode === "event" && (
         <>

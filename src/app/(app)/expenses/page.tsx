@@ -75,7 +75,11 @@ async function ExpensesList() {
     allDay: e.allDay,
     participantIds: participants.filter((p) => p.eventId === e.id).map((p) => p.userId),
   }));
-  const memberOptions = members.map((m) => ({ userId: m.userId, name: m.name }));
+  const memberOptions = members.map((m) => ({
+    userId: m.userId,
+    name: m.name,
+    excludedFromAll: m.excludeFromSplitAll,
+  }));
 
   const groupTotal = expenses.reduce((s, e) => s + e.amount, 0);
   const myConfirmed = shares

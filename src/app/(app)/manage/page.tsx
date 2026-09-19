@@ -51,7 +51,7 @@ export default async function ManagePage() {
       href: "/manage/members",
       icon: IconUsers,
       title: "メンバー管理・招待",
-      desc: "参加承認・招待リンク・管理者の追加",
+      desc: "参加承認・招待リンク・管理者の追加・全員割り勘の対象設定",
       badge: pending.value > 0 ? `承認待ち${pending.value}` : undefined,
     },
     {

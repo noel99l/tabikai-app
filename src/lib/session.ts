@@ -108,6 +108,7 @@ export const getApprovedMembers = cache(async () => {
     .select({
       userId: schema.tripMembers.userId,
       role: schema.tripMembers.role,
+      excludeFromSplitAll: schema.tripMembers.excludeFromSplitAll,
       name: schema.users.name,
       email: schema.users.email,
       avatarEmoji: schema.users.avatarEmoji,
