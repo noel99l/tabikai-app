@@ -129,7 +129,7 @@ export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: nu
         </div>
 
         {/* +N pt の表示 */}
-        <div className="thanks-grant-points pointer-events-none absolute top-[38%] right-[6%] rounded-full border-[3px] border-line bg-screen px-4 py-2 font-pop text-[26px] text-primary shadow-[4px_4px_0_var(--color-line)]">
+        <div className="thanks-grant-points pointer-events-none absolute top-[30%] right-[4%] rounded-full border-[3px] border-line bg-screen px-4 py-2 font-pop text-[26px] text-primary shadow-[4px_4px_0_var(--color-line)]">
           +{budget}
           <span className="ml-0.5 text-[13px]">pt</span>
         </div>
