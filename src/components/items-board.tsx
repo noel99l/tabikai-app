@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { deleteItem, reorderItems, setItemStatus } from "@/lib/actions/items";
+import { deleteItem, reorderItems, setItemStatus, setItemUsed } from "@/lib/actions/items";
 import {
   ITEM_CATEGORIES,
   isItemCategory,
@@ -23,6 +23,7 @@ export type BoardItem = {
   assigneeName: string | null;
   method: "bring" | "buy" | null;
   status: "missing" | "planned" | "ready";
+  used: boolean; // 使い終わった・消費した(準備OKのみ。既定で非表示)
   canDelete: boolean;
 };
 
@@ -67,6 +68,8 @@ export function ItemsBoard({
     }
   };
   const [shopOpen, setShopOpen] = useState(false);
+  // 準備OKタブで使用済み・消費済みも表示するか(既定は非表示)
+  const [showUsed, setShowUsed] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, Partial<BoardItem>>>({});
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [sessionChecked, setSessionChecked] = useState<Set<string>>(new Set());
@@ -103,15 +106,18 @@ export function ItemsBoard({
     );
   }, [items, overrides, removed, orderIds]);
 
-  // カテゴリ絞り込み後の一覧(タブの件数もこの範囲で数える)
+  // カテゴリ絞り込み後の一覧(タブの件数もこの範囲で数える)。
+  // 使用済みの備品は件数に含めず、準備OKタブで「表示する」を選んだときだけ一覧に出す
   const filtered = category ? merged.filter((i) => i.category === category) : merged;
+  const usedList = filtered.filter((i) => i.status === "ready" && i.used);
   const lists: Record<Status, BoardItem[]> = {
     missing: filtered.filter((i) => i.status === "missing"),
     planned: filtered.filter((i) => i.status === "planned"),
-    ready: filtered.filter((i) => i.status === "ready"),
+    ready: filtered.filter((i) => i.status === "ready" && (showUsed || !i.used)),
   };
+  const readyActive = lists.ready.filter((i) => !i.used).length;
   const countOf = (c: ItemCategory | null) =>
-    c ? merged.filter((i) => i.category === c).length : merged.length;
+    (c ? merged.filter((i) => i.category === c) : merged).filter((i) => !i.used).length;
   // 買い出しリスト: 自分が買う予定+このセッションで購入済みにしたもの
   const shopList = merged.filter(
     (i) =>
@@ -122,9 +128,10 @@ export function ItemsBoard({
   const mutate = (item: BoardItem, status: Status, method: "bring" | "buy" = "bring") => {
     const ov: Partial<BoardItem> =
       status === "missing"
-        ? { status, assigneeId: null, assigneeName: null, method: null }
+        ? { status, used: false, assigneeId: null, assigneeName: null, method: null }
         : {
             status,
+            used: false,
             assigneeId: item.assigneeId ?? selfId,
             assigneeName: item.assigneeName ?? selfName,
             method: item.status === "missing" ? method : (item.method ?? method),
@@ -132,6 +139,14 @@ export function ItemsBoard({
     setOverrides((prev) => ({ ...prev, [item.id]: ov }));
     startTransition(async () => {
       await setItemStatus(item.id, status, method);
+    });
+  };
+
+  // 使い終わった・消費した ⇄ 戻す(準備OKのみ)
+  const setUsed = (item: BoardItem, used: boolean) => {
+    setOverrides((prev) => ({ ...prev, [item.id]: { ...prev[item.id], used } }));
+    startTransition(async () => {
+      await setItemUsed(item.id, used);
     });
   };
 
@@ -233,7 +248,9 @@ export function ItemsBoard({
       key={i.id}
       data-item-id={i.id}
       style={dragStyle(i.id, idx)}
-      className={`mb-2.5 rounded-[14px] border-2 bg-white p-3 ${
+      className={`mb-2.5 rounded-[14px] border-2 p-3 ${
+        i.used ? "bg-line-soft opacity-75" : "bg-white"
+      } ${
         drag?.id === i.id
           ? "border-primary shadow-[5px_5px_0_var(--color-primary)]"
           : "border-line shadow-[3px_3px_0_var(--color-line)]"
@@ -313,18 +330,46 @@ export function ItemsBoard({
         </div>
       )}
 
-      {i.status === "ready" && (
-        <div className="mt-1.5 flex items-center justify-between">
+      {i.status === "ready" && !i.used && (
+        <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-[11.5px] font-bold text-ok">
             <IconCheck className="h-3.5 w-3.5" />
             {i.method === "buy" ? "購入済み" : "持参の準備OK"}
           </span>
-          <button
-            onClick={() => mutate(i, "missing")}
-            className="text-[11px] font-bold text-muted underline"
-          >
-            足りないに戻す
-          </button>
+          <span className="flex shrink-0 items-center gap-2.5">
+            <button
+              onClick={() => setUsed(i, true)}
+              className="rounded-full border-2 border-line bg-line-soft px-2.5 py-1 text-[11px] font-bold text-ink"
+            >
+              使い終わった
+            </button>
+            <button
+              onClick={() => mutate(i, "missing")}
+              className="text-[11px] font-bold text-muted underline"
+            >
+              足りないに戻す
+            </button>
+          </span>
+        </div>
+      )}
+
+      {i.status === "ready" && i.used && (
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span className="text-[11.5px] font-bold text-muted">使用済み・消費済み</span>
+          <span className="flex shrink-0 items-center gap-2.5">
+            <button
+              onClick={() => setUsed(i, false)}
+              className="rounded-full border-2 border-line bg-white px-2.5 py-1 text-[11px] font-bold text-ink"
+            >
+              備品に戻す
+            </button>
+            <button
+              onClick={() => mutate(i, "missing")}
+              className="text-[11px] font-bold text-muted underline"
+            >
+              足りないに戻す
+            </button>
+          </span>
         </div>
       )}
     </div>
@@ -334,12 +379,18 @@ export function ItemsBoard({
     ? {
         missing: "このカテゴリで足りないものはありません。",
         planned: "このカテゴリで調達予定のものはありません。",
-        ready: "このカテゴリで準備OKのものはまだありません。",
+        ready:
+          usedList.length > 0
+            ? "このカテゴリの備品はすべて使用済みです。"
+            : "このカテゴリで準備OKのものはまだありません。",
       }
     : {
         missing: "足りないものはありません。右下の＋から掲載できます。",
         planned: "調達予定のものはありません。",
-        ready: "準備OKのものはまだありません。",
+        ready:
+          usedList.length > 0
+            ? "備品はすべて使用済みです。"
+            : "準備OKのものはまだありません。",
       };
 
   return (
@@ -380,7 +431,7 @@ export function ItemsBoard({
           >
             {t.label}{" "}
             <span className={tab === t.key ? "text-screen" : t.countCls}>
-              {lists[t.key].length}
+              {t.key === "ready" ? readyActive : lists[t.key].length}
             </span>
           </button>
         ))}
@@ -408,6 +459,18 @@ export function ItemsBoard({
         </p>
       ) : (
         <div ref={listRef}>{lists[tab].map((it, idx) => renderCard(it, idx))}</div>
+      )}
+      {tab === "ready" && usedList.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowUsed((v) => !v)}
+          aria-expanded={showUsed}
+          className="mt-1 mb-2 w-full rounded-[10px] border-2 border-dashed border-line bg-white py-2 text-[12px] font-bold text-muted"
+        >
+          {showUsed
+            ? `使用済み・消費済みを隠す(${usedList.length})`
+            : `使用済み・消費済みを表示(${usedList.length})`}
+        </button>
       )}
       {lists[tab].length > 1 && (
         <p className="mx-0.5 mt-1 text-[11px] text-muted">

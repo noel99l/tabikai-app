@@ -24,7 +24,7 @@ export default async function ItemsPage() {
     <>
       <AppHeader title="買物 / 備品" />
       <p className="mx-0.5 mb-2.5 text-[12.5px] text-muted">
-        足りないものを掲載して、持参か買い出しで調達。準備OKになったものは備品一覧として確認できます。
+        足りないものを掲載して、持参か買い出しで調達。準備OKになったものは備品一覧として確認でき、使い終わったものは非表示にできます。
       </p>
 
       <ItemsBoard
@@ -39,6 +39,7 @@ export default async function ItemsPage() {
           assigneeName: i.assigneeId ? nameOf(i.assigneeId) : null,
           method: i.method,
           status: i.done ? "ready" : i.assigneeId ? "planned" : "missing",
+          used: i.done && i.usedAt !== null,
           canDelete: i.addedBy === user.id || isAdmin,
         }))}
         selfId={user.id}

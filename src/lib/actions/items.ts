@@ -68,7 +68,7 @@ export async function setItemStatus(
     // 担当を外して募集中に戻す
     await db
       .update(schema.items)
-      .set({ assigneeId: null, method: null, done: false })
+      .set({ assigneeId: null, method: null, done: false, usedAt: null })
       .where(eq(schema.items.id, itemId));
     if (item.assigneeId && item.addedBy !== user.id) {
       await notify(db, trip.id, [item.addedBy], {
@@ -85,7 +85,7 @@ export async function setItemStatus(
     const m = item.assigneeId ? (item.method ?? method) : method;
     await db
       .update(schema.items)
-      .set({ assigneeId, method: m, done: false })
+      .set({ assigneeId, method: m, done: false, usedAt: null })
       .where(eq(schema.items.id, itemId));
     if (!item.assigneeId && item.addedBy !== user.id) {
       await notify(db, trip.id, [item.addedBy], {
@@ -104,7 +104,7 @@ export async function setItemStatus(
     const m = item.method ?? method;
     await db
       .update(schema.items)
-      .set({ assigneeId, method: m, done: true })
+      .set({ assigneeId, method: m, done: true, usedAt: null })
       .where(eq(schema.items.id, itemId));
     if (item.addedBy !== user.id) {
       await notify(db, trip.id, [item.addedBy], {
@@ -122,6 +122,21 @@ export async function setItemStatus(
       });
     }
   }
+  revalidatePath("/items");
+}
+
+// 使い終わった / 消費した(準備OK一覧から非表示にする)。used=false で戻す。
+// 準備OKのものだけが対象。通知は不要(備品の整理なので掲載者に知らせることはない)
+export async function setItemUsed(itemId: string, used: boolean) {
+  const { trip, db } = await requireTripContext();
+  const item = await db.query.items.findFirst({
+    where: eq(schema.items.id, itemId),
+  });
+  if (!item || item.tripId !== trip.id || !item.done) return;
+  await db
+    .update(schema.items)
+    .set({ usedAt: used ? new Date() : null })
+    .where(eq(schema.items.id, itemId));
   revalidatePath("/items");
 }
 
