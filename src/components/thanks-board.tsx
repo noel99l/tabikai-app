@@ -24,19 +24,22 @@ export type GivenThanks = {
   message: string;
   anonymous: boolean;
   timeLabel: string;
+  today: boolean; // 今日の期間(直前の4:00以降)に送った分か。手持ちの計算対象・取り消し可
 };
 
-// ありがとうポイントを送るフォーム+送った履歴(取り消し可)
+// ありがとうポイントを送るフォーム+送った履歴(今日の分は取り消し可)
 export function ThanksBoard({
   members,
   budget,
   given,
   closed,
+  resetLabel,
 }: {
   members: ThanksMember[]; // 自分以外の承認済みメンバー
-  budget: number;
+  budget: number; // 1日の手持ち
   given: GivenThanks[];
   closed: boolean; // 企画終了後: 送付・取り消し不可(残ポイントは消滅)
+  resetLabel: string; // 次のリセット時刻(例: "明日 4:00")
 }) {
   const [toUserId, setToUserId] = useState<string | null>(null);
   const [points, setPoints] = useState(1);
@@ -48,7 +51,7 @@ export function ThanksBoard({
   const formRef = useRef<HTMLFormElement>(null);
   const toast = useToast();
 
-  const used = given.reduce((s, g) => s + g.points, 0);
+  const used = given.filter((g) => g.today).reduce((s, g) => s + g.points, 0);
   const remaining = Math.max(0, budget - used);
   const givenTo = (id: string) =>
     given.filter((g) => g.toUserId === id).reduce((s, g) => s + g.points, 0);
@@ -63,12 +66,15 @@ export function ThanksBoard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[11px] text-muted">
-            {closed ? "手持ちのポイント(終了時に消滅)" : "手持ちのありがとうポイント"}
+            {closed ? "今日の手持ち(終了時に消滅)" : "今日の手持ちポイント"}
           </div>
           <div className={`text-xl font-extrabold tabular-nums ${closed ? "text-muted line-through" : ""}`}>
             {remaining}
             <span className="ml-1 text-[12px] font-bold text-muted">/ {budget} pt</span>
           </div>
+          {!closed && (
+            <div className="text-[10.5px] text-muted">{resetLabel} に {budget} pt にリセット(残りは消滅)</div>
+          )}
         </div>
         <div className="flex gap-1">
           {Array.from({ length: Math.min(budget, 10) }, (_, i) => (
@@ -97,7 +103,7 @@ export function ThanksBoard({
             return;
           }
           if (remaining === 0) {
-            setError("手持ちのポイントがありません");
+            setError(`今日の手持ちを使い切りました(${resetLabel} にリセット)`);
             return;
           }
           submitting.current = true;
@@ -123,7 +129,7 @@ export function ThanksBoard({
         <h3 className="text-sm font-bold">ありがとうを送る</h3>
         <p className="mt-0.5 text-[11.5px] text-muted">
           頑張っている人、企画に大きく協力してくれている人にポイントを送りましょう。同じ人に何度でも送れます。
-          コメントは任意で、匿名でも送れます。受け取った人にはすぐ表示され、手元に残ったポイントは企画の終了時に消滅します。
+          コメントは任意で、匿名でも送れます。受け取った人にはすぐ表示されます。手持ちは毎朝 4:00 に {budget} pt に戻り、使い切らなかった分は消滅します。
         </p>
 
         <label className={labelCls}>送る相手</label>
@@ -276,7 +282,7 @@ export function ThanksBoard({
                 )}
                 <div className="mt-0.5 text-[10.5px] text-muted">{g.timeLabel}</div>
               </div>
-              {!closed && (
+              {!closed && g.today && (
               <button
                 type="button"
                 onClick={() => {

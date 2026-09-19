@@ -70,9 +70,9 @@ export default async function ManageThanksPage() {
       </div>
 
       <Card>
-        <h3 className="text-sm font-bold">手持ちポイント(1人あたり)</h3>
+        <h3 className="text-sm font-bold">1日の手持ちポイント(1人あたり)</h3>
         <p className="mt-1 mb-2 text-[11.5px] text-muted">
-          各メンバーが送れる合計ポイントです。すでに送った分より少なくはできません。
+          各メンバーが1日に送れるポイントです。毎朝 4:00(JST)にこの値に戻り、使い切らなかった分は消滅します。今日すでに送った分より少なくはできません。
         </p>
         <form action={updateThanksBudget} className="flex items-center gap-2">
           <input
@@ -103,7 +103,7 @@ export default async function ManageThanksPage() {
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13.5px] font-bold">{m.name}</div>
             <div className="text-[10.5px] text-muted">
-              受け取り {m.receivedCount}件 · 送った {m.sent} / {trip.thanksBudget}pt
+              受け取り {m.receivedCount}件 · 送った合計 {m.sent}pt
             </div>
           </div>
           <div className="text-right">

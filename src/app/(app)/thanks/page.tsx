@@ -3,9 +3,9 @@ import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ThanksBoard } from "@/components/thanks-board";
 import { Avatar, Card, Pill } from "@/components/ui";
-import { fmtDateTime } from "@/lib/format";
+import { fmtDateTime, fmtTime, jstDateKey } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
-import { thanksClosed } from "@/lib/thanks";
+import { thanksClosed, thanksPeriodEnd, thanksPeriodStart } from "@/lib/thanks";
 
 // ありがとうポイント: 受け取ったポイントとコメント(常時表示)・送る・送った履歴
 export default async function ThanksPage() {
@@ -23,6 +23,11 @@ export default async function ThanksPage() {
   ]);
   const memberOf = (id: string) => members.find((m) => m.userId === id);
   const closed = thanksClosed(trip);
+  const now = new Date();
+  const periodStart = thanksPeriodStart(now).getTime();
+  const periodEnd = thanksPeriodEnd(now);
+  // 次のリセット(次の4:00 JST)の表示。今日中なら「今日 4:00」、それ以外は「明日 4:00」
+  const resetLabel = `${jstDateKey(periodEnd) === jstDateKey(now) ? "今日" : "明日"} ${fmtTime(periodEnd)}`;
   const receivedTotal = received.reduce((s, r) => s + r.points, 0);
 
   return (
@@ -83,6 +88,7 @@ export default async function ThanksPage() {
 
       <ThanksBoard
         closed={closed}
+        resetLabel={resetLabel}
         budget={trip.thanksBudget}
         members={members
           .filter((m) => m.userId !== user.id)
@@ -100,6 +106,7 @@ export default async function ThanksPage() {
           message: g.message,
           anonymous: g.anonymous,
           timeLabel: fmtDateTime(g.createdAt),
+          today: g.createdAt.getTime() >= periodStart,
         }))}
       />
     </>
