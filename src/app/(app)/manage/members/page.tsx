@@ -11,6 +11,7 @@ import { Avatar, Card, Pill, SectionTitle } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { SwitchButton } from "@/components/switch";
 import { approveMember, setAutoApprove, setExcludeFromSplitAll } from "@/lib/actions/trips";
+import { RecalcSplitAllButton } from "@/components/recalc-split-all";
 import { requireTripContext } from "@/lib/session";
 
 // メンバー参加承認(管理者のみ)。PC管理画面はフェーズ4で拡張予定。
@@ -115,12 +116,19 @@ export default async function MembersPage() {
 
       <SectionTitle>メンバー({approved.length})</SectionTitle>
       <p className="mx-0.5 -mt-1 mb-2 text-[11.5px] text-muted">
-        「全員割り勘の対象」をオフにしたメンバーは、以後に登録・編集される「全員で割り勘」の費用に含まれません(子ども・ゲストなど)。
-        個別に選択する割り勘には影響しません。
+        「全員割り勘の対象」をオフにしたメンバーは「全員で割り勘」の費用に含まれません(子ども・ゲストなど)。
+        切り替えると登録済みの全員割り勘もそのメンバー分を割り直します。個別に選択する割り勘には影響しません。
         {excludedCount > 0 && (
           <span className="font-bold"> 現在 {excludedCount} 人が対象外です。</span>
         )}
       </p>
+      {trip.expensesClosedAt ? (
+        <p className="mx-0.5 mb-2 rounded-lg bg-pend-soft px-2.5 py-1.5 text-[11.5px] font-bold text-pend">
+          精算を締めているため、対象の切り替えはできません(締めを解除すると変更できます)。
+        </p>
+      ) : (
+        <RecalcSplitAllButton />
+      )}
       {approved.map((m) => (
         <Card key={m.userId} className="mb-2 py-2.5">
           <div className="flex items-center gap-3">
@@ -139,15 +147,17 @@ export default async function MembersPage() {
               <GrantAdminButton userId={m.userId} name={m.name} />
             )}
           </div>
-          <form
-            action={setExcludeFromSplitAll.bind(null, m.userId, !m.excludeFromSplitAll)}
-            className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2"
-          >
-            <span className="text-[12px] text-muted">
-              全員割り勘の対象{m.excludeFromSplitAll ? "(オフ: 含めない)" : "(オン: 含める)"}
-            </span>
-            <SwitchButton checked={!m.excludeFromSplitAll} />
-          </form>
+          {!trip.expensesClosedAt && (
+            <form
+              action={setExcludeFromSplitAll.bind(null, m.userId, !m.excludeFromSplitAll)}
+              className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2"
+            >
+              <span className="text-[12px] text-muted">
+                全員割り勘の対象{m.excludeFromSplitAll ? "(オフ: 含めない)" : "(オン: 含める)"}
+              </span>
+              <SwitchButton checked={!m.excludeFromSplitAll} />
+            </form>
+          )}
         </Card>
       ))}
     </>

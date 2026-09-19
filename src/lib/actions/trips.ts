@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb, schema } from "@/db";
+import { syncSplitAllShares } from "@/lib/expense-shares";
 import { jstDate } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { requireTripContext, requireUser, TRIP_COOKIE } from "@/lib/session";
@@ -182,18 +183,46 @@ export async function setAutoApprove(next: boolean) {
 }
 
 // 「全員で割り勘」の対象から外す/戻す(管理者のみ)。
-// 以後に登録・編集される全員割り勘の対象に反映される(登録済みの費用は変わらない)
+// 以後に登録・編集される費用に加え、登録済みの全員割り勘もそのメンバー分を割り直す。
+// 精算を締めた後は変更できない(締めを解除してから)
 export async function setExcludeFromSplitAll(userId: string, next: boolean) {
-  const { trip, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
   if (!isAdmin) throw new Error("管理者のみ操作できます");
+  if (trip.expensesClosedAt) throw new Error("精算を締めた後は変更できません");
   await db
     .update(schema.tripMembers)
     .set({ excludeFromSplitAll: next })
     .where(
       and(eq(schema.tripMembers.tripId, trip.id), eq(schema.tripMembers.userId, userId)),
     );
+  const changed = await syncSplitAllShares(db, trip.id, user.id, userId);
+  if (changed > 0) {
+    await notify(db, trip.id, [userId], {
+      type: "expense_confirmed",
+      title: next
+        ? "全員割り勘の対象から外れました"
+        : "全員割り勘の対象に戻りました",
+      body: `管理者の設定により、登録済みの費用 ${changed} 件を割り直しました`,
+      link: "/expenses",
+      senderId: user.id,
+    });
+  }
   revalidatePath("/manage/members");
   revalidatePath("/expenses");
+  revalidatePath("/home");
+}
+
+// 登録済みの全員割り勘を、今の対象外設定に合わせてまとめて割り直す(管理者のみ)。
+// 設定を変えたのに反映されていない費用がある場合の手動再計算用
+export async function recalcSplitAllExpenses() {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  if (trip.expensesClosedAt) throw new Error("精算を締めた後は変更できません");
+  const changed = await syncSplitAllShares(db, trip.id, user.id);
+  revalidatePath("/manage/members");
+  revalidatePath("/expenses");
+  revalidatePath("/home");
+  return { changed };
 }
 
 // 旅程(開始・終了日時)の更新。予定表の日付タブがこの範囲で生成される

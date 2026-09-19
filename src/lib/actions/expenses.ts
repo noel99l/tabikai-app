@@ -3,6 +3,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
+import { redistributeShares, splitAmount } from "@/lib/expense-shares";
 import { yen } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { RECEIPT_HARD_LIMIT_BYTES } from "@/lib/receipt-image";
@@ -52,70 +53,6 @@ function splitAllTargets(members: { userId: string; excludeFromSplitAll: boolean
   return members.filter((m) => !m.excludeFromSplitAll).map((m) => m.userId);
 }
 
-// 均等割り(端数は先頭から1円ずつ負担)
-function splitAmount(total: number, n: number): number[] {
-  const base = Math.floor(total / n);
-  const remainder = total - base * n;
-  return Array.from({ length: n }, (_, i) => base + (i < remainder ? 1 : 0));
-}
-
-// excluded 以外の対象者で割り勘額を再計算する(金額編集・対象から外した時に使う)。
-// 個別割り勘は再承認のため pending に戻し(立替者は承認扱い)、対象者に再確認を通知する。
-async function redistributeShares(
-  db: Awaited<ReturnType<typeof requireTripContext>>["db"],
-  expense: {
-    id: string;
-    tripId: string;
-    title: string;
-    amount: number;
-    paidBy: string;
-    splitAll: boolean;
-  },
-  actorId: string,
-  notice: { title: string; body: string },
-) {
-  const shares = await db.query.expenseShares.findMany({
-    where: eq(schema.expenseShares.expenseId, expense.id),
-  });
-  const active = shares.filter((s) => s.status !== "excluded");
-  if (active.length === 0) return;
-  const amounts = splitAmount(expense.amount, active.length);
-  for (let i = 0; i < active.length; i++) {
-    await db
-      .update(schema.expenseShares)
-      .set({
-        amount: amounts[i],
-        status: expense.splitAll
-          ? "approved"
-          : active[i].userId === expense.paidBy
-            ? "approved"
-            : "pending",
-      })
-      .where(
-        and(
-          eq(schema.expenseShares.expenseId, expense.id),
-          eq(schema.expenseShares.userId, active[i].userId),
-        ),
-      );
-  }
-  if (!expense.splitAll) {
-    await notify(
-      db,
-      expense.tripId,
-      active
-        .map((s) => s.userId)
-        .filter((id) => id !== actorId && id !== expense.paidBy),
-      {
-        type: "expense_assigned",
-        title: notice.title,
-        body: notice.body,
-        link: "/expenses/approvals",
-        senderId: actorId,
-      },
-    );
-  }
-}
-
 export async function createExpense(formData: FormData) {
   const { user, trip, db } = await requireTripContext();
   const title = String(formData.get("title") ?? "").trim();
@@ -124,6 +61,9 @@ export async function createExpense(formData: FormData) {
   const splitAll = formData.get("splitAll") === "on";
   const eventId = String(formData.get("eventId") ?? "");
   const memberIds = formData.getAll("memberIds").map(String);
+  if (trip.expensesClosedAt) {
+    return { error: "精算を締めた後は追加できません。管理者が締めを解除すると登録できます" };
+  }
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
@@ -265,7 +205,8 @@ export async function rejectShare(expenseId: string) {
 
 // 主催者/管理者による操作: 承認として確定(forced) or 割り勘対象から外す(excluded)
 export async function resolveShare(formData: FormData) {
-  const { user, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (trip.expensesClosedAt) throw new Error("精算を締めた後は変更できません");
   const expenseId = String(formData.get("expenseId"));
   const userId = String(formData.get("userId"));
   const action = String(formData.get("action")); // force | exclude
@@ -368,6 +309,8 @@ export async function updateExpense(formData: FormData) {
 
   const amountChanged = amount !== expense.amount;
   const newPaidBy = paidBy || expense.paidBy;
+  // 立替者が変わると「立替者本人は承認済み扱い」の対象も変わるため、状態を計算し直す
+  const paidByChanged = newPaidBy !== expense.paidBy;
   const [shares] = await Promise.all([
     db.query.expenseShares.findMany({
       where: eq(schema.expenseShares.expenseId, expenseId),
@@ -453,7 +396,7 @@ export async function updateExpense(formData: FormData) {
     await Promise.all(ops);
   }
 
-  if (amountChanged || targetsChanged) {
+  if (amountChanged || targetsChanged || paidByChanged) {
     await redistributeShares(
       db,
       { id: expenseId, tripId: expense.tripId, title, amount, paidBy: newPaidBy, splitAll },
@@ -463,10 +406,15 @@ export async function updateExpense(formData: FormData) {
             title: `「${title}」の割り勘対象が変更されました`,
             body: `合計 ${yen(amount)} を${targetIds?.length ?? ""}人で割り直し · 再度ご確認ください`,
           }
-        : {
-            title: `「${title}」の金額が変更されました`,
-            body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
-          },
+        : amountChanged
+          ? {
+              title: `「${title}」の金額が変更されました`,
+              body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
+            }
+          : {
+              title: `「${title}」の立替者が変更されました`,
+              body: `立替者の変更に伴い承認をやり直します · 再度ご確認ください`,
+            },
     );
   }
   revalidatePath("/expenses");
@@ -476,7 +424,8 @@ export async function updateExpense(formData: FormData) {
 
 // 費用の削除。作成者・立替者・管理者のみ。
 export async function deleteExpense(expenseId: string) {
-  const { user, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (trip.expensesClosedAt) throw new Error("精算を締めた後は削除できません");
   const expense = await db.query.expenses.findFirst({
     where: eq(schema.expenses.id, expenseId),
   });

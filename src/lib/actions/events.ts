@@ -3,6 +3,7 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
+import { syncEventExpenseShares } from "@/lib/expense-shares";
 import { fmtDateTime, jstDate } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
@@ -111,7 +112,7 @@ const isSignupClosed = (e: { signupDeadline: Date | null }) =>
   e.signupDeadline !== null && e.signupDeadline.getTime() <= Date.now();
 
 export async function joinEvent(eventId: string) {
-  const { user, db } = await requireTripContext();
+  const { user, trip, db } = await requireTripContext();
   const event = await db.query.events.findFirst({
     where: eq(schema.events.id, eventId),
   });
@@ -125,6 +126,11 @@ export async function joinEvent(eventId: string) {
       target: [schema.eventParticipants.eventId, schema.eventParticipants.userId],
       set: { status: "joined" },
     });
+  // このイベントの参加者で割った費用があれば、参加者として分担に加える
+  const recalculated = await syncEventExpenseShares(db, trip.id, eventId, user.id, {
+    added: [user.id],
+  });
+  if (recalculated > 0) revalidatePath("/expenses");
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events");
   revalidatePath("/schedule");
@@ -156,6 +162,11 @@ export async function leaveEvent(eventId: string) {
     link: `/events/${eventId}`,
     senderId: user.id,
   });
+  // このイベントの参加者で割った費用があれば、分担から外して残りで割り直す
+  const recalculated = await syncEventExpenseShares(db, trip.id, eventId, user.id, {
+    removed: [user.id],
+  });
+  if (recalculated > 0) revalidatePath("/expenses");
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events");
   revalidatePath("/schedule");
@@ -185,6 +196,11 @@ export async function declineEvent(eventId: string) {
     link: `/events/${eventId}`,
     senderId: user.id,
   });
+  // 招待中は分担に入っていないのが通常だが、手動で対象に入れられていた場合は外す
+  const recalculated = await syncEventExpenseShares(db, trip.id, eventId, user.id, {
+    removed: [user.id],
+  });
+  if (recalculated > 0) revalidatePath("/expenses");
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events");
 }
@@ -286,6 +302,11 @@ export async function addParticipants(formData: FormData) {
     link: `/events/${eventId}`,
     senderId: user.id,
   });
+  // このイベントの参加者で割った費用があれば、追加した人を分担に加える
+  const recalculated = await syncEventExpenseShares(db, trip.id, eventId, user.id, {
+    added: memberIds,
+  });
+  if (recalculated > 0) revalidatePath("/expenses");
   revalidatePath(`/events/${eventId}`);
 }
 
@@ -416,6 +437,12 @@ export async function updateEvent(eventId: string, formData: FormData) {
         senderId: user.id,
       },
     );
+    // 参加者から外した人は、このイベントの費用の分担からも外す
+    // (追加は「招待」なので、本人が参加登録した時点で joinEvent 側が分担に加える)
+    const recalculated = await syncEventExpenseShares(db, trip.id, eventId, user.id, {
+      removed: toRemove,
+    });
+    if (recalculated > 0) revalidatePath("/expenses");
   }
 
   // 参加登録者(操作者以外)へ変更を通知

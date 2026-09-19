@@ -183,7 +183,10 @@ async function ExpensesList() {
         </Card>
       )}
 
-      <ExpenseCreateFab members={memberOptions} events={eventOptions} selfId={user.id} />
+      {/* 締め後は追加不可(サーバー側でも弾く) */}
+      {!trip.expensesClosedAt && (
+        <ExpenseCreateFab members={memberOptions} events={eventOptions} selfId={user.id} />
+      )}
     </>
   );
 }
