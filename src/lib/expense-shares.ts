@@ -13,8 +13,10 @@ export function splitAmount(total: number, n: number): number[] {
   return Array.from({ length: n }, (_, i) => base + (i < remainder ? 1 : 0));
 }
 
-// excluded 以外の対象者で割り勘額を再計算する(金額編集・対象から外した時に使う)。
-// 個別割り勘は再承認のため pending に戻し(立替者は承認扱い)、対象者に再確認を通知する。
+// excluded 以外の対象者で割り勘額を再計算する(金額編集・対象の増減時に使う)。
+// 一度承認した分(approved / forced)は金額や人数が変わっても再承認不要でそのまま確定扱い。
+// 承認待ち・否認中の分はその状態のまま金額だけ更新し、立替者本人は常に承認済み。
+// 個別割り勘では対象者に金額変更を知らせる(承認待ちの人には承認画面へのリンク)。
 export async function redistributeShares(
   db: Db,
   expense: {
@@ -34,17 +36,16 @@ export async function redistributeShares(
   const active = shares.filter((s) => s.status !== "excluded");
   if (active.length === 0) return;
   const amounts = splitAmount(expense.amount, active.length);
+  const nextStatus = (s: (typeof active)[number]) => {
+    if (expense.splitAll) return "approved" as const;
+    if (s.userId === expense.paidBy) return "approved" as const;
+    // 承認済み・確定はそのまま。承認待ち・否認もそのまま(状態は変えず金額だけ更新)
+    return s.status;
+  };
   for (let i = 0; i < active.length; i++) {
     await db
       .update(schema.expenseShares)
-      .set({
-        amount: amounts[i],
-        status: expense.splitAll
-          ? "approved"
-          : active[i].userId === expense.paidBy
-            ? "approved"
-            : "pending",
-      })
+      .set({ amount: amounts[i], status: nextStatus(active[i]) })
       .where(
         and(
           eq(schema.expenseShares.expenseId, expense.id),
@@ -53,20 +54,26 @@ export async function redistributeShares(
       );
   }
   if (!expense.splitAll) {
-    await notify(
-      db,
-      expense.tripId,
-      active
-        .map((s) => s.userId)
-        .filter((id) => id !== actorId && id !== expense.paidBy),
-      {
+    const targets = active.filter((s) => s.userId !== actorId && s.userId !== expense.paidBy);
+    // 承認待ちの人は承認画面へ、承認済みの人は費用一覧へ(再承認は不要)
+    const pending = targets.filter((s) => s.status === "pending" || s.status === "rejected");
+    const settled = targets.filter((s) => s.status !== "pending" && s.status !== "rejected");
+    await Promise.all([
+      notify(db, expense.tripId, pending.map((s) => s.userId), {
         type: "expense_assigned",
         title: notice.title,
-        body: notice.body,
+        body: `${notice.body} · 承認をお願いします`,
         link: "/expenses/approvals",
         senderId: actorId,
-      },
-    );
+      }),
+      notify(db, expense.tripId, settled.map((s) => s.userId), {
+        type: "expense_confirmed",
+        title: notice.title,
+        body: `${notice.body} · 承認済みのため再承認は不要です`,
+        link: "/expenses",
+        senderId: actorId,
+      }),
+    ]);
   }
 }
 
@@ -229,7 +236,7 @@ export async function syncEventExpenseShares(
     const n = mine.filter((s) => s.status !== "excluded").length + toInsert.length + toRestore.length - toExclude.length;
     await redistributeShares(db, expense, actorId, {
       title: `「${expense.title}」の割り勘対象が変更されました`,
-      body: `イベント参加者の変更により ${n} 人で割り直し · 再度ご確認ください`,
+      body: `イベント参加者の変更により ${n} 人で割り直し`,
     });
     changed++;
   }

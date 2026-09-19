@@ -249,7 +249,7 @@ export async function resolveShare(formData: FormData) {
   if (action !== "force") {
     await redistributeShares(db, expense, user.id, {
       title: `「${expense.title}」の割り勘額が変更されました`,
-      body: "対象から外れたメンバーの分を残りで割り直しました · 再度ご確認ください",
+      body: "対象から外れたメンバーの分を残りで割り直しました",
     });
   }
   revalidatePath("/expenses");
@@ -257,8 +257,8 @@ export async function resolveShare(formData: FormData) {
 }
 
 // 費用の編集(内容・金額・立替者・割り勘対象・領収書)。作成者・立替者・管理者のみ。
-// 金額または対象が変わったら割り勘額を再計算し、個別割り勘は再承認のため pending に戻す。
-// 対象から外したメンバーは excluded にして通知、追加したメンバーは承認待ちで通知する。
+// 金額または対象が変わったら割り勘額を再計算する。承認済みの分は再承認不要でそのまま確定、
+// 追加したメンバーだけが承認待ちになる。対象から外したメンバーは excluded にして通知する。
 export async function updateExpense(formData: FormData) {
   const { user, trip, db, isAdmin } = await requireTripContext();
   const expenseId = String(formData.get("expenseId"));
@@ -404,16 +404,16 @@ export async function updateExpense(formData: FormData) {
       targetsChanged
         ? {
             title: `「${title}」の割り勘対象が変更されました`,
-            body: `合計 ${yen(amount)} を${targetIds?.length ?? ""}人で割り直し · 再度ご確認ください`,
+            body: `合計 ${yen(amount)} を${targetIds?.length ?? ""}人で割り直し`,
           }
         : amountChanged
           ? {
               title: `「${title}」の金額が変更されました`,
-              body: `合計 ${yen(amount)} に更新 · 再度ご確認ください`,
+              body: `合計 ${yen(amount)} に更新`,
             }
           : {
               title: `「${title}」の立替者が変更されました`,
-              body: `立替者の変更に伴い承認をやり直します · 再度ご確認ください`,
+              body: `立替者が変わりました`,
             },
     );
   }

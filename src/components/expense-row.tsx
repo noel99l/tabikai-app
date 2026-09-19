@@ -251,7 +251,7 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
               onStateChange={setSplit}
             />
             <p className="mx-0.5 mt-2 text-[11px] text-muted">
-              金額や対象メンバーを変更すると割り勘額が再計算され、個別割り勘は対象者の再承認が必要になります。外したメンバーには通知されます。
+              金額や対象メンバーを変更すると割り勘額が再計算されます。承認済みの分はそのまま確定で再承認は不要、追加したメンバーだけ承認待ちになります。外したメンバーには通知されます。
             </p>
             <ReceiptInput existingId={expense.receiptId} idPrefix={`edit-${expense.id}`} />
             <FormError message={error} />
