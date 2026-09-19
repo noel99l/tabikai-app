@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { THANKS_RESET_HOUR, thanksPeriodStart } from "@/lib/thanks";
+import { thanksPeriodStart } from "@/lib/thanks";
 import { IconHeart } from "./icons";
 
 const SEEN_KEY = "thanks-grant-seen"; // 表示済みの期間開始時刻(ISO)
-export const THANKS_GRANT_PREVIEW_EVENT = "thanks-grant:preview";
-// 4:00 の切り替えと同じ経路(演出+再取得)を任意に起こすデモ用イベント
+// 4:00 の切り替えと同じ経路(演出+再取得)を任意に起こすデモ用イベント(開発者ツールから)
 export const THANKS_GRANT_CROSS_EVENT = "thanks-grant:cross";
 const AUTO_CLOSE_MS = 6000;
 // キャラクター画像(public/thanks/character.png)。指差しポーズのイラストを置く。
@@ -18,7 +17,6 @@ const CHARACTER_IMAGE = "/thanks/character.png";
 // 告げてポイントが付与される演出。
 // - アプリを開いたときにその日の期間で未表示なら1回表示(端末ごとに記憶)
 // - 開いたまま4:00をまたいだときも表示し、画面を再読込して残ポイントを反映する
-// - ありがとう画面の「演出を見る」からいつでも再生できる
 export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: number }) {
   const [open, setOpen] = useState(false);
   const [imgOk, setImgOk] = useState(true);
@@ -73,16 +71,11 @@ export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: nu
     return () => clearInterval(iv);
   }, [endsAtMs, show]);
 
-  // プレビュー(ありがとう画面のボタンから)/ 日付切り替えのデモ
+  // 日付切り替えのデモ(開発者ツールから window.dispatchEvent(new Event("thanks-grant:cross")))
   useEffect(() => {
-    const onPreview = () => show(false);
     const onCross = () => show(true);
-    window.addEventListener(THANKS_GRANT_PREVIEW_EVENT, onPreview);
     window.addEventListener(THANKS_GRANT_CROSS_EVENT, onCross);
-    return () => {
-      window.removeEventListener(THANKS_GRANT_PREVIEW_EVENT, onPreview);
-      window.removeEventListener(THANKS_GRANT_CROSS_EVENT, onCross);
-    };
+    return () => window.removeEventListener(THANKS_GRANT_CROSS_EVENT, onCross);
   }, [show]);
 
   useEffect(() => () => {
@@ -147,9 +140,6 @@ export function ThanksGrant({ budget, endsAtMs }: { budget: number; endsAtMs: nu
           )}
         </div>
 
-        <p className="mt-1 text-[11.5px] font-bold text-white/85">
-          毎朝 {THANKS_RESET_HOUR}:00 に {budget} pt 付与 · タップで閉じる
-        </p>
       </div>
     </div>
   );
