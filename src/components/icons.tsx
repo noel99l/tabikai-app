@@ -87,6 +87,12 @@ export const IconFlag = (p: SVGProps<SVGSVGElement>) => (
   </Svg>
 );
 
+export const IconHeart = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10z" />
+  </Svg>
+);
+
 export const IconClock = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />

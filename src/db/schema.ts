@@ -105,6 +105,7 @@ export const trips = pgTable("trips", {
     .default({})
     .notNull(),
   expensesClosedAt: timestamp("expenses_closed_at", { withTimezone: true }), // 経費入力の締め
+  thanksBudget: integer("thanks_budget").default(10).notNull(), // ありがとうポイントの手持ち(1人あたり)
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id),
@@ -335,5 +336,26 @@ export const notifications = pgTable("notifications", {
   link: text("link"), // アプリ内遷移先
   senderId: uuid("sender_id").references(() => users.id),
   readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ============ thanks (ありがとうポイント) ============
+
+// メンバーからメンバーへ、メッセージつきでポイントを送る。
+// 1人の手持ちは trips.thanksBudget(標準10)。同じ相手に複数回・複数ポイント送れる。
+// 受け取った分は企画の終了後に本人へ表示される(管理者は常に集計を見られる)
+export const thanksPoints = pgTable("thanks_points", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tripId: uuid("trip_id")
+    .notNull()
+    .references(() => trips.id, { onDelete: "cascade" }),
+  fromUserId: uuid("from_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  toUserId: uuid("to_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  points: integer("points").notNull(),
+  message: text("message").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

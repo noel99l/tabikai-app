@@ -7,6 +7,7 @@ import {
   IconHome,
   IconList,
   IconFlag,
+  IconHeart,
   IconMoney,
 } from "./icons";
 
@@ -16,6 +17,7 @@ const tabs = [
   { href: "/schedule", label: "予定表", icon: IconCalendar },
   { href: "/items", label: "買物 / 備品", icon: IconList },
   { href: "/expenses", label: "費用", icon: IconMoney },
+  { href: "/thanks", label: "ありがとう", icon: IconHeart },
 ];
 
 // expenseBadge: 費用タブに載せる承認待ちバッジ(サーバー側で件数を取得して渡す)
@@ -37,7 +39,7 @@ export function BottomNav({ expenseBadge }: { expenseBadge?: React.ReactNode }) 
               // 下部タブは常に見えているので、動的ページも本文まで事前取得して
               // 初回遷移からキャッシュ表示できるようにする
               prefetch={true}
-              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] ${
+              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] whitespace-nowrap ${
                 active ? "bg-ink font-bold text-screen" : "text-muted"
               }`}
             >

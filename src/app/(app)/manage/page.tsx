@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app-header";
 import {
   IconBack,
   IconCalendar,
+  IconHeart,
   IconHome,
   IconMegaphone,
   IconMoney,
@@ -61,6 +62,12 @@ export default async function ManagePage() {
       desc: trip.expensesClosedAt
         ? "締め済み・精算リスト公開中"
         : "経費を締めて精算リストを公開",
+    },
+    {
+      href: "/manage/thanks",
+      icon: IconHeart,
+      title: "ありがとうポイント",
+      desc: `誰が何ポイント獲得したかの集計・手持ちの設定(現在 ${trip.thanksBudget}pt)`,
     },
     {
       href: "/notifications",
