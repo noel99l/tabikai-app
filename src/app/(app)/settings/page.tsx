@@ -13,7 +13,6 @@ import { resetMyNotifySettings, updateMyNotifySetting } from "@/lib/actions/trip
 import { NOTIFY_CATEGORIES } from "@/lib/notify";
 import { fmtDateLabel } from "@/lib/format";
 import { requireTripContext } from "@/lib/session";
-import { thanksRevealed } from "@/lib/thanks";
 import { IconHeart } from "@/components/icons";
 
 export default async function SettingsPage() {
@@ -30,7 +29,6 @@ export default async function SettingsPage() {
     where: and(eq(schema.thanksPoints.tripId, trip.id), eq(schema.thanksPoints.toUserId, user.id)),
   });
   const thanksTotal = receivedThanks.reduce((s, t) => s + t.points, 0);
-  const revealed = thanksRevealed(trip);
   const myNs = member?.notifySettings ?? {};
   const tripNs = trip.notifySettings ?? {};
   const overridden = NOTIFY_CATEGORIES.some((c) => myNs[c.key] !== undefined);
@@ -51,7 +49,7 @@ export default async function SettingsPage() {
         <ProfileEditButton name={user.name} emoji={user.avatarEmoji} image={user.avatarImage} />
       </Card>
 
-      {/* ありがとうポイント(自分のページに終了後表示) */}
+      {/* ありがとうポイント(受け取った合計) */}
       <Link href="/thanks" className="block">
         <Card className="mt-2.5 flex items-center gap-3.5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-violet-soft">
@@ -59,14 +57,10 @@ export default async function SettingsPage() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[11px] text-muted">受け取ったありがとうポイント</div>
-            {revealed ? (
-              <div className="text-xl font-extrabold tabular-nums">
-                {thanksTotal}
-                <span className="ml-1 text-[12px] font-bold text-muted">pt · {receivedThanks.length}件</span>
-              </div>
-            ) : (
-              <div className="text-[13px] font-bold">企画の終了後に公開されます</div>
-            )}
+            <div className="text-xl font-extrabold tabular-nums">
+              {thanksTotal}
+              <span className="ml-1 text-[12px] font-bold text-muted">pt · {receivedThanks.length}件</span>
+            </div>
           </div>
           <span className="text-muted">›</span>
         </Card>

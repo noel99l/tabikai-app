@@ -343,7 +343,7 @@ export const notifications = pgTable("notifications", {
 
 // メンバーからメンバーへ、メッセージつきでポイントを送る。
 // 1人の手持ちは trips.thanksBudget(標準10)。同じ相手に複数回・複数ポイント送れる。
-// 受け取った分は企画の終了後に本人へ表示される(管理者は常に集計を見られる)
+// 受け取った分は常時本人へ表示される。送付は企画の終了で締め切り、残ったポイントは消滅する
 export const thanksPoints = pgTable("thanks_points", {
   id: uuid("id").defaultRandom().primaryKey(),
   tripId: uuid("trip_id")
@@ -356,6 +356,7 @@ export const thanksPoints = pgTable("thanks_points", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   points: integer("points").notNull(),
-  message: text("message").notNull(),
+  message: text("message").default("").notNull(), // コメントは任意(空文字=なし)
+  anonymous: boolean("anonymous").default(false).notNull(), // 匿名(受け取る側に送り主を出さない。管理者は見える)
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
-import { THANKS_MESSAGE_MAX } from "@/lib/thanks";
+import { THANKS_CLOSED_MESSAGE, THANKS_MESSAGE_MAX, thanksClosed } from "@/lib/thanks";
 
 // 自分が送った合計ポイント(手持ちの残りを計算する)
 async function givenTotal(
@@ -19,16 +19,18 @@ async function givenTotal(
   return Number(row?.total ?? 0);
 }
 
-// メンバーにメッセージつきでポイントを送る。手持ち(trips.thanksBudget)を超えては送れない
+// メンバーにポイントを送る(コメントは任意・匿名可)。手持ち(trips.thanksBudget)を超えては送れない。
+// 企画の終了後は送れない(残ったポイントは消滅)
 export async function giveThanks(formData: FormData) {
   const { user, trip, db } = await requireTripContext();
+  if (thanksClosed(trip)) return { error: THANKS_CLOSED_MESSAGE };
   const toUserId = String(formData.get("toUserId") ?? "");
   const points = Number(String(formData.get("points") ?? "").replace(/[^\d]/g, ""));
   const message = String(formData.get("message") ?? "").trim();
+  const anonymous = formData.get("anonymous") === "on";
   if (!toUserId) return { error: "送る相手を選んでください" };
   if (toUserId === user.id) return { error: "自分には送れません" };
   if (!Number.isInteger(points) || points < 1) return { error: "ポイントは1以上で指定してください" };
-  if (!message) return { error: "メッセージを入力してください" };
   if ([...message].length > THANKS_MESSAGE_MAX) {
     return { error: `メッセージは${THANKS_MESSAGE_MAX}文字以内で入力してください` };
   }
@@ -46,15 +48,17 @@ export async function giveThanks(formData: FormData) {
     toUserId,
     points,
     message,
+    anonymous,
   });
   revalidatePath("/thanks");
   revalidatePath("/settings");
   revalidatePath("/manage/thanks");
 }
 
-// 自分が送ったポイントを取り消す(手持ちに戻る)
+// 自分が送ったポイントを取り消す(手持ちに戻る)。企画の終了後は不可
 export async function cancelThanks(id: string) {
   const { user, trip, db } = await requireTripContext();
+  if (thanksClosed(trip)) return { error: THANKS_CLOSED_MESSAGE };
   await db
     .delete(schema.thanksPoints)
     .where(

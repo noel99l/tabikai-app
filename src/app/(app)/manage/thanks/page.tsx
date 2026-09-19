@@ -9,7 +9,7 @@ import { Avatar, Card, Pill, SectionTitle, btnCls } from "@/components/ui";
 import { updateThanksBudget } from "@/lib/actions/thanks";
 import { fmtDateLabel, fmtDateTime } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
-import { thanksRevealed } from "@/lib/thanks";
+import { thanksClosed } from "@/lib/thanks";
 
 // 管理者向け: ありがとうポイントの集計(誰が何ポイント獲得したか)と手持ちの設定
 export default async function ManageThanksPage() {
@@ -39,7 +39,7 @@ export default async function ManageThanksPage() {
     .sort((a, b) => b.received - a.received || b.receivedCount - a.receivedCount || a.name.localeCompare(b.name, "ja"));
   const total = all.reduce((s, t) => s + t.points, 0);
   const senders = new Set(all.map((t) => t.fromUserId)).size;
-  const revealed = thanksRevealed(trip);
+  const closed = thanksClosed(trip);
 
   return (
     <>
@@ -88,7 +88,8 @@ export default async function ManageThanksPage() {
           <SubmitButton className={`${btnCls} ml-auto shrink-0`}>保存</SubmitButton>
         </form>
         <p className="mt-2 text-[11px] text-muted">
-          受け取った分の本人への公開: {revealed ? "公開中" : `企画終了(${fmtDateLabel(trip.endsAt)})後に自動で公開`}
+          受け取った分は本人にすぐ表示されます。送付の受付は企画終了({fmtDateLabel(trip.endsAt)})と同時に締め切り、手元に残ったポイントは消滅します
+          {closed ? "(締め切り済み)" : ""}。匿名で送られた分も管理者には送り主が表示されます。
         </p>
       </Card>
 
@@ -125,14 +126,19 @@ export default async function ManageThanksPage() {
               <div key={t.id} className="border-t border-line pt-2">
                 <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
                   <span className="font-bold">{nameOf(t.fromUserId)}</span>
+                  {t.anonymous && <Pill tone="info">匿名</Pill>}
                   <span className="text-muted">→</span>
                   <span className="font-bold">{nameOf(t.toUserId)}</span>
                   <Pill tone="violet">{t.points}pt</Pill>
                   <span className="ml-auto text-[10.5px] text-muted">{fmtDateTime(t.createdAt)}</span>
                 </div>
-                <p className="mt-1 text-[12.5px] leading-relaxed break-words whitespace-pre-wrap">
-                  {t.message}
-                </p>
+                {t.message ? (
+                  <p className="mt-1 text-[12.5px] leading-relaxed break-words whitespace-pre-wrap">
+                    {t.message}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[11.5px] text-muted">(コメントなし)</p>
+                )}
               </div>
             ))}
           </div>

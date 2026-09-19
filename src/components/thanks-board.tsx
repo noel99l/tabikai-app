@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { cancelThanks, giveThanks } from "@/lib/actions/thanks";
-import { THANKS_MESSAGE_MAX } from "@/lib/thanks";
+import { THANKS_CLOSED_MESSAGE, THANKS_MESSAGE_MAX } from "@/lib/thanks";
 import { IconHeart } from "./icons";
 import { FormError } from "./form-error";
 import { SubmitButton } from "./submit-button";
@@ -22,6 +22,7 @@ export type GivenThanks = {
   toName: string;
   points: number;
   message: string;
+  anonymous: boolean;
   timeLabel: string;
 };
 
@@ -30,14 +31,17 @@ export function ThanksBoard({
   members,
   budget,
   given,
+  closed,
 }: {
   members: ThanksMember[]; // 自分以外の承認済みメンバー
   budget: number;
   given: GivenThanks[];
+  closed: boolean; // 企画終了後: 送付・取り消し不可(残ポイントは消滅)
 }) {
   const [toUserId, setToUserId] = useState<string | null>(null);
   const [points, setPoints] = useState(1);
   const [message, setMessage] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const submitting = useRef(false);
@@ -58,8 +62,10 @@ export function ThanksBoard({
           <IconHeart className="h-6 w-6 text-primary" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] text-muted">手持ちのありがとうポイント</div>
-          <div className="text-xl font-extrabold tabular-nums">
+          <div className="text-[11px] text-muted">
+            {closed ? "手持ちのポイント(終了時に消滅)" : "手持ちのありがとうポイント"}
+          </div>
+          <div className={`text-xl font-extrabold tabular-nums ${closed ? "text-muted line-through" : ""}`}>
             {remaining}
             <span className="ml-1 text-[12px] font-bold text-muted">/ {budget} pt</span>
           </div>
@@ -76,6 +82,11 @@ export function ThanksBoard({
         </div>
       </Card>
 
+      {closed ? (
+        <p className="mt-2.5 rounded-[14px] border-2 border-dashed border-line bg-white p-4 text-center text-[12.5px] text-muted shadow-[3px_3px_0_var(--color-line)]">
+          {THANKS_CLOSED_MESSAGE}。
+        </p>
+      ) : (
       <form
         ref={formRef}
         className="mt-2.5 rounded-[14px] border-2 border-line bg-white p-3.5 shadow-[3px_3px_0_var(--color-line)]"
@@ -100,6 +111,7 @@ export function ThanksBoard({
               setMessage("");
               setPoints(1);
               setToUserId(null);
+              setAnonymous(false);
             }
           } catch {
             setError("送信に失敗しました。時間をおいて再度お試しください。");
@@ -110,7 +122,8 @@ export function ThanksBoard({
       >
         <h3 className="text-sm font-bold">ありがとうを送る</h3>
         <p className="mt-0.5 text-[11.5px] text-muted">
-          助けてもらった人、盛り上げてくれた人にメッセージつきでポイントを送りましょう。同じ人に何度でも送れます。受け取った人には企画の終了後に表示されます。
+          頑張っている人、企画に大きく協力してくれている人にポイントを送りましょう。同じ人に何度でも送れます。
+          コメントは任意で、匿名でも送れます。受け取った人にはすぐ表示され、手元に残ったポイントは企画の終了時に消滅します。
         </p>
 
         <label className={labelCls}>送る相手</label>
@@ -191,11 +204,10 @@ export function ThanksBoard({
           </div>
         </div>
 
-        <label className={labelCls} htmlFor="thanks-message">メッセージ</label>
+        <label className={labelCls} htmlFor="thanks-message">コメント(任意)</label>
         <textarea
           id="thanks-message"
           name="message"
-          required
           rows={3}
           maxLength={THANKS_MESSAGE_MAX}
           value={message}
@@ -207,14 +219,29 @@ export function ThanksBoard({
           {[...message].length} / {THANKS_MESSAGE_MAX}
         </p>
 
+        <label className="mt-1 flex items-center gap-2 text-[12.5px] font-bold">
+          <input
+            type="checkbox"
+            name="anonymous"
+            checked={anonymous}
+            onChange={(e) => setAnonymous(e.target.checked)}
+            className="h-4 w-4 accent-[var(--color-primary)]"
+          />
+          匿名で送る
+          <span className="text-[11px] font-medium text-muted">(受け取る人に名前が表示されません)</span>
+        </label>
+
         <FormError message={error} />
         <SubmitButton
           className={`${btnCls} mt-3 w-full py-3.5`}
-          disabled={!toUserId || remaining === 0 || !message.trim()}
+          disabled={!toUserId || remaining === 0}
         >
-          {target ? `${target.name} さんに ${points} pt 送る` : "相手を選んでください"}
+          {target
+            ? `${target.name} さんに ${points} pt ${anonymous ? "匿名で" : ""}送る`
+            : "相手を選んでください"}
         </SubmitButton>
       </form>
+      )}
 
       {/* 送った履歴 */}
       <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">
@@ -234,25 +261,36 @@ export function ThanksBoard({
                   <span className="rounded-full bg-primary-soft px-1.5 py-px text-[10.5px] font-bold text-primary">
                     {g.points}pt
                   </span>
+                  {g.anonymous && (
+                    <span className="ml-1 rounded-full bg-line-soft px-1.5 py-px text-[10px] font-bold text-muted">
+                      匿名
+                    </span>
+                  )}
                 </div>
-                <p className="mt-0.5 text-[12.5px] leading-relaxed break-words whitespace-pre-wrap">
-                  {g.message}
-                </p>
+                {g.message ? (
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed break-words whitespace-pre-wrap">
+                    {g.message}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-[11.5px] text-muted">(コメントなし)</p>
+                )}
                 <div className="mt-0.5 text-[10.5px] text-muted">{g.timeLabel}</div>
               </div>
+              {!closed && (
               <button
                 type="button"
                 onClick={() => {
                   if (!window.confirm(`${g.toName} さんへの ${g.points} pt を取り消しますか?(手持ちに戻ります)`)) return;
                   startTransition(async () => {
-                    await cancelThanks(g.id);
-                    toast.show("取り消しました");
+                    const res = await cancelThanks(g.id);
+                    toast.show(res?.error ?? "取り消しました");
                   });
                 }}
                 className="shrink-0 text-[11px] font-bold text-muted underline"
               >
                 取り消す
               </button>
+              )}
             </div>
           </Card>
         ))
