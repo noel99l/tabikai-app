@@ -1,7 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -357,6 +357,54 @@ export async function grantAdmin(userId: string) {
     senderId: user.id,
   });
   revalidatePath("/manage/members");
+}
+
+// メンバーを企画から外す(管理者のみ)。管理者は外せない(先に権限の整理が必要)。
+// 費用の分担・送ったありがとう・掲載した持ち物などの記録は残す(精算やポイントに影響させない)。
+// 今後のイベントには来ないので、この企画のイベントの参加登録・招待だけは削除する。
+export async function removeMember(userId: string) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  if (userId === user.id) throw new Error("自分自身は外せません(アカウント画面から企画を切り替えてください)");
+  const target = await db.query.tripMembers.findFirst({
+    where: and(eq(schema.tripMembers.tripId, trip.id), eq(schema.tripMembers.userId, userId)),
+  });
+  if (!target) return;
+  if (target.role === "admin") throw new Error("管理者は外せません");
+  const eventIds = (
+    await db.query.events.findMany({
+      where: eq(schema.events.tripId, trip.id),
+      columns: { id: true },
+    })
+  ).map((e) => e.id);
+  await Promise.all([
+    db
+      .delete(schema.tripMembers)
+      .where(and(eq(schema.tripMembers.tripId, trip.id), eq(schema.tripMembers.userId, userId))),
+    eventIds.length > 0
+      ? db
+          .delete(schema.eventParticipants)
+          .where(
+            and(
+              inArray(schema.eventParticipants.eventId, eventIds),
+              eq(schema.eventParticipants.userId, userId),
+            ),
+          )
+      : Promise.resolve(),
+  ]);
+  // 本人へは企画外のお知らせとして届く(この企画のお知らせ一覧はもう開けないため、リンクは企画選択へ)
+  await notify(db, trip.id, [userId], {
+    type: "member_request",
+    title: `「${trip.name}」のメンバーから外れました`,
+    body: `${user.name} さん(管理者)の操作です。再度参加するには招待リンクから申請してください。`,
+    link: "/trips",
+    senderId: user.id,
+  });
+  revalidatePath("/manage/members");
+  revalidatePath("/members");
+  revalidatePath("/schedule");
+  revalidatePath("/events");
+  revalidatePath("/expenses");
 }
 
 // 管理者招待URLのトークンを発行する(既存の未使用トークンがあれば再利用)
