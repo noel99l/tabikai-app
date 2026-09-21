@@ -39,7 +39,7 @@ export function ThanksBoard({
   budget: number; // 1日の手持ち
   given: GivenThanks[];
   closed: boolean; // 企画終了後: 送付・取り消し不可(残ポイントは消滅)
-  resetLabel: string; // 次のリセット時刻(例: "明日 4:00")
+  resetLabel: string | null; // 次のリセット時刻(例: "明日 4:00")。企画終了前にリセットが来ない場合は null
 }) {
   const [toUserId, setToUserId] = useState<string | null>(null);
   const [points, setPoints] = useState(1);
@@ -72,8 +72,11 @@ export function ThanksBoard({
             {remaining}
             <span className="ml-1 text-[12px] font-bold text-muted">/ {budget} pt</span>
           </div>
-          {!closed && (
+          {!closed && resetLabel && (
             <div className="text-[10.5px] text-muted">{resetLabel} に {budget} pt にリセット(残りは消滅)</div>
+          )}
+          {!closed && !resetLabel && (
+            <div className="text-[10.5px] text-muted">残りは企画の終了時に消滅します</div>
           )}
         </div>
         <div className="flex gap-1">
@@ -103,7 +106,7 @@ export function ThanksBoard({
             return;
           }
           if (remaining === 0) {
-            setError(`今日の手持ちを使い切りました(${resetLabel} にリセット)`);
+            setError(resetLabel ? `今日の手持ちを使い切りました(${resetLabel} にリセット)` : "手持ちを使い切りました");
             return;
           }
           submitting.current = true;

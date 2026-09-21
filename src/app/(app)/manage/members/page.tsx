@@ -13,11 +13,12 @@ import { SwitchButton } from "@/components/switch";
 import { approveMember, setAutoApprove, setExcludeFromSplitAll } from "@/lib/actions/trips";
 import { RecalcSplitAllButton } from "@/components/recalc-split-all";
 import { RemoveMemberButton } from "@/components/remove-member-button";
+import { RevokeAdminButton } from "@/components/revoke-admin-button";
 import { requireTripContext } from "@/lib/session";
 
 // メンバー参加承認(管理者のみ)。PC管理画面はフェーズ4で拡張予定。
 export default async function MembersPage() {
-  const { trip, db, isAdmin } = await requireTripContext();
+  const { user, trip, db, isAdmin } = await requireTripContext();
   if (!isAdmin) redirect("/home");
 
   const rows = await db
@@ -117,7 +118,7 @@ export default async function MembersPage() {
 
       <SectionTitle>メンバー({approved.length})</SectionTitle>
       <p className="mx-0.5 -mt-1 mb-1 text-[11.5px] text-muted">
-        「外す」でメンバーから除外できます(管理者は除外できません)。費用やポイントの記録は残ります。
+        「外す」でメンバーから除外できます(管理者は先に「権限を外す」で一般メンバーに戻してください)。費用やポイントの記録は残ります。
       </p>
       <p className="mx-0.5 -mt-1 mb-2 text-[11.5px] text-muted">
         「全員割り勘の対象」をオフにしたメンバーは「全員で割り勘」の費用に含まれません(子ども・ゲストなど)。
@@ -146,7 +147,10 @@ export default async function MembersPage() {
               )}
             </div>
             {m.role === "admin" ? (
-              <Pill tone="info">管理者</Pill>
+              <span className="flex shrink-0 items-center gap-1.5">
+                <Pill tone="info">管理者</Pill>
+                {m.userId !== user.id && <RevokeAdminButton userId={m.userId} name={m.name} />}
+              </span>
             ) : (
               <span className="flex shrink-0 items-center gap-1.5">
                 <GrantAdminButton userId={m.userId} name={m.name} />

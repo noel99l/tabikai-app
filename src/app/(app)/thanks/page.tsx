@@ -26,8 +26,12 @@ export default async function ThanksPage() {
   const now = new Date();
   const periodStart = thanksPeriodStart(now).getTime();
   const periodEnd = thanksPeriodEnd(now);
-  // 次のリセット(次の4:00 JST)の表示。今日中なら「今日 4:00」、それ以外は「明日 4:00」
-  const resetLabel = `${jstDateKey(periodEnd) === jstDateKey(now) ? "今日" : "明日"} ${fmtTime(periodEnd)}`;
+  // 次のリセット(次の4:00 JST)の表示。今日中なら「今日 4:00」、それ以外は「明日 4:00」。
+  // 次の4:00より前に企画が終わる場合はリセットは来ないので表示しない(残りは終了時に消滅)
+  const resetLabel =
+    periodEnd.getTime() < trip.endsAt.getTime()
+      ? `${jstDateKey(periodEnd) === jstDateKey(now) ? "今日" : "明日"} ${fmtTime(periodEnd)}`
+      : null;
   const receivedTotal = received.reduce((s, r) => s + r.points, 0);
 
   return (

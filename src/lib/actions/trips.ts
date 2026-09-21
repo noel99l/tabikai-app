@@ -359,6 +359,33 @@ export async function grantAdmin(userId: string) {
   revalidatePath("/manage/members");
 }
 
+// 管理者権限を外して一般メンバーに戻す(管理者のみ)。自分自身の権限は外せない
+// (管理者が0人になるのを防ぐ。別の管理者に外してもらう)
+export async function revokeAdmin(userId: string) {
+  const { user, trip, db, isAdmin } = await requireTripContext();
+  if (!isAdmin) throw new Error("管理者のみ操作できます");
+  if (userId === user.id) throw new Error("自分自身の管理者権限は外せません(別の管理者に依頼してください)");
+  await db
+    .update(schema.tripMembers)
+    .set({ role: "member" })
+    .where(
+      and(
+        eq(schema.tripMembers.tripId, trip.id),
+        eq(schema.tripMembers.userId, userId),
+        eq(schema.tripMembers.role, "admin"),
+      ),
+    );
+  await notify(db, trip.id, [userId], {
+    type: "member_request",
+    title: `「${trip.name}」の管理者権限が解除されました`,
+    body: `${user.name} さんの操作です。一般メンバーとして引き続き参加できます。`,
+    link: "/home",
+    senderId: user.id,
+  });
+  revalidatePath("/manage/members");
+  revalidatePath("/members");
+}
+
 // メンバーを企画から外す(管理者のみ)。管理者は外せない(先に権限の整理が必要)。
 // 費用の分担・送ったありがとう・掲載した持ち物などの記録は残す(精算やポイントに影響させない)。
 // 今後のイベントには来ないので、この企画のイベントの参加登録・招待だけは削除する。
