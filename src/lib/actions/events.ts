@@ -457,29 +457,33 @@ export async function updateEvent(eventId: string, formData: FormData) {
     if (recalculated > 0) revalidatePath("/expenses");
   }
 
-  // 参加登録者(操作者以外)へ変更を通知
-  const venue = await db.query.venues.findFirst({
-    where: eq(schema.venues.id, venueId),
-  });
-  const parts = await db.query.eventParticipants.findMany({
-    where: and(
-      eq(schema.eventParticipants.eventId, eventId),
-      eq(schema.eventParticipants.status, "joined"),
-      ne(schema.eventParticipants.userId, user.id),
-    ),
-  });
-  await notify(
-    db,
-    trip.id,
-    parts.map((p) => p.userId),
-    {
-      type: "event_invite",
-      title: `「${title}」の内容が変更されました`,
-      body: `${fmtDateTime(startsAt)} · ${venue?.name ?? ""}`,
-      link: `/events/${eventId}`,
-      senderId: user.id,
-    },
-  );
+  // 参加登録者(操作者以外)へ変更を通知(フォームで「通知しない」を選んだ場合は送らない。
+  // 参加者の追加・削除の通知は本人に関わる変更なので上で常に送る)
+  const skipNotify = formData.get("skipNotify") === "on";
+  if (!skipNotify) {
+    const venue = await db.query.venues.findFirst({
+      where: eq(schema.venues.id, venueId),
+    });
+    const parts = await db.query.eventParticipants.findMany({
+      where: and(
+        eq(schema.eventParticipants.eventId, eventId),
+        eq(schema.eventParticipants.status, "joined"),
+        ne(schema.eventParticipants.userId, user.id),
+      ),
+    });
+    await notify(
+      db,
+      trip.id,
+      parts.map((p) => p.userId),
+      {
+        type: "event_invite",
+        title: `「${title}」の内容が変更されました`,
+        body: `${fmtDateTime(startsAt)} · ${venue?.name ?? ""}`,
+        link: `/events/${eventId}`,
+        senderId: user.id,
+      },
+    );
+  }
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/schedule");
   revalidatePath("/home");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createEvent } from "@/lib/actions/events";
 import {
   EVENT_COLORS,
@@ -25,6 +25,19 @@ type Props = {
   onSuccess?: () => void;
 };
 
+// 入力途中の内容を端末に保持するキーと期限(モーダルを閉じても・画面が更新されても復元できる)
+const DRAFT_KEY = "event-create-draft";
+const DRAFT_TTL = 24 * 60 * 60 * 1000;
+type Draft = {
+  at: number;
+  fields: Record<string, string>; // name → value(テキスト系の入力)
+  inviteMode: "members" | "all" | "solo";
+  invitees: string[];
+  allDay: boolean;
+  color: string;
+  icon: string | null;
+};
+
 export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
   // 招待: デフォルトは「個別に招待」。solo = 自分だけの予定(お風呂の単独利用など)
   const [inviteMode, setInviteMode] = useState<"members" | "all" | "solo">("members");
@@ -33,8 +46,76 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
   const [color, setColor] = useState("red");
   const [icon, setIcon] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false); // 下書きを復元したことの表示
   const submitting = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const toast = useToast();
+
+  // マウント時: 24時間以内の下書きがあれば復元する(予定表からのプリセットがある場合は日時・会場は
+  // プリセットを優先し、タイトル・説明などのテキストだけ復元)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Draft;
+      if (!d.at || Date.now() - d.at > DRAFT_TTL) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      const hasText = Object.values(d.fields ?? {}).some((v) => v && v.trim());
+      if (!hasText) return;
+      setInviteMode(d.inviteMode ?? "members");
+      setInvitees(new Set(d.invitees ?? []));
+      setAllDay(!!d.allDay);
+      setColor(d.color ?? "red");
+      setIcon(d.icon ?? null);
+      const skip = new Set(defaults ? ["venueId", "date", "endDate", "start", "end"] : []);
+      // state 反映後に uncontrolled な入力へ値を戻す
+      requestAnimationFrame(() => {
+        const form = formRef.current;
+        if (!form) return;
+        for (const [name, value] of Object.entries(d.fields ?? {})) {
+          if (skip.has(name)) continue;
+          const el = form.elements.namedItem(name);
+          if (el && "value" in el && !(el instanceof RadioNodeList)) {
+            (el as HTMLInputElement).value = value;
+          }
+        }
+      });
+      setRestored(true);
+    } catch {
+      /* 壊れた下書きは無視 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 入力のたびに下書きを保存する(state 系は変化時に別途保存)
+  const saveDraft = () => {
+    const form = formRef.current;
+    if (!form) return;
+    try {
+      const fields: Record<string, string> = {};
+      for (const name of ["title", "venueId", "date", "endDate", "start", "end", "description", "budgetAmount", "budgetPer"]) {
+        const el = form.elements.namedItem(name);
+        if (el && "value" in el && !(el instanceof RadioNodeList)) fields[name] = (el as HTMLInputElement).value;
+      }
+      const d: Draft = { at: Date.now(), fields, inviteMode, invitees: [...invitees], allDay, color, icon };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    } catch {
+      /* noop */
+    }
+  };
+  useEffect(() => {
+    if (formRef.current && (formRef.current.elements.namedItem("title") as HTMLInputElement | null)?.value) saveDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteMode, invitees, allDay, color, icon]);
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* noop */
+    }
+  };
 
   const toggleInvitee = (id: string) => {
     setInvitees((prev) => {
@@ -47,6 +128,9 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
 
   return (
     <form
+      ref={formRef}
+      onInput={saveDraft}
+      onChange={saveDraft}
       action={async (formData) => {
         if (submitting.current) return;
         // 送信前のバリデーション(原因がわかるメッセージを表示)
@@ -64,6 +148,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
             setError(res.error);
             submitting.current = false;
           } else {
+            clearDraft();
             toast.show("イベントを作成しました");
             onSuccess?.();
           }
@@ -73,6 +158,27 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
         }
       }}
     >
+      {restored && (
+        <div className="mb-1 flex items-center justify-between gap-2 rounded-lg bg-primary-soft px-2.5 py-1.5 text-[11.5px] font-bold text-primary">
+          <span>入力途中の内容を復元しました</span>
+          <button
+            type="button"
+            onClick={() => {
+              clearDraft();
+              formRef.current?.reset();
+              setInviteMode("members");
+              setInvitees(new Set());
+              setAllDay(false);
+              setColor("red");
+              setIcon(null);
+              setRestored(false);
+            }}
+            className="shrink-0 underline"
+          >
+            白紙にする
+          </button>
+        </div>
+      )}
       <label className={labelCls} htmlFor="title">イベント名</label>
       <input className={inputCls} id="title" name="title" required placeholder="花火大会" />
 
@@ -278,6 +384,7 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
       <p className="mx-0.5 mt-3.5 text-[11.5px] text-muted">
         同じ会場・時間帯に複数のイベントを重ねて登録できます。
         参加者には開始前に自動でリマインド通知が届きます(各自オフ可)。
+        入力途中の内容はこの端末に自動保存され、閉じてしまっても次に開いたときに復元されます。
       </p>
 
       <FormError message={error} />

@@ -87,7 +87,11 @@ export default async function NotificationsPage() {
             <span className="min-w-0 flex-1">
               <Pill tone={meta.tone}>{meta.label}</Pill>
               <span className="mt-0.5 block text-[13.5px] font-bold">{n.title}</span>
-              {n.body && <span className="block text-xs text-muted">{n.body}</span>}
+              {n.body && (
+                <span className="block text-xs leading-relaxed break-words whitespace-pre-wrap text-muted">
+                  {n.body}
+                </span>
+              )}
               <span className="mt-0.5 block text-[10.5px] text-muted">
                 {fmtDateTime(n.createdAt)}
               </span>

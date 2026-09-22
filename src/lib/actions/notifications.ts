@@ -66,8 +66,9 @@ export async function sendAnnouncement(formData: FormData) {
     members.map((m) => m.userId).filter((id) => id !== user.id),
     {
       type: "announce",
-      title: body.length > 40 ? `${body.slice(0, 40)}…` : body,
-      body: `${user.name} さんより`,
+      // 本文は省略せず全文を残す(お知らせ一覧で全文表示)。見出しに送信者を出す
+      title: `${user.name} さんからのアナウンス`,
+      body,
       link: "/notifications",
       senderId: user.id,
     },

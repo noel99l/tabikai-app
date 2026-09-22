@@ -59,6 +59,7 @@ export function EventEdit({ eventId, venues, days, members, participantIds, host
     });
   };
   const [error, setError] = useState<string | null>(null);
+  const [notifyParticipants, setNotifyParticipants] = useState(true);
   const submitting = useRef(false);
   const toast = useToast();
 
@@ -317,9 +318,22 @@ export function EventEdit({ eventId, venues, days, members, participantIds, host
             〆切を過ぎると参加登録・参加の取り消しができなくなります(日付を空にすると〆切なし)。
           </p>
 
-          <p className="mx-0.5 mt-3 text-[11px] text-muted">
-            保存すると参加登録済みのメンバーへ変更のお知らせ+通知が届きます。
-          </p>
+          <label className="mt-3 flex items-start gap-2.5 rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-[13px] font-semibold">
+            <input
+              type="checkbox"
+              checked={notifyParticipants}
+              onChange={(e) => setNotifyParticipants(e.target.checked)}
+              className="mt-0.5 h-5 w-5 accent-primary"
+            />
+            <span>
+              参加者に変更を通知する
+              <span className="block text-[11px] font-medium text-muted">
+                オフにすると「内容が変更されました」のお知らせ・通知を送りません(誤字の修正など)。
+                参加者を追加・外したときの本人への通知は送られます。
+              </span>
+            </span>
+          </label>
+          {!notifyParticipants && <input type="hidden" name="skipNotify" value="on" />}
 
           <FormError message={error} />
 
