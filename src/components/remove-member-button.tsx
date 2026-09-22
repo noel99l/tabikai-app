@@ -13,7 +13,7 @@ export function RemoveMemberButton({ userId, name }: { userId: string; name: str
   const onRemove = () => {
     if (
       !window.confirm(
-        `${name} さんをこの企画のメンバーから外しますか?\n\n・イベントの参加登録・招待は解除されます\n・費用の分担やありがとうポイントの記録は残ります\n・再参加には招待リンクからの申請が必要です`,
+        `${name} さんをこの企画のメンバーから外しますか?\n\n・イベントの参加登録・招待は解除されます\n・費用の割り勘対象から外れ(¥0)、残りのメンバーで割り直されます\n・ありがとうポイントや持ち物の記録は残ります\n・再参加には招待リンクからの申請が必要です`,
       )
     )
       return;

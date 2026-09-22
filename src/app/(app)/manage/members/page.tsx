@@ -118,7 +118,7 @@ export default async function MembersPage() {
 
       <SectionTitle>メンバー({approved.length})</SectionTitle>
       <p className="mx-0.5 -mt-1 mb-1 text-[11.5px] text-muted">
-        「外す」でメンバーから除外できます(管理者は先に「権限を外す」で一般メンバーに戻してください)。費用やポイントの記録は残ります。
+        「外す」でメンバーから除外できます(管理者は先に「権限を外す」で一般メンバーに戻してください)。外した人は費用の割り勘対象から外れて残りで割り直され、ポイントなどの記録は残ります。
       </p>
       <p className="mx-0.5 -mt-1 mb-2 text-[11.5px] text-muted">
         「全員割り勘の対象」をオフにしたメンバーは「全員で割り勘」の費用に含まれません(子ども・ゲストなど)。

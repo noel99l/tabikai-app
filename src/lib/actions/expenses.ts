@@ -248,6 +248,8 @@ export async function resolveShare(formData: FormData) {
     .update(schema.expenseShares)
     .set({
       status: action === "force" ? "forced" : "excluded",
+      // 対象外にした分は金額を 0 にする(以前の分担額を残さない)
+      ...(action === "force" ? {} : { amount: 0 }),
       resolvedBy: user.id,
       resolvedAt: new Date(),
     })
@@ -389,7 +391,7 @@ export async function updateExpense(formData: FormData) {
       ops.push(
         db
           .update(schema.expenseShares)
-          .set({ status: "excluded", resolvedBy: user.id, resolvedAt: new Date() })
+          .set({ status: "excluded", amount: 0, resolvedBy: user.id, resolvedAt: new Date() })
           .where(
             and(
               eq(schema.expenseShares.expenseId, expenseId),

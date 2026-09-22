@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb, schema } from "@/db";
-import { syncSplitAllShares } from "@/lib/expense-shares";
+import { excludeMemberFromAllExpenses, syncSplitAllShares } from "@/lib/expense-shares";
 import { jstDate } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { requireTripContext, requireUser, TRIP_COOKIE } from "@/lib/session";
@@ -387,11 +387,16 @@ export async function revokeAdmin(userId: string) {
 }
 
 // メンバーを企画から外す(管理者のみ)。管理者は外せない(先に権限の整理が必要)。
-// 費用の分担・送ったありがとう・掲載した持ち物などの記録は残す(精算やポイントに影響させない)。
-// 今後のイベントには来ないので、この企画のイベントの参加登録・招待だけは削除する。
+// 費用の分担は対象外(¥0)にして残りのメンバーで割り直す(立て替えた記録は残る)。
+// 送ったありがとう・掲載した持ち物などの記録は残す。
+// 今後のイベントには来ないので、この企画のイベントの参加登録・招待は削除する。
+// 精算を締めた後は割り直せないため外せない(締めを解除してから)。
 export async function removeMember(userId: string) {
   const { user, trip, db, isAdmin } = await requireTripContext();
   if (!isAdmin) throw new Error("管理者のみ操作できます");
+  if (trip.expensesClosedAt) {
+    throw new Error("精算を締めた後はメンバーを外せません(締めを解除してから操作してください)");
+  }
   if (userId === user.id) throw new Error("自分自身は外せません(アカウント画面から企画を切り替えてください)");
   const target = await db.query.tripMembers.findFirst({
     where: and(eq(schema.tripMembers.tripId, trip.id), eq(schema.tripMembers.userId, userId)),
@@ -419,6 +424,8 @@ export async function removeMember(userId: string) {
           )
       : Promise.resolve(),
   ]);
+  // 費用の分担を対象外にして残りで割り直す
+  await excludeMemberFromAllExpenses(db, trip.id, userId, user.id);
   // 本人へは企画外のお知らせとして届く(この企画のお知らせ一覧はもう開けないため、リンクは企画選択へ)
   await notify(db, trip.id, [userId], {
     type: "member_request",

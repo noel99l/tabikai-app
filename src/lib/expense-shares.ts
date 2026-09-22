@@ -33,6 +33,15 @@ export async function redistributeShares(
   const shares = await db.query.expenseShares.findMany({
     where: eq(schema.expenseShares.expenseId, expense.id),
   });
+  // 対象外の分担は金額を 0 にする(以前の分担額が残らないように)
+  if (shares.some((s) => s.status === "excluded" && s.amount !== 0)) {
+    await db
+      .update(schema.expenseShares)
+      .set({ amount: 0 })
+      .where(
+        and(eq(schema.expenseShares.expenseId, expense.id), eq(schema.expenseShares.status, "excluded")),
+      );
+  }
   const active = shares.filter((s) => s.status !== "excluded");
   if (active.length === 0) return;
   const amounts = splitAmount(expense.amount, active.length);
@@ -119,7 +128,7 @@ export async function syncSplitAllShares(
       ops.push(
         db
           .update(schema.expenseShares)
-          .set({ status: "excluded", resolvedBy: actorId, resolvedAt: new Date() })
+          .set({ status: "excluded", amount: 0, resolvedBy: actorId, resolvedAt: new Date() })
           .where(
             and(
               eq(schema.expenseShares.expenseId, expense.id),
@@ -223,7 +232,7 @@ export async function syncEventExpenseShares(
       ops.push(
         db
           .update(schema.expenseShares)
-          .set({ status: "excluded", resolvedBy: actorId, resolvedAt: new Date() })
+          .set({ status: "excluded", amount: 0, resolvedBy: actorId, resolvedAt: new Date() })
           .where(
             and(
               eq(schema.expenseShares.expenseId, expense.id),
@@ -241,4 +250,43 @@ export async function syncEventExpenseShares(
     changed++;
   }
   return changed;
+}
+
+// メンバーが企画から退会したときに、その人の分担を対象外(¥0)にして残りで割り直す。
+// 立替者としての記録は残る(立て替えた分は精算で受け取れる)。戻り値は割り直した費用の件数
+export async function excludeMemberFromAllExpenses(
+  db: Db,
+  tripId: string,
+  userId: string,
+  actorId: string,
+): Promise<number> {
+  const rows = await db
+    .select({
+      expense: schema.expenses,
+      status: schema.expenseShares.status,
+    })
+    .from(schema.expenseShares)
+    .innerJoin(schema.expenses, eq(schema.expenses.id, schema.expenseShares.expenseId))
+    .where(and(eq(schema.expenses.tripId, tripId), eq(schema.expenseShares.userId, userId)));
+  const targets = rows.filter((r) => r.status !== "excluded");
+  if (targets.length === 0) return 0;
+  await db
+    .update(schema.expenseShares)
+    .set({ status: "excluded", amount: 0, resolvedBy: actorId, resolvedAt: new Date() })
+    .where(
+      and(
+        inArray(
+          schema.expenseShares.expenseId,
+          targets.map((r) => r.expense.id),
+        ),
+        eq(schema.expenseShares.userId, userId),
+      ),
+    );
+  for (const r of targets) {
+    await redistributeShares(db, r.expense, actorId, {
+      title: `「${r.expense.title}」の割り勘額が変更されました`,
+      body: "退会したメンバーの分を残りで割り直しました",
+    });
+  }
+  return targets.length;
 }
