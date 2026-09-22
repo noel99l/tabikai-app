@@ -63,6 +63,16 @@ export function ExpenseForm({ members, events, selfId, onSuccess }: Props) {
         placeholder="18400"
       />
 
+      <label className={labelCls} htmlFor="note">メモ(任意)</label>
+      <textarea
+        className="w-full rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-sm"
+        id="note"
+        name="note"
+        rows={2}
+        maxLength={500}
+        placeholder="内訳や補足(例: 肉3kg・炭・紙皿。レシート2枚ぶん)"
+      />
+
       <label className={labelCls} htmlFor="paidBy">立て替えた人</label>
       <select className={inputCls} id="paidBy" name="paidBy" defaultValue={selfId}>
         {members.map((m) => (

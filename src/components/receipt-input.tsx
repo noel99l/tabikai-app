@@ -1,45 +1,72 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { blobToBase64, compressReceipt, fmtBytes } from "@/lib/receipt-image";
+import {
+  RECEIPT_MAX_PER_EXPENSE,
+  RECEIPT_MAX_PER_SUBMIT,
+  blobToBase64,
+  compressReceipt,
+  fmtBytes,
+} from "@/lib/receipt-image";
 import { labelCls } from "./ui";
 
-// 領収書画像の添付欄。選んだ画像を端末側で圧縮し、base64をhidden inputでフォームに載せる。
-// 既存画像(existingId)がある場合は差し替え・削除もここから行う。
+type NewFile = { key: string; preview: string; data: string; before: number; after: number };
+
+// 領収書画像の添付欄(複数枚)。選んだ画像を端末側で圧縮し、base64 を hidden input で載せる。
+// 既存画像(existingIds)は個別に削除でき、削除分は removeReceiptIds で送る。
 export function ReceiptInput({
-  existingId = null,
+  existingIds = [],
   idPrefix,
 }: {
-  existingId?: string | null;
+  existingIds?: string[];
   idPrefix: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [data, setData] = useState<string | null>(null);
-  const [size, setSize] = useState<{ before: number; after: number } | null>(null);
-  const [removed, setRemoved] = useState(false);
+  const [files, setFiles] = useState<NewFile[]>([]);
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
 
-  // プレビュー用のobject URLを解放
+  // プレビュー用の object URL を解放
   useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview);
+      for (const f of files) URL.revokeObjectURL(f.preview);
     };
-  }, [preview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const pick = async (file: File | undefined) => {
-    if (!file) return;
+  const kept = existingIds.filter((id) => !removed.has(id));
+  const total = kept.length + files.length;
+
+  const pick = async (list: FileList | null) => {
+    if (!list || list.length === 0) return;
     setError(null);
+    const picked = [...list];
+    if (files.length + picked.length > RECEIPT_MAX_PER_SUBMIT) {
+      setError(`一度に追加できるのは${RECEIPT_MAX_PER_SUBMIT}枚までです`);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    if (total + picked.length > RECEIPT_MAX_PER_EXPENSE) {
+      setError(`領収書は1つの費用に${RECEIPT_MAX_PER_EXPENSE}枚までです`);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     setBusy(true);
     try {
-      const { blob } = await compressReceipt(file);
-      const b64 = await blobToBase64(blob);
-      if (preview) URL.revokeObjectURL(preview);
-      setPreview(URL.createObjectURL(blob));
-      setData(b64);
-      setSize({ before: file.size, after: blob.size });
-      setRemoved(false);
+      const added: NewFile[] = [];
+      for (const file of picked) {
+        const { blob } = await compressReceipt(file);
+        const data = await blobToBase64(blob);
+        added.push({
+          key: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          preview: URL.createObjectURL(blob),
+          data,
+          before: file.size,
+          after: blob.size,
+        });
+      }
+      setFiles((prev) => [...prev, ...added]);
     } catch (e) {
       setError((e as Error).message || "画像を読み込めませんでした");
     } finally {
@@ -48,95 +75,110 @@ export function ReceiptInput({
     }
   };
 
-  const clear = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(null);
-    setData(null);
-    setSize(null);
-    // 既存画像がある状態で消したら「削除」として送る
-    if (existingId) setRemoved(true);
+  const removeNew = (key: string) => {
+    setFiles((prev) => {
+      const f = prev.find((x) => x.key === key);
+      if (f) URL.revokeObjectURL(f.preview);
+      return prev.filter((x) => x.key !== key);
+    });
   };
 
-  const showExisting = !!existingId && !removed && !preview;
   const inputId = `${idPrefix}-receipt`;
+  const canAdd = total < RECEIPT_MAX_PER_EXPENSE && files.length < RECEIPT_MAX_PER_SUBMIT;
 
   return (
     <div>
       <label className={labelCls} htmlFor={inputId}>
-        領収書(任意)
+        領収書(任意・{RECEIPT_MAX_PER_EXPENSE}枚まで)
       </label>
       <input
         ref={fileRef}
         id={inputId}
         type="file"
         accept="image/*"
+        multiple
         className="sr-only"
-        onChange={(e) => pick(e.target.files?.[0])}
+        onChange={(e) => pick(e.target.files)}
       />
-      {/* サーバーへ送る値(圧縮済みbase64) */}
-      <input type="hidden" name="receiptData" value={data ?? ""} />
-      <input type="hidden" name="receiptMime" value={data ? "image/jpeg" : ""} />
-      {removed && !data && <input type="hidden" name="removeReceipt" value="on" />}
+      {/* サーバーへ送る値: 新規は圧縮済み base64、既存の削除は ID */}
+      {files.map((f) => (
+        <span key={f.key}>
+          <input type="hidden" name="receiptData" value={f.data} />
+          <input type="hidden" name="receiptMime" value="image/jpeg" />
+        </span>
+      ))}
+      {[...removed].map((id) => (
+        <input key={id} type="hidden" name="removeReceiptIds" value={id} />
+      ))}
 
-      {preview || showExisting ? (
-        <div className="rounded-[12px] border-2 border-line bg-white p-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={preview ?? `/api/receipts/${existingId}`}
-            alt="領収書"
-            className="mx-auto max-h-44 rounded-lg object-contain"
-          />
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="text-[11px] text-muted">
-              {size
-                ? `${fmtBytes(size.before)} → ${fmtBytes(size.after)} に圧縮`
-                : "登録済みの領収書"}
-            </span>
-            <span className="flex gap-1.5">
+      {total > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {kept.map((id) => (
+            <figure key={id} className="relative rounded-[12px] border-2 border-line bg-white p-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/receipts/${id}`}
+                alt="領収書"
+                className="h-24 w-full rounded-lg object-cover"
+              />
+              <figcaption className="mt-1 truncate text-center text-[10px] text-muted">登録済み</figcaption>
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={() => setRemoved((prev) => new Set(prev).add(id))}
                 disabled={busy}
-                className="rounded-full border-2 border-line bg-white px-2.5 py-1 text-[11px] font-bold text-primary disabled:opacity-50"
+                aria-label="この領収書を削除"
+                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-line bg-accent-soft text-[11px] font-bold text-accent disabled:opacity-50"
               >
-                差し替え
+                ✕
               </button>
+            </figure>
+          ))}
+          {files.map((f) => (
+            <figure key={f.key} className="relative rounded-[12px] border-2 border-primary bg-white p-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={f.preview} alt="領収書(追加)" className="h-24 w-full rounded-lg object-cover" />
+              <figcaption className="mt-1 truncate text-center text-[10px] text-muted">
+                {fmtBytes(f.before)} → {fmtBytes(f.after)}
+              </figcaption>
               <button
                 type="button"
-                onClick={clear}
+                onClick={() => removeNew(f.key)}
                 disabled={busy}
-                className="rounded-full border-2 border-line bg-accent-soft px-2.5 py-1 text-[11px] font-bold text-accent disabled:opacity-50"
+                aria-label="この領収書を取り消す"
+                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-line bg-accent-soft text-[11px] font-bold text-accent disabled:opacity-50"
               >
-                削除
+                ✕
               </button>
-            </span>
-          </div>
+            </figure>
+          ))}
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-line bg-white px-3 py-3 text-[12.5px] font-bold text-muted disabled:opacity-50"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden
-          >
-            <path d="M4 7h3l2-3h6l2 3h3v13H4z" />
-            <circle cx="12" cy="13" r="3.5" />
-          </svg>
-          {busy ? "圧縮中…" : "写真を撮る / 選ぶ"}
-        </button>
       )}
+
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={busy || !canAdd}
+        className={`flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-line bg-white px-3 py-3 text-[12.5px] font-bold text-muted disabled:opacity-50 ${
+          total > 0 ? "mt-2" : ""
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden
+        >
+          <path d="M4 7h3l2-3h6l2 3h3v13H4z" />
+          <circle cx="12" cy="13" r="3.5" />
+        </svg>
+        {busy ? "圧縮中…" : total > 0 ? "写真を追加する" : "写真を撮る / 選ぶ(複数可)"}
+      </button>
       <p className="mx-0.5 mt-1.5 text-[11px] text-muted">
-        画像は端末で縮小・圧縮してから保存されます(数百KB程度)。
+        画像は端末で縮小・圧縮してから保存されます(1枚あたり数百KB程度)。一度に追加できるのは{RECEIPT_MAX_PER_SUBMIT}枚までです。
       </p>
       {error && <p className="mx-0.5 mt-1 text-[11.5px] font-bold text-primary">{error}</p>}
     </div>

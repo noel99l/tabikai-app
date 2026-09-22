@@ -221,6 +221,7 @@ export const expenses = pgTable("expenses", {
   eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   amount: integer("amount").notNull(), // 円
+  note: text("note"), // メモ(任意。内訳や補足)
   paidBy: uuid("paid_by")
     .notNull()
     .references(() => users.id),

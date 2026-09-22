@@ -5,6 +5,10 @@ export const RECEIPT_MAX_EDGE = 1600;
 export const RECEIPT_TARGET_BYTES = 450 * 1024;
 // サーバー側で受け付ける上限(圧縮に失敗しても極端なサイズは弾く)
 export const RECEIPT_HARD_LIMIT_BYTES = 1500 * 1024;
+// 1つの費用に添付できる領収書の上限枚数と、1回の送信で追加できる枚数
+// (サーバーアクションの本文サイズ上限に収めるため。1枚あたり数百KBの base64)
+export const RECEIPT_MAX_PER_EXPENSE = 6;
+export const RECEIPT_MAX_PER_SUBMIT = 4;
 
 export type CompressedReceipt = {
   blob: Blob;

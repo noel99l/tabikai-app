@@ -6,46 +6,59 @@ import { schema } from "@/db";
 import { redistributeShares, splitAmount } from "@/lib/expense-shares";
 import { yen } from "@/lib/format";
 import { notify } from "@/lib/notify";
-import { RECEIPT_HARD_LIMIT_BYTES } from "@/lib/receipt-image";
+import {
+  RECEIPT_HARD_LIMIT_BYTES,
+  RECEIPT_MAX_PER_EXPENSE,
+  RECEIPT_MAX_PER_SUBMIT,
+} from "@/lib/receipt-image";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 const RECEIPT_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-// フォームの領収書(端末側で圧縮済みのbase64)を検証してバイナリにする。
-// 添付なしは null、不正な場合は error を返す
-function parseReceipt(
-  formData: FormData,
-): { bytes: Buffer; mime: string } | null | { error: string } {
-  const data = String(formData.get("receiptData") ?? "");
-  if (!data) return null;
-  const mime = String(formData.get("receiptMime") ?? "");
-  if (!RECEIPT_MIMES.has(mime)) return { error: "領収書はJPEG/PNG/WebP画像のみ添付できます" };
-  // base64長からおおよそのサイズを先に見て、巨大な入力をデコード前に弾く
-  if (data.length > (RECEIPT_HARD_LIMIT_BYTES * 4) / 3 + 4) {
-    return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+// フォームの領収書(端末側で圧縮済みのbase64、複数可)を検証してバイナリにする。
+// receiptData / receiptMime は同じ順序で複数送られる。不正な場合は error を返す
+type ReceiptFile = { bytes: Buffer; mime: string };
+function parseReceipts(formData: FormData): ReceiptFile[] | { error: string } {
+  const datas = formData.getAll("receiptData").map(String).filter(Boolean);
+  const mimes = formData.getAll("receiptMime").map(String);
+  if (datas.length > RECEIPT_MAX_PER_SUBMIT) {
+    return { error: `領収書は一度に${RECEIPT_MAX_PER_SUBMIT}枚まで追加できます` };
   }
-  const bytes = Buffer.from(data, "base64");
-  if (bytes.length === 0 || bytes.length > RECEIPT_HARD_LIMIT_BYTES) {
-    return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+  const out: ReceiptFile[] = [];
+  for (let i = 0; i < datas.length; i++) {
+    const data = datas[i];
+    const mime = mimes[i] ?? "";
+    if (!RECEIPT_MIMES.has(mime)) return { error: "領収書はJPEG/PNG/WebP画像のみ添付できます" };
+    // base64長からおおよそのサイズを先に見て、巨大な入力をデコード前に弾く
+    if (data.length > (RECEIPT_HARD_LIMIT_BYTES * 4) / 3 + 4) {
+      return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+    }
+    const bytes = Buffer.from(data, "base64");
+    if (bytes.length === 0 || bytes.length > RECEIPT_HARD_LIMIT_BYTES) {
+      return { error: "領収書の画像が大きすぎます。別の画像でお試しください" };
+    }
+    out.push({ bytes, mime });
   }
-  return { bytes, mime };
+  return out;
 }
 
-async function saveReceipt(
+// 領収書を追加保存する(既存は残す。削除は removeReceiptIds で個別に行う)
+async function saveReceipts(
   db: Awaited<ReturnType<typeof requireTripContext>>["db"],
   tripId: string,
   expenseId: string,
-  receipt: { bytes: Buffer; mime: string },
+  receipts: ReceiptFile[],
 ) {
-  // 差し替えは削除→新規(IDが変わるので配信側の長期キャッシュと相性が良い)
-  await db.delete(schema.expenseReceipts).where(eq(schema.expenseReceipts.expenseId, expenseId));
-  await db.insert(schema.expenseReceipts).values({
-    expenseId,
-    tripId,
-    mime: receipt.mime,
-    bytes: receipt.bytes,
-    size: receipt.bytes.length,
-  });
+  if (receipts.length === 0) return;
+  await db.insert(schema.expenseReceipts).values(
+    receipts.map((r) => ({
+      expenseId,
+      tripId,
+      mime: r.mime,
+      bytes: r.bytes,
+      size: r.bytes.length,
+    })),
+  );
 }
 
 // 「全員で割り勘」の対象者。管理者がメンバー管理で対象外にしたメンバーを除く
@@ -58,6 +71,7 @@ export async function createExpense(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const amount = Number(String(formData.get("amount") ?? "").replace(/[^\d]/g, ""));
   const paidBy = String(formData.get("paidBy") ?? user.id);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
   const splitAll = formData.get("splitAll") === "on";
   const eventId = String(formData.get("eventId") ?? "");
   const memberIds = formData.getAll("memberIds").map(String);
@@ -67,8 +81,11 @@ export async function createExpense(formData: FormData) {
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
-  const receipt = parseReceipt(formData);
-  if (receipt && "error" in receipt) return { error: receipt.error };
+  const receipts = parseReceipts(formData);
+  if ("error" in receipts) return { error: receipts.error };
+  if (receipts.length > RECEIPT_MAX_PER_EXPENSE) {
+    return { error: `領収書は1つの費用に${RECEIPT_MAX_PER_EXPENSE}枚までです` };
+  }
 
   const members = await getApprovedMembers();
   let targetIds: string[];
@@ -92,6 +109,7 @@ export async function createExpense(formData: FormData) {
       eventId: splitAll ? null : eventId || null,
       title,
       amount,
+      note,
       paidBy,
       splitAll,
       createdBy: user.id,
@@ -109,7 +127,7 @@ export async function createExpense(formData: FormData) {
         status: splitAll || userId === paidBy ? ("approved" as const) : ("pending" as const),
       })),
     ),
-    receipt ? saveReceipt(db, trip.id, expense.id, receipt) : Promise.resolve(),
+    saveReceipts(db, trip.id, expense.id, receipts),
   ]);
 
   const payerName = members.find((m) => m.userId === paidBy)?.name ?? "";
@@ -272,6 +290,7 @@ export async function updateExpense(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const amount = Number(String(formData.get("amount") ?? "").replace(/[^\d]/g, ""));
   const paidBy = String(formData.get("paidBy") ?? "");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
   const expense = await db.query.expenses.findFirst({
     where: eq(schema.expenses.id, expenseId),
   });
@@ -285,9 +304,20 @@ export async function updateExpense(formData: FormData) {
   if (!title || !Number.isFinite(amount) || amount <= 0) {
     return { error: "内容と金額を入力してください" };
   }
-  const receipt = parseReceipt(formData);
-  if (receipt && "error" in receipt) return { error: receipt.error };
-  const removeReceipt = formData.get("removeReceipt") === "on";
+  const receipts = parseReceipts(formData);
+  if ("error" in receipts) return { error: receipts.error };
+  // 個別に削除する既存の領収書ID
+  const removeReceiptIds = formData.getAll("removeReceiptIds").map(String).filter(Boolean);
+  if (receipts.length > 0 || removeReceiptIds.length > 0) {
+    const existing = await db
+      .select({ id: schema.expenseReceipts.id })
+      .from(schema.expenseReceipts)
+      .where(eq(schema.expenseReceipts.expenseId, expenseId));
+    const remaining = existing.filter((r) => !removeReceiptIds.includes(r.id)).length;
+    if (remaining + receipts.length > RECEIPT_MAX_PER_EXPENSE) {
+      return { error: `領収書は1つの費用に${RECEIPT_MAX_PER_EXPENSE}枚までです` };
+    }
+  }
 
   // 割り勘対象の指定(splitMode があれば選び方ごと更新する。無ければ従来どおり据え置き)
   const splitMode = String(formData.get("splitMode") ?? "");
@@ -324,15 +354,19 @@ export async function updateExpense(formData: FormData) {
     }),
     db
       .update(schema.expenses)
-      .set({ title, amount, paidBy: newPaidBy, splitAll, eventId })
+      .set({ title, amount, note, paidBy: newPaidBy, splitAll, eventId })
       .where(eq(schema.expenses.id, expenseId)),
-    receipt
-      ? saveReceipt(db, expense.tripId, expenseId, receipt)
-      : removeReceipt
-        ? db
-            .delete(schema.expenseReceipts)
-            .where(eq(schema.expenseReceipts.expenseId, expenseId))
-        : Promise.resolve(),
+    removeReceiptIds.length > 0
+      ? db
+          .delete(schema.expenseReceipts)
+          .where(
+            and(
+              eq(schema.expenseReceipts.expenseId, expenseId),
+              inArray(schema.expenseReceipts.id, removeReceiptIds),
+            ),
+          )
+      : Promise.resolve(),
+    saveReceipts(db, expense.tripId, expenseId, receipts),
   ]);
 
   // 対象の差分(追加・除外)を反映する

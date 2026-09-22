@@ -18,11 +18,12 @@ type Props = {
     id: string;
     title: string;
     amount: number;
+    note: string | null; // メモ(任意)
     paidBy: string;
     splitAll: boolean;
     eventId: string | null;
     eventTitle: string | null;
-    receiptId: string | null; // 領収書画像(なければnull)
+    receiptIds: string[]; // 領収書画像(複数可)
   };
   shares: ShareInfo[];
   members: { userId: string; name: string; excludedFromAll?: boolean }[];
@@ -43,7 +44,7 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [receiptLarge, setReceiptLarge] = useState(false); // 領収書の拡大表示
+  const [receiptLarge, setReceiptLarge] = useState<string | null>(null); // 拡大表示中の領収書ID
   const [split, setSplit] = useState<SplitState | null>(null);
   const submitting = useRef(false);
   const toast = useToast();
@@ -82,7 +83,8 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
           <div className="text-[11.5px] text-muted">
             立替: {nameOf(expense.paidBy)} · 対象{active.length}人
             {expense.eventTitle ? ` · ${expense.eventTitle}` : ""}
-            {expense.receiptId && " · 領収書あり"}
+            {expense.receiptIds.length > 0 &&
+              ` · 領収書${expense.receiptIds.length > 1 ? `${expense.receiptIds.length}枚` : "あり"}`}
           </div>
         </div>
         <div className="shrink-0 text-base font-extrabold tabular-nums">
@@ -109,34 +111,64 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
                 </span>
               </div>
               {expense.eventTitle && (
-                <div className="flex justify-between py-2 text-[13px]">
+                <div className="flex justify-between border-b border-line py-2 text-[13px]">
                   <span className="text-muted">関連イベント</span>
                   <span className="font-semibold">{expense.eventTitle}</span>
                 </div>
               )}
+              {expense.note && (
+                <div className="py-2 text-[13px]">
+                  <span className="block text-muted">メモ</span>
+                  <p className="mt-0.5 leading-relaxed break-words whitespace-pre-wrap">{expense.note}</p>
+                </div>
+              )}
             </div>
 
-            {expense.receiptId && (
+            {expense.receiptIds.length > 0 && (
               <>
-                <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">領収書</h3>
-                <button
-                  type="button"
-                  onClick={() => setReceiptLarge((v) => !v)}
-                  aria-label={receiptLarge ? "領収書を縮小" : "領収書を拡大"}
-                  className="block w-full rounded-[14px] border-2 border-line bg-white p-2 shadow-[3px_3px_0_var(--color-line)]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/api/receipts/${expense.receiptId}`}
-                    alt={`${expense.title} の領収書`}
-                    className={`mx-auto rounded-lg object-contain ${
-                      receiptLarge ? "w-full" : "max-h-40"
-                    }`}
-                  />
-                  <span className="mt-1.5 block text-[11px] text-muted">
-                    {receiptLarge ? "タップで縮小" : "タップで拡大"}
-                  </span>
-                </button>
+                <h3 className="mx-0.5 mt-4 mb-2 text-[13px] font-bold text-muted">
+                  領収書({expense.receiptIds.length}枚)
+                </h3>
+                {receiptLarge ? (
+                  <button
+                    type="button"
+                    onClick={() => setReceiptLarge(null)}
+                    aria-label="領収書を縮小"
+                    className="block w-full rounded-[14px] border-2 border-line bg-white p-2 shadow-[3px_3px_0_var(--color-line)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/receipts/${receiptLarge}`}
+                      alt={`${expense.title} の領収書`}
+                      className="mx-auto w-full rounded-lg object-contain"
+                    />
+                    <span className="mt-1.5 block text-[11px] text-muted">タップで一覧に戻る</span>
+                  </button>
+                ) : (
+                  <div
+                    className={`grid gap-2 ${expense.receiptIds.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+                  >
+                    {expense.receiptIds.map((rid, i) => (
+                      <button
+                        key={rid}
+                        type="button"
+                        onClick={() => setReceiptLarge(rid)}
+                        aria-label={`領収書${i + 1}を拡大`}
+                        className="rounded-[14px] border-2 border-line bg-white p-1.5 shadow-[3px_3px_0_var(--color-line)]"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/receipts/${rid}`}
+                          alt={`${expense.title} の領収書${i + 1}`}
+                          className={`mx-auto rounded-lg object-contain ${
+                            expense.receiptIds.length === 1 ? "max-h-40" : "h-32 w-full object-cover"
+                          }`}
+                        />
+                        <span className="mt-1 block text-[10.5px] text-muted">タップで拡大</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -236,6 +268,16 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
               defaultValue={expense.amount}
               required
             />
+            <label className={labelCls} htmlFor={`edit-note-${expense.id}`}>メモ(任意)</label>
+            <textarea
+              className="w-full rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-sm"
+              id={`edit-note-${expense.id}`}
+              name="note"
+              rows={2}
+              maxLength={500}
+              defaultValue={expense.note ?? ""}
+              placeholder="内訳や補足"
+            />
             <label className={labelCls} htmlFor={`edit-paid-${expense.id}`}>立て替えた人</label>
             <select
               className={inputCls}
@@ -258,7 +300,7 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
             <p className="mx-0.5 mt-2 text-[11px] text-muted">
               金額や対象メンバーを変更すると割り勘額が再計算されます。承認済みの分はそのまま確定で再承認は不要、追加したメンバーだけ承認待ちになります。「全員で割り勘」から個別に変えた場合は1人あたりの金額が上がるため、対象メンバー全員が改めて承認待ちになります。外したメンバーには通知されます。
             </p>
-            <ReceiptInput existingId={expense.receiptId} idPrefix={`edit-${expense.id}`} />
+            <ReceiptInput existingIds={expense.receiptIds} idPrefix={`edit-${expense.id}`} />
             <FormError message={error} />
             <div className="mt-4 flex gap-2">
               <button

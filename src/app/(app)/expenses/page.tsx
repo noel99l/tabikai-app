@@ -47,6 +47,7 @@ async function ExpensesList() {
               expenses.map((e) => e.id),
             ),
           )
+          .orderBy(schema.expenseReceipts.createdAt)
       : Promise.resolve([]),
     // 費用フォームの「イベントの参加者から選択」用に参加登録者を取得
     tripEvents.length
@@ -128,11 +129,12 @@ async function ExpensesList() {
               id: x.id,
               title: x.title,
               amount: x.amount,
+              note: x.note,
               paidBy: x.paidBy,
               splitAll: x.splitAll,
               eventId: x.eventId,
               eventTitle: eventTitleOf(x.eventId),
-              receiptId: receipts.find((r) => r.expenseId === x.id)?.id ?? null,
+              receiptIds: receipts.filter((r) => r.expenseId === x.id).map((r) => r.id),
             }}
             shares={xs.map((s) => ({
               userId: s.userId,
