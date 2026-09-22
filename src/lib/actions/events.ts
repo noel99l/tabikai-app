@@ -216,7 +216,7 @@ export async function declineEvent(eventId: string) {
   revalidatePath("/events");
 }
 
-// イベントへのコメント投稿。参加者(参加/招待)+主催者へお知らせ+通知
+// イベントへのコメント投稿。参加登録済みの参加者+主催者へお知らせ+通知(招待中は対象外)
 export async function addEventComment(eventId: string, formData: FormData) {
   const { user, trip, db } = await requireTripContext();
   const body = String(formData.get("body") ?? "").trim();
@@ -232,12 +232,11 @@ export async function addEventComment(eventId: string, formData: FormData) {
   const participants = await db.query.eventParticipants.findMany({
     where: eq(schema.eventParticipants.eventId, eventId),
   });
+  // 通知は参加登録済み(joined)の人と主催者だけ。招待中・不参加の人には送らない
   const targets = [
     ...new Set([
       event.hostId,
-      ...participants
-        .filter((p) => p.status === "joined" || p.status === "invited")
-        .map((p) => p.userId),
+      ...participants.filter((p) => p.status === "joined").map((p) => p.userId),
     ]),
   ].filter((id) => id !== user.id);
   await notify(db, trip.id, targets, {
