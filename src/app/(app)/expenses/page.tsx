@@ -130,7 +130,7 @@ async function ExpensesList() {
                   </b>
                 )}
                 {s.toUserId === user.id ? (
-                  // 受け取る側: 受け取り済みのチェック(外すこともできる)
+                  // 受け取る側: 受取済のチェック(外すこともできる)
                   <form action={setSettlementReceived.bind(null, s.id, !received)} className="shrink-0">
                     <SubmitButton
                       spinner={false}
@@ -146,7 +146,7 @@ async function ExpensesList() {
                       >
                         {received && "✓"}
                       </span>
-                      受け取り済み
+                      受取済
                     </SubmitButton>
                   </form>
                 ) : received ? (

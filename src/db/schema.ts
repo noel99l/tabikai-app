@@ -284,7 +284,7 @@ export const settlements = pgTable("settlements", {
     .notNull()
     .references(() => users.id),
   amount: integer("amount").notNull(),
-  receivedAt: timestamp("received_at", { withTimezone: true }), // 受け取り側が「受け取り済み」にした時刻
+  receivedAt: timestamp("received_at", { withTimezone: true }), // 受け取り側が「受取済」にした時刻
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
