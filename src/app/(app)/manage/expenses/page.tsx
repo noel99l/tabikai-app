@@ -96,6 +96,7 @@ export default async function ManageExpensesPage() {
                       <th className="px-2.5 py-2 text-left font-semibold">支払う人</th>
                       <th className="px-2.5 py-2 text-left font-semibold">受け取る人</th>
                       <th className="px-2.5 py-2 text-right font-semibold">金額</th>
+                      <th className="px-2.5 py-2 text-center font-semibold">受取</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -105,6 +106,13 @@ export default async function ManageExpensesPage() {
                         <td className="px-2.5 py-2">{nameOf(s.toUserId)}</td>
                         <td className="px-2.5 py-2 text-right font-bold tabular-nums">
                           {yen(s.amount)}
+                        </td>
+                        <td className="px-2.5 py-2 text-center">
+                          {s.receivedAt ? (
+                            <span className="font-bold text-ok">済</span>
+                          ) : (
+                            <span className="text-muted">–</span>
+                          )}
                         </td>
                       </tr>
                     ))}

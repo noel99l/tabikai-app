@@ -6,6 +6,9 @@ import { ExpensesTabs } from "@/components/expenses-tabs";
 import { ExpenseCreateFab } from "@/components/expense-create";
 import { ExpenseRow } from "@/components/expense-row";
 import { Card, Pill, SectionTitle } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
+import { setSettlementReceived } from "@/lib/actions/expenses";
+import { fmtDateTime } from "@/lib/format";
 import { yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
@@ -109,15 +112,57 @@ async function ExpensesList() {
       {mySettlements.length === 0 ? (
         <p className="mt-1.5 text-xs text-muted">あなたの精算はありません。</p>
       ) : (
-        mySettlements.map((s) => (
-          <div key={s.id} className="mt-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
-            {s.fromUserId === user.id ? (
-              <b>{nameOf(s.toUserId)} さんへ {yen(s.amount)} を支払う</b>
-            ) : (
-              <b>{nameOf(s.fromUserId)} さんから {yen(s.amount)} を受け取る</b>
-            )}
-          </div>
-        ))
+        mySettlements.map((s) => {
+          const received = s.receivedAt !== null;
+          return (
+            <div
+              key={s.id}
+              className={`mt-2 rounded-lg px-2.5 py-2 text-[12.5px] ${received ? "bg-ok-soft" : "bg-screen"}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                {s.fromUserId === user.id ? (
+                  <b className={received ? "text-muted line-through" : ""}>
+                    {nameOf(s.toUserId)} さんへ {yen(s.amount)} を支払う
+                  </b>
+                ) : (
+                  <b className={received ? "text-muted line-through" : ""}>
+                    {nameOf(s.fromUserId)} さんから {yen(s.amount)} を受け取る
+                  </b>
+                )}
+                {s.toUserId === user.id ? (
+                  // 受け取る側: 受け取り済みのチェック(外すこともできる)
+                  <form action={setSettlementReceived.bind(null, s.id, !received)} className="shrink-0">
+                    <SubmitButton
+                      spinner={false}
+                      className={`flex items-center gap-1.5 rounded-full border-2 border-line px-2.5 py-1 text-[11px] font-bold ${
+                        received ? "bg-ok text-white" : "bg-white text-ink"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded-[4px] border-2 text-[10px] ${
+                          received ? "border-white bg-white text-ok" : "border-line bg-white"
+                        }`}
+                        aria-hidden
+                      >
+                        {received && "✓"}
+                      </span>
+                      受け取り済み
+                    </SubmitButton>
+                  </form>
+                ) : received ? (
+                  <Pill tone="ok">受け取り確認済み</Pill>
+                ) : (
+                  <Pill tone="pend">未払い</Pill>
+                )}
+              </div>
+              {received && s.receivedAt && (
+                <div className="mt-0.5 text-[10.5px] text-muted">
+                  {fmtDateTime(s.receivedAt)} に受け取りを確認
+                </div>
+              )}
+            </div>
+          );
+        })
       )}
       <p className="mt-2 text-[11px] text-muted">
         経費は締め切られています。費用の追加・変更はできません。

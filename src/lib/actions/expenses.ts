@@ -604,3 +604,29 @@ export async function reopenExpenses() {
   revalidatePath("/expenses/approvals");
   revalidatePath("/home");
 }
+
+// 精算の受け取り確認(受け取る側の本人のみ)。チェックを外すこともできる。
+// 支払う側には「受け取りが確認されました」と知らせる
+export async function setSettlementReceived(settlementId: string, received: boolean) {
+  const { user, trip, db } = await requireTripContext();
+  const s = await db.query.settlements.findFirst({
+    where: and(eq(schema.settlements.id, settlementId), eq(schema.settlements.tripId, trip.id)),
+  });
+  if (!s) return;
+  if (s.toUserId !== user.id) throw new Error("受け取る側の本人のみ操作できます");
+  await db
+    .update(schema.settlements)
+    .set({ receivedAt: received ? new Date() : null })
+    .where(eq(schema.settlements.id, settlementId));
+  if (received && s.fromUserId !== user.id) {
+    await notify(db, trip.id, [s.fromUserId], {
+      type: "settlement",
+      title: `${user.name} さんが ${yen(s.amount)} の受け取りを確認しました`,
+      body: "精算リストの支払いが完了として記録されました。",
+      link: "/expenses",
+      senderId: user.id,
+    });
+  }
+  revalidatePath("/expenses");
+  revalidatePath("/manage/expenses");
+}
