@@ -9,6 +9,9 @@ export const EVENT_COLORS: { key: string; label: string; cls: string }[] = [
   { key: "violet", label: "バイオレット", cls: "bg-violet text-white" },
   { key: "green", label: "グリーン", cls: "bg-ok text-white" },
   { key: "pink", label: "ピンク", cls: "bg-[#e8467c] text-white" },
+  { key: "orange", label: "オレンジ", cls: "bg-[#f97316] text-white" },
+  { key: "teal", label: "ティール", cls: "bg-[#0d9488] text-white" },
+  { key: "brown", label: "ブラウン", cls: "bg-[#8b5a2b] text-white" },
 ];
 
 export const eventColorClass = (key: string | null | undefined) =>
@@ -22,6 +25,9 @@ export const eventSwatchClass = (key: string) =>
     violet: "bg-violet",
     green: "bg-ok",
     pink: "bg-[#e8467c]",
+    orange: "bg-[#f97316]",
+    teal: "bg-[#0d9488]",
+    brown: "bg-[#8b5a2b]",
   })[key] ?? "bg-primary";
 
 function Svg(props: SVGProps<SVGSVGElement>) {
@@ -121,6 +127,59 @@ const ICONS: Record<string, (p: SVGProps<SVGSVGElement>) => React.ReactNode> = {
       <path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z" />
     </Svg>
   ),
+  // 睡眠時間・仮眠(ベッド)
+  bed: (p) => (
+    <Svg {...p}>
+      <path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7" />
+      <path d="M3 15h18" />
+      <path d="M6 9V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+      <path d="M3 18v2M21 18v2" />
+    </Svg>
+  ),
+  // 掃除・片付け・荷造り(ほうき)
+  broom: (p) => (
+    <Svg {...p}>
+      <path d="M15 3l-6.5 9" />
+      <path d="M8.5 12l4 3" />
+      <path d="M4 21c1-4 3-6.5 6-7.5l3 2.5c-.5 3-2.5 5-6 5z" />
+      <path d="M7 16.5l2 1.5M6 19l1.5 1" />
+    </Svg>
+  ),
+  // ラーメン・麺(どんぶりと箸)
+  noodle: (p) => (
+    <Svg {...p}>
+      <path d="M4 12h16a8 8 0 0 1-16 0z" />
+      <path d="M8 12V6M11 12V5" />
+      <path d="M14 3l5 6" />
+      <path d="M7 20h10" />
+    </Svg>
+  ),
+  // 温泉・露天風呂(♨)
+  onsen: (p) => (
+    <Svg {...p}>
+      <path d="M4 14h16v1a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
+      <path d="M8 10c0-1.5 1.5-2 1.5-3.5S8 4.5 8 3" />
+      <path d="M12 10c0-1.5 1.5-2 1.5-3.5S12 4.5 12 3" />
+      <path d="M16 10c0-1.5 1.5-2 1.5-3.5S16 4.5 16 3" />
+    </Svg>
+  ),
+  // 料理・食事の準備(鍋)
+  pot: (p) => (
+    <Svg {...p}>
+      <path d="M5 10h14v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z" />
+      <path d="M3 12h2M19 12h2" />
+      <path d="M6 10l1-3h10l1 3" />
+      <path d="M10 4c0 1-1 1.5-1 2.5M14 4c0 1-1 1.5-1 2.5" />
+    </Svg>
+  ),
+  // クイズ・大喜利・お題(吹き出しの?)
+  quiz: (p) => (
+    <Svg {...p}>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z" />
+      <path d="M10 8a2 2 0 1 1 3 1.7c-.8.5-1 .9-1 1.8" />
+      <circle cx="12" cy="13.6" r="0.6" fill="currentColor" />
+    </Svg>
+  ),
 };
 
 export const EVENT_ICON_KEYS = Object.keys(ICONS);
@@ -138,6 +197,12 @@ export const EVENT_ICON_LABELS: Record<string, string> = {
   car: "移動",
   fire: "焚き火",
   star: "スター",
+  bed: "睡眠",
+  broom: "掃除・片付け",
+  noodle: "ラーメン",
+  onsen: "温泉",
+  pot: "料理・準備",
+  quiz: "クイズ・大喜利",
 };
 
 export function EventIcon({
