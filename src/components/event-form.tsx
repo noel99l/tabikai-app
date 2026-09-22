@@ -14,11 +14,15 @@ import { useToast } from "./toast";
 import { FormError } from "./form-error";
 import { btnCls, inputCls, labelCls } from "./ui";
 
+// 重複チェック用の既存イベント(同じ会場・時間帯に重なるものを保存前に知らせる)
+export type ExistingEvent = { id: string; title: string; venueId: string; startMs: number; endMs: number };
+
 type Props = {
   venues: { id: string; name: string }[];
   days: { key: string; label: string }[];
   members: { userId: string; name: string }[];
   selfId: string;
+  existing?: ExistingEvent[];
   // 予定表の範囲選択からのプリセット
   defaults?: { venueId?: string; date?: string; start?: string; end?: string };
   // 作成成功時(モーダルを閉じる等)
@@ -38,7 +42,26 @@ type Draft = {
   icon: string | null;
 };
 
-export function EventForm({ venues, days, members, selfId, defaults, onSuccess }: Props) {
+// フォームの日時入力から開始・終了(ms, JST)を求める。未入力なら null
+function rangeFromForm(form: HTMLFormElement, allDay: boolean): { start: number; end: number } | null {
+  const v = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+  const date = v("date");
+  const endDate = v("endDate") || date;
+  if (!date) return null;
+  if (allDay) {
+    const s = new Date(`${date}T00:00:00+09:00`).getTime();
+    const e = new Date(`${endDate}T00:00:00+09:00`).getTime() + 24 * 60 * 60 * 1000;
+    return e > s ? { start: s, end: e } : null;
+  }
+  const start = v("start");
+  const end = v("end");
+  if (!start || !end) return null;
+  const s = new Date(`${date}T${start}:00+09:00`).getTime();
+  const e = new Date(`${endDate}T${end}:00+09:00`).getTime();
+  return e > s ? { start: s, end: e } : null;
+}
+
+export function EventForm({ venues, days, members, selfId, defaults, onSuccess, existing = [] }: Props) {
   // 招待: デフォルトは「個別に招待」。solo = 自分だけの予定(お風呂の単独利用など)
   const [inviteMode, setInviteMode] = useState<"members" | "all" | "solo">("members");
   const [invitees, setInvitees] = useState<Set<string>>(() => new Set());
@@ -47,9 +70,26 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
   const [icon, setIcon] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false); // 下書きを復元したことの表示
+  const [overlaps, setOverlaps] = useState<ExistingEvent[]>([]); // 同じ会場・時間帯に重なる既存イベント
   const submitting = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const toast = useToast();
+
+  // 会場・日時の入力から重複を計算する(入力のたびに更新し、送信前にも確認する)
+  const computeOverlaps = (): ExistingEvent[] => {
+    const form = formRef.current;
+    if (!form || existing.length === 0) return [];
+    const venueId = (form.elements.namedItem("venueId") as HTMLSelectElement | null)?.value ?? "";
+    const range = rangeFromForm(form, allDay);
+    if (!venueId || !range) return [];
+    return existing.filter(
+      (e) => e.venueId === venueId && e.startMs < range.end && e.endMs > range.start,
+    );
+  };
+  useEffect(() => {
+    setOverlaps(computeOverlaps());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allDay, existing]);
 
   // マウント時: 24時間以内の下書きがあれば復元する(予定表からのプリセットがある場合は日時・会場は
   // プリセットを優先し、タイトル・説明などのテキストだけ復元)
@@ -129,8 +169,14 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
   return (
     <form
       ref={formRef}
-      onInput={saveDraft}
-      onChange={saveDraft}
+      onInput={() => {
+        saveDraft();
+        setOverlaps(computeOverlaps());
+      }}
+      onChange={() => {
+        saveDraft();
+        setOverlaps(computeOverlaps());
+      }}
       action={async (formData) => {
         if (submitting.current) return;
         // 送信前のバリデーション(原因がわかるメッセージを表示)
@@ -139,6 +185,16 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
             "招待するメンバーを選択してください(ひとりで使う場合は「自分のみ」を選べます)",
           );
           return;
+        }
+        // 同じ会場・時間帯に既存のイベントがあれば、保存前に確認する
+        const hits = computeOverlaps();
+        if (hits.length > 0) {
+          const names = hits.slice(0, 3).map((h) => `「${h.title}」`).join("、");
+          const more = hits.length > 3 ? ` ほか${hits.length - 3}件` : "";
+          const ok = window.confirm(
+            `同じ会場・時間帯に ${names}${more} が予約されています。\n重ねて登録しますか?`,
+          );
+          if (!ok) return;
         }
         submitting.current = true;
         setError(null);
@@ -235,6 +291,14 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
           ? "開始日〜終了日の期間、この会場を終日押さえます。"
           : "終了日を翌日以降にすると、日をまたぐ予定を作成できます。"}
       </p>
+      {overlaps.length > 0 && (
+        <div className="mt-2 rounded-[10px] border-2 border-pend bg-pend-soft px-3 py-2 text-[12px] text-pend">
+          <span className="font-bold">この会場・時間帯には既に予定があります:</span>{" "}
+          {overlaps.slice(0, 3).map((h) => `「${h.title}」`).join("、")}
+          {overlaps.length > 3 && ` ほか${overlaps.length - 3}件`}
+          <span className="block text-[11px]">重ねて登録することもできます(保存時に確認します)。</span>
+        </div>
+      )}
 
       <label className={labelCls} htmlFor="description">説明(任意)</label>
       <input className={inputCls} id="description" name="description" placeholder="持ち物や集合場所など" />

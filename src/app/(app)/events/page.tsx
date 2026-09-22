@@ -84,6 +84,7 @@ export default async function EventsPage() {
         events={visibleEvents.map((e) => ({
           id: e.id,
           title: e.title,
+          venueId: e.venueId,
           venueName: venueName(e.venueId),
           startsAt: e.startsAt,
           endsAt: e.endsAt,

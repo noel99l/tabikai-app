@@ -11,6 +11,7 @@ import { fmtBudget, fmtTime, jstDateKey } from "@/lib/format";
 type Ev = {
   id: string;
   title: string;
+  venueId: string;
   venueName: string;
   startsAt: Date;
   endsAt: Date;
@@ -246,6 +247,13 @@ export function EventsList({ events, members, venues, days, selfId }: Props) {
           days={days}
           members={members}
           selfId={selfId}
+          existing={events.map((e) => ({
+            id: e.id,
+            title: e.title,
+            venueId: e.venueId,
+            startMs: e.startsAt.getTime(),
+            endMs: e.endsAt.getTime(),
+          }))}
           defaults={{ date: days.find((d) => d.key === todayKey)?.key ?? days[0]?.key }}
           onSuccess={() => setModalOpen(false)}
         />

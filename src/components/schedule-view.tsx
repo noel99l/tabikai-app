@@ -983,6 +983,13 @@ export function ScheduleView({
           days={days}
           members={members}
           selfId={selfId}
+          existing={events.map((e) => ({
+            id: e.id,
+            title: e.masked ? "予約中" : e.title,
+            venueId: e.venueId,
+            startMs: e.startMs,
+            endMs: e.endMs,
+          }))}
           defaults={prefill ?? { date: activeDay.key }}
           onSuccess={() => setModalOpen(false)}
         />
