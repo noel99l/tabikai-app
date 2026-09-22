@@ -1,10 +1,18 @@
 import Link from "next/link";
-import { and, asc, count, eq, gte, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, or, sql } from "drizzle-orm";
 import { schema } from "@/db";
 import { AnnounceFab } from "@/components/announce-fab";
 import { AppHeader } from "@/components/app-header";
 import { EventIcon, eventColorClass } from "@/components/event-icons";
-import { IconCalendar, IconCart, IconMail, IconMoney, IconSettings, IconUsers } from "@/components/icons";
+import {
+  IconCalendar,
+  IconCart,
+  IconCheck,
+  IconMail,
+  IconMoney,
+  IconSettings,
+  IconUsers,
+} from "@/components/icons";
 import { InstallPrompt } from "@/components/install-prompt";
 import { PushNudge } from "@/components/push-nudge";
 import { TripLogo } from "@/components/trip-logo";
@@ -69,7 +77,7 @@ export default async function DashboardPage() {
   const { user, trip, db, isAdmin } = await requireTripContext();
   const now = new Date();
 
-  const [upcoming, myPending, invitedRows, itemRows, pendingMemberRows] = await Promise.all([
+  const [upcoming, myPending, invitedRows, itemRows, pendingMemberRows, openSettlements] = await Promise.all([
     // 自分が参加登録/招待されている今後のイベント(終日は除く)
     db
       .select({
@@ -141,6 +149,23 @@ export default async function DashboardPage() {
             ),
           )
       : Promise.resolve([{ value: 0 }]),
+    // 締め後: 自分が関わる未完了の精算(送金する分・受け取る分)
+    trip.expensesClosedAt
+      ? db
+          .select({
+            fromUserId: schema.settlements.fromUserId,
+            toUserId: schema.settlements.toUserId,
+            amount: schema.settlements.amount,
+          })
+          .from(schema.settlements)
+          .where(
+            and(
+              eq(schema.settlements.tripId, trip.id),
+              isNull(schema.settlements.receivedAt),
+              or(eq(schema.settlements.fromUserId, user.id), eq(schema.settlements.toUserId, user.id)),
+            ),
+          )
+      : Promise.resolve([]),
   ]);
 
   const [hero, ...rest] = upcoming;
@@ -149,11 +174,18 @@ export default async function DashboardPage() {
   const invitedCount = Number(invitedRows[0]?.value ?? 0);
   const itemsLeft = Number(itemRows[0]?.total ?? 0);
   const pendingMembers = Number(pendingMemberRows[0]?.value ?? 0);
+  // 精算: 自分が送金する分(相手が受取済にするまで)と、自分が受け取って受取済にする分
+  const toPay = openSettlements.filter((s) => s.fromUserId === user.id);
+  const toConfirm = openSettlements.filter((s) => s.toUserId === user.id);
+  const toPayTotal = toPay.reduce((s, x) => s + x.amount, 0);
+  const toConfirmTotal = toConfirm.reduce((s, x) => s + x.amount, 0);
   const taskCount =
     (pendingCount > 0 ? 1 : 0) +
     (invitedCount > 0 ? 1 : 0) +
     (itemsLeft > 0 ? 1 : 0) +
-    (pendingMembers > 0 ? 1 : 0);
+    (pendingMembers > 0 ? 1 : 0) +
+    (toPay.length > 0 ? 1 : 0) +
+    (toConfirm.length > 0 ? 1 : 0);
   const c = hero ? countdown(hero.startsAt, now) : null;
 
   return (
@@ -223,6 +255,28 @@ export default async function DashboardPage() {
         <Card className="py-3">
           <p className="text-center text-[12px] text-muted">やることはありません。</p>
         </Card>
+      )}
+      {toPay.length > 0 && (
+        <TaskRow
+          href="/expenses"
+          icon={<IconMoney className="h-[18px] w-[18px] text-primary" />}
+          iconBg="bg-primary-soft"
+          title={`送金 ${toPay.length}件`}
+          sub={`合計 ${yen(toPayTotal)} · 相手が受取済にすると完了`}
+          cta="精算リスト"
+          solid
+        />
+      )}
+      {toConfirm.length > 0 && (
+        <TaskRow
+          href="/expenses"
+          icon={<IconCheck className="h-[18px] w-[18px] text-ok" />}
+          iconBg="bg-ok-soft"
+          title={`送金の確認 ${toConfirm.length}件`}
+          sub={`受け取る合計 ${yen(toConfirmTotal)} · 届いたら受取済にしましょう`}
+          cta="確認する"
+          solid
+        />
       )}
       {pendingCount > 0 && (
         <TaskRow
