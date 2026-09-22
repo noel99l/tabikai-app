@@ -7,6 +7,7 @@ import { IconBack } from "@/components/icons";
 import { SubmitButton } from "@/components/submit-button";
 import { Avatar, Card, Pill, SectionTitle, btnCls } from "@/components/ui";
 import { updateThanksBudget } from "@/lib/actions/thanks";
+import { CsvDownload } from "@/components/csv-download";
 import { fmtDateLabel, fmtDateTime } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 import { thanksClosed } from "@/lib/thanks";
@@ -91,6 +92,17 @@ export default async function ManageThanksPage() {
           受け取った分は本人にすぐ表示されます。送付の受付は企画終了({fmtDateLabel(trip.endsAt)})と同時に締め切り、手元に残ったポイントは消滅します
           {closed ? "(締め切り済み)" : ""}。匿名で送られた分も管理者には送り主が表示されます。
         </p>
+      </Card>
+
+      <SectionTitle>CSV 出力</SectionTitle>
+      <Card>
+        <p className="mb-2 text-[11.5px] text-muted">
+          Excel などで開ける CSV(UTF-8)をダウンロードします。匿名で送られた分も送り主が含まれます。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <CsvDownload kind="thanks" label="明細(誰が誰に何pt)" />
+          <CsvDownload kind="thanks-summary" label="メンバー別集計" />
+        </div>
       </Card>
 
       <SectionTitle>獲得ポイント(多い順)</SectionTitle>

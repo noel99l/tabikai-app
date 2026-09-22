@@ -7,6 +7,7 @@ import { IconBack } from "@/components/icons";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "@/components/ui";
 import { closeExpenses, reopenExpenses } from "@/lib/actions/expenses";
+import { CsvDownload } from "@/components/csv-download";
 import { yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
@@ -61,6 +62,17 @@ export default async function ManageExpensesPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="mb-3">
+        <h3 className="text-sm font-bold">CSV 出力</h3>
+        <p className="mt-1 mb-2 text-[11.5px] text-muted">
+          精算リスト(締め後)と、メンバー別の立替・負担・差額を Excel などで開ける CSV(UTF-8)で保存します。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <CsvDownload kind="settlements" label="精算リスト" />
+          <CsvDownload kind="balances" label="メンバー別収支" />
+        </div>
+      </Card>
 
       {!trip.expensesClosedAt ? (
         <Card>
