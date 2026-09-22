@@ -99,8 +99,35 @@ async function ExpensesList() {
     (s) => s.fromUserId === user.id || s.toUserId === user.id,
   );
 
+  // 締め後の精算リスト(自分の支払い・受け取り)。締め後はタブの一番上に表示する
+  const settlementCard = trip.expensesClosedAt ? (
+    <Card className="mb-3 border-l-[6px] border-l-ok">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-bold">精算リスト</div>
+        <Pill tone="ok">締め済み</Pill>
+      </div>
+      {mySettlements.length === 0 ? (
+        <p className="mt-1.5 text-xs text-muted">あなたの精算はありません。</p>
+      ) : (
+        mySettlements.map((s) => (
+          <div key={s.id} className="mt-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
+            {s.fromUserId === user.id ? (
+              <b>{nameOf(s.toUserId)} さんへ {yen(s.amount)} を支払う</b>
+            ) : (
+              <b>{nameOf(s.fromUserId)} さんから {yen(s.amount)} を受け取る</b>
+            )}
+          </div>
+        ))
+      )}
+      <p className="mt-2 text-[11px] text-muted">
+        経費は締め切られています。費用の追加・変更はできません。
+      </p>
+    </Card>
+  ) : null;
+
   return (
     <>
+      {settlementCard}
       <div className="mb-3 grid grid-cols-2 gap-2">
         <Card className="p-3">
           <div className="text-[11px] text-muted">グループ合計</div>
@@ -151,39 +178,19 @@ async function ExpensesList() {
         );
       })}
 
-      <SectionTitle>精算</SectionTitle>
-      {trip.expensesClosedAt ? (
-        <Card>
-          <div className="text-sm font-bold">
-            精算リスト <Pill tone="ok">締め済み</Pill>
-          </div>
-          {mySettlements.length === 0 ? (
-            <p className="mt-1.5 text-xs text-muted">あなたの精算はありません。</p>
-          ) : (
-            mySettlements.map((s) => (
-              <div key={s.id} className="mt-2 rounded-lg bg-screen px-2.5 py-2 text-[12.5px]">
-                {s.fromUserId === user.id ? (
-                  <>
-                    <b>{nameOf(s.toUserId)} さんへ {yen(s.amount)} を支払う</b>
-                  </>
-                ) : (
-                  <>
-                    <b>{nameOf(s.fromUserId)} さんから {yen(s.amount)} を受け取る</b>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </Card>
-      ) : (
-        <Card className="border-dashed">
-          <div className="text-sm font-bold">
-            精算 <Pill tone="info">締め後に表示</Pill>
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            管理者が経費入力を締め切ると、あなたの支払い先と金額がここに表示されます。
-          </p>
-        </Card>
+      {/* 締め前の案内(締め後は精算リストを一番上に表示する) */}
+      {!trip.expensesClosedAt && (
+        <>
+          <SectionTitle>精算</SectionTitle>
+          <Card className="border-dashed">
+            <div className="text-sm font-bold">
+              精算 <Pill tone="info">締め後に表示</Pill>
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              管理者が経費入力を締め切ると、あなたの支払い先と金額が費用タブの一番上に表示されます。
+            </p>
+          </Card>
+        </>
       )}
 
       {/* 締め後は追加不可(サーバー側でも弾く) */}
