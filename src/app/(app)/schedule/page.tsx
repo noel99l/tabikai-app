@@ -1,4 +1,4 @@
-import { count, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { schema } from "@/db";
 import { AppHeader } from "@/components/app-header";
 import { ScheduleView } from "@/components/schedule-view";
@@ -26,7 +26,8 @@ export default async function SchedulePage() {
         color: schema.events.color,
         icon: schema.events.icon,
         hostId: schema.events.hostId,
-        joined: count(schema.eventParticipants.userId),
+        // 参加登録済み(joined)だけを数える(招待中・不参加は含めない。イベント詳細と同じ基準)
+        joined: sql<number>`count(*) filter (where ${schema.eventParticipants.status} = 'joined')`,
         // 自分が参加登録済みか(別クエリを往復させず集約で判定)
         mine: sql<boolean>`coalesce(bool_or(${schema.eventParticipants.userId} = ${user.id} and ${schema.eventParticipants.status} = 'joined'), false)`,
       })
@@ -108,7 +109,7 @@ export default async function SchedulePage() {
               allDay: e.allDay,
               color: masked ? null : e.color,
               icon: masked ? null : e.icon,
-              joined: masked ? 0 : e.joined,
+              joined: masked ? 0 : Number(e.joined),
               mine: masked ? false : e.mine,
               canManage: !masked && (e.hostId === user.id || isAdmin),
               masked,
