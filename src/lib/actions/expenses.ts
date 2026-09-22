@@ -150,7 +150,7 @@ export async function approveShare(expenseId: string) {
   const { user, db } = await requireTripContext();
   await db
     .update(schema.expenseShares)
-    .set({ status: "approved", resolvedAt: new Date() })
+    .set({ status: "approved", resolvedAt: new Date(), rejectReason: null })
     .where(
       and(
         eq(schema.expenseShares.expenseId, expenseId),
@@ -162,16 +162,18 @@ export async function approveShare(expenseId: string) {
   revalidatePath("/expenses/approvals");
 }
 
-// 本人による否認。対象からは外れず、主催者/管理者が最終判断する(承認として確定 or 対象から外す)
-export async function rejectShare(expenseId: string) {
+// 本人による否認(理由メッセージは任意)。対象からは外れず、主催者/管理者が最終判断する
+// (承認として確定 or 対象から外す)。理由は承認画面と費用の内訳に表示され、通知にも載る
+export async function rejectShare(expenseId: string, formData?: FormData) {
   const { user, trip, db } = await requireTripContext();
+  const reason = String(formData?.get("reason") ?? "").trim().slice(0, 200) || null;
   const expense = await db.query.expenses.findFirst({
     where: eq(schema.expenses.id, expenseId),
   });
   if (!expense) return;
   await db
     .update(schema.expenseShares)
-    .set({ status: "rejected", resolvedAt: new Date() })
+    .set({ status: "rejected", resolvedAt: new Date(), rejectReason: reason })
     .where(
       and(
         eq(schema.expenseShares.expenseId, expenseId),
@@ -195,7 +197,9 @@ export async function rejectShare(expenseId: string) {
   await notify(db, trip.id, targets, {
     type: "expense_assigned",
     title: `「${expense.title}」が否認されました`,
-    body: `${user.name} さんが否認 · 承認画面から確定または対象から外せます`,
+    body: reason
+      ? `${user.name} さんが否認: 「${reason}」 · 承認画面から確定または対象から外せます`
+      : `${user.name} さんが否認 · 承認画面から確定または対象から外せます`,
     link: "/expenses/approvals",
     senderId: user.id,
   });

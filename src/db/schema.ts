@@ -187,6 +187,9 @@ export const events = pgTable("events", {
   inviteAll: boolean("invite_all").default(true).notNull(),
   // 参加〆切(null=なし)。〆切後は参加登録・取り消し不可(不参加の返事と主催者の追加は可)
   signupDeadline: timestamp("signup_deadline", { withTimezone: true }),
+  // 予算の目安(任意)。budgetPer: "person"=1人あたり / "total"=全体
+  budgetAmount: integer("budget_amount"),
+  budgetPer: text("budget_per"),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -242,6 +245,7 @@ export const expenseShares = pgTable(
     status: shareStatus("status").default("pending").notNull(),
     resolvedBy: uuid("resolved_by").references(() => users.id), // forced/excluded の操作者
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"), // 本人が否認したときのメッセージ(任意)
     nudgedAt: timestamp("nudged_at", { withTimezone: true }), // 24h催促の送信済み時刻
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

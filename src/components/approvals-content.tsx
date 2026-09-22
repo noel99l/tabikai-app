@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { schema } from "@/db";
 import { Card, Pill, SectionTitle, btnCls, btnGhostCls } from "./ui";
 import { SubmitButton } from "@/components/submit-button";
-import { approveShare, rejectShare, resolveShare } from "@/lib/actions/expenses";
+import { approveShare, resolveShare } from "@/lib/actions/expenses";
+import { RejectShareForm } from "./reject-share-form";
 import { fmtEventSpan, sinceLabel, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
@@ -28,6 +29,7 @@ export async function ApprovalsContent() {
         amount: schema.expenseShares.amount,
         status: schema.expenseShares.status,
         createdAt: schema.expenseShares.createdAt,
+        rejectReason: schema.expenseShares.rejectReason,
       })
       .from(schema.expenseShares)
       .innerJoin(
@@ -109,19 +111,12 @@ export async function ApprovalsContent() {
                 他のメンバーの否認などで割り直された場合、金額が変わることがあります
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <form action={approveShare.bind(null, s.expenseId)} className="flex-1">
                 <SubmitButton className={`${btnCls} w-full`}>承認する</SubmitButton>
               </form>
-              {/* 否認は例外的な操作なので控えめに表示する */}
-              <form action={rejectShare.bind(null, s.expenseId)} className="shrink-0">
-                <SubmitButton
-                  spinner={false}
-                  className="rounded-[10px] border-2 border-line bg-white px-3 py-2.5 text-[11.5px] font-bold text-muted"
-                >
-                  否認
-                </SubmitButton>
-              </form>
+              {/* 否認は例外的な操作なので控えめに表示する(押すと理由の入力欄が開く) */}
+              <RejectShareForm expenseId={s.expenseId} />
             </div>
           </Card>
         );
@@ -153,6 +148,11 @@ export async function ApprovalsContent() {
                     <Pill tone="pend">放置 {sinceLabel(s.createdAt)}</Pill>
                   )}
                 </div>
+                {s.status === "rejected" && s.rejectReason && (
+                  <p className="mt-2 rounded-lg bg-pend-soft px-2.5 py-1.5 text-[12px] text-pend">
+                    <span className="font-bold">{nameOf(s.userId)} さんのメッセージ:</span> {s.rejectReason}
+                  </p>
+                )}
                 <form action={resolveShare} className="mt-2.5 flex gap-2">
                   <input type="hidden" name="expenseId" value={s.expenseId} />
                   <input type="hidden" name="userId" value={s.userId} />
@@ -185,6 +185,9 @@ export async function ApprovalsContent() {
                   <div className="text-[11.5px] text-muted">
                     立替: {nameOf(x.paidBy)} · あなたの負担予定 {yen(s.amount)}
                   </div>
+                  {s.status === "rejected" && s.rejectReason && (
+                    <div className="text-[11px] text-pend">否認の理由: {s.rejectReason}</div>
+                  )}
                 </div>
                 {s.status === "rejected" ? (
                   <Pill tone="pend">否認済み</Pill>

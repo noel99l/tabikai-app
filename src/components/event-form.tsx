@@ -133,6 +133,34 @@ export function EventForm({ venues, days, members, selfId, defaults, onSuccess }
       <label className={labelCls} htmlFor="description">説明(任意)</label>
       <input className={inputCls} id="description" name="description" placeholder="持ち物や集合場所など" />
 
+      {/* 予算の目安(任意): 金額+単位(1人あたり/全体) */}
+      <label className={labelCls} htmlFor="budgetAmount">予算の目安(任意)</label>
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-[13px] text-muted">¥</span>
+        <input
+          className={inputCls}
+          id="budgetAmount"
+          name="budgetAmount"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={100}
+          placeholder="3000"
+        />
+        <select
+          className="shrink-0 rounded-[10px] border-2 border-line bg-white px-2 py-2.5 text-sm"
+          name="budgetPer"
+          defaultValue="person"
+          aria-label="予算の単位"
+        >
+          <option value="person">1人あたり</option>
+          <option value="total">全体</option>
+        </select>
+      </div>
+      <p className="mx-0.5 mt-1 text-[11px] text-muted">
+        参加者が「いくらくらいかかるか」を判断する目安です。費用の登録とは連動しません。
+      </p>
+
       {/* 予定表での見た目: カラー+アイコン */}
       <label className={labelCls}>カレンダーのカラー</label>
       <input type="hidden" name="color" value={color} />

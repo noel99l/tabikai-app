@@ -19,6 +19,15 @@ function parseAppearance(formData: FormData) {
   };
 }
 
+// 予算の目安(任意)。金額が空なら未設定。単位は "person"(1人あたり) / "total"(全体)
+function parseBudget(formData: FormData): { budgetAmount: number | null; budgetPer: string | null } {
+  const raw = String(formData.get("budgetAmount") ?? "").replace(/[^\d]/g, "");
+  const amount = raw ? Number(raw) : 0;
+  if (!Number.isInteger(amount) || amount <= 0) return { budgetAmount: null, budgetPer: null };
+  const per = String(formData.get("budgetPer") ?? "") === "total" ? "total" : "person";
+  return { budgetAmount: Math.min(amount, 100_000_000), budgetPer: per };
+}
+
 export async function createEvent(formData: FormData) {
   const { user, trip, db } = await requireTripContext();
   const title = String(formData.get("title") ?? "").trim();
@@ -55,6 +64,7 @@ export async function createEvent(formData: FormData) {
   }
 
   const { color, icon } = parseAppearance(formData);
+  const budget = parseBudget(formData);
   const [event] = await db
     .insert(schema.events)
     .values({
@@ -69,6 +79,7 @@ export async function createEvent(formData: FormData) {
       icon,
       hostId: user.id,
       inviteAll,
+      ...budget,
     })
     .returning();
 
@@ -358,6 +369,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
 
   const timeChanged = startsAt.getTime() !== event.startsAt.getTime();
   const { color, icon } = parseAppearance(formData);
+  const budget = parseBudget(formData);
   await db
     .update(schema.events)
     .set({
@@ -370,6 +382,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       icon,
       description,
       signupDeadline,
+      ...budget,
       // 開始日時が変わった場合はリマインド送信済みフラグを解除して再送対象にする
       ...(timeChanged ? { reminderSentAt: null } : {}),
     })

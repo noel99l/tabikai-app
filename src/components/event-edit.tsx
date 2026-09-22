@@ -28,6 +28,8 @@ type Props = {
     deadlineTime?: string;
     title: string;
     description: string;
+    budgetAmount: number | null;
+    budgetPer: string | null;
     venueId: string;
     date: string;
     endDate: string;
@@ -260,6 +262,34 @@ export function EventEdit({ eventId, venues, days, members, participantIds, host
             defaultValue={defaults.description}
             placeholder="持ち物や集合場所など"
           />
+
+          <label className={labelCls} htmlFor="e-budgetAmount">予算の目安(任意)</label>
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-[13px] text-muted">¥</span>
+            <input
+              className={inputCls}
+              id="e-budgetAmount"
+              name="budgetAmount"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={100}
+              defaultValue={defaults.budgetAmount ?? ""}
+              placeholder="3000"
+            />
+            <select
+              className="shrink-0 rounded-[10px] border-2 border-line bg-white px-2 py-2.5 text-sm"
+              name="budgetPer"
+              defaultValue={defaults.budgetPer ?? "person"}
+              aria-label="予算の単位"
+            >
+              <option value="person">1人あたり</option>
+              <option value="total">全体</option>
+            </select>
+          </div>
+          <p className="mx-0.5 mt-1 text-[11px] text-muted">
+            金額を空にすると未設定になります。費用の登録とは連動しません。
+          </p>
 
           <div className="grid grid-cols-2 gap-2">
             <div>

@@ -17,7 +17,7 @@ import {
   setSignupClosed,
   toggleReminder,
 } from "@/lib/actions/events";
-import { fmtDateLabel, fmtDateTime, fmtTime, jstDateKey } from "@/lib/format";
+import { fmtBudget, fmtDateLabel, fmtDateTime, fmtTime, jstDateKey, yen } from "@/lib/format";
 import { getApprovedMembers, requireTripContext } from "@/lib/session";
 
 // イベント詳細の本体。/events/[id] ページと、予定表からのモーダル表示で共用する。
@@ -111,6 +111,19 @@ export async function EventDetail({ id }: { id: string }) {
             <div className="flex justify-between gap-4 border-b border-line py-2 text-[13px]">
               <dt className="shrink-0 text-muted">説明</dt>
               <dd className="text-right font-semibold">{event.description}</dd>
+            </div>
+          )}
+          {event.budgetAmount && (
+            <div className="flex justify-between gap-4 border-b border-line py-2 text-[13px]">
+              <dt className="shrink-0 text-muted">予算の目安</dt>
+              <dd className="text-right font-semibold">
+                {fmtBudget(event.budgetAmount, event.budgetPer)}
+                {event.budgetPer === "total" && joined.length > 0 && (
+                  <span className="ml-1 text-[11px] font-medium text-muted">
+                    (1人 約{yen(Math.ceil(event.budgetAmount / joined.length))} · 参加{joined.length}人)
+                  </span>
+                )}
+              </dd>
             </div>
           )}
           {event.signupDeadline && (
@@ -298,6 +311,8 @@ export async function EventDetail({ id }: { id: string }) {
               deadlineTime: event.signupDeadline ? fmtTime(event.signupDeadline) : undefined,
               title: event.title,
               description: event.description ?? "",
+              budgetAmount: event.budgetAmount,
+              budgetPer: event.budgetPer,
               venueId: event.venueId,
               // 終日イベントの終了は翌日0:00なので、表示上の最終日に戻す
               date: jstDateKey(event.startsAt),

@@ -6,7 +6,7 @@ import { EventForm } from "./event-form";
 import { EventIcon, eventColorClass } from "./event-icons";
 import { IconCalendar } from "./icons";
 import { Fab, Modal } from "./modal";
-import { fmtTime, jstDateKey } from "@/lib/format";
+import { fmtBudget, fmtTime, jstDateKey } from "@/lib/format";
 
 type Ev = {
   id: string;
@@ -17,6 +17,8 @@ type Ev = {
   allDay: boolean;
   color: string | null;
   icon: string | null;
+  budgetAmount: number | null;
+  budgetPer: string | null;
   participants: { userId: string; status: string }[];
 };
 
@@ -86,6 +88,9 @@ function AgendaRow({ ev, status, dim = false }: { ev: Ev; status: string | undef
           <span className="block truncate text-[10.5px] text-muted">
             {ev.venueName} · 参加
             {ev.participants.filter((p) => p.status === "joined").length}人
+            {fmtBudget(ev.budgetAmount, ev.budgetPer) && (
+              <> · 予算 {fmtBudget(ev.budgetAmount, ev.budgetPer)}</>
+            )}
           </span>
         </span>
         <StatusPill status={status} />

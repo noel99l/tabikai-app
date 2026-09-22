@@ -26,6 +26,8 @@ export default async function EventsPage() {
         color: schema.events.color,
         icon: schema.events.icon,
         hostId: schema.events.hostId,
+        budgetAmount: schema.events.budgetAmount,
+        budgetPer: schema.events.budgetPer,
       })
       .from(schema.events)
       .where(eq(schema.events.tripId, trip.id)),
@@ -88,6 +90,8 @@ export default async function EventsPage() {
           allDay: e.allDay,
           color: e.color,
           icon: e.icon,
+          budgetAmount: e.budgetAmount,
+          budgetPer: e.budgetPer,
           participants: participants.filter((p) => p.eventId === e.id),
         }))}
         members={members.map((m) => ({ userId: m.userId, name: m.name ?? "?" }))}

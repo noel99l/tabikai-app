@@ -139,6 +139,7 @@ async function ExpensesList() {
               name: nameOf(s.userId),
               amount: s.amount,
               status: s.status,
+              reason: s.rejectReason,
             }))}
             members={memberOptions}
             events={eventOptions}

@@ -11,7 +11,7 @@ import { SubmitButton } from "./submit-button";
 import { useToast } from "./toast";
 import { FormError } from "./form-error";
 
-type ShareInfo = { userId: string; name: string; amount: number; status: string };
+type ShareInfo = { userId: string; name: string; amount: number; status: string; reason?: string | null };
 
 type Props = {
   expense: {
@@ -146,15 +146,20 @@ export function ExpenseRow({ expense, shares, members, events, selfId, canEdit }
             {shares.map((s) => (
               <div
                 key={s.userId}
-                className="mb-1.5 flex items-center justify-between rounded-lg border-2 border-line bg-white px-3 py-2"
+                className="mb-1.5 rounded-lg border-2 border-line bg-white px-3 py-2"
               >
-                <span className="text-[13px] font-semibold">{s.name}</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-[13px] tabular-nums">{yen(s.amount)}</span>
-                  <Pill tone={statusLabel[s.status]?.tone ?? "info"}>
-                    {statusLabel[s.status]?.label ?? s.status}
-                  </Pill>
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-semibold">{s.name}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-[13px] tabular-nums">{yen(s.amount)}</span>
+                    <Pill tone={statusLabel[s.status]?.tone ?? "info"}>
+                      {statusLabel[s.status]?.label ?? s.status}
+                    </Pill>
+                  </span>
+                </div>
+                {s.status === "rejected" && s.reason && (
+                  <p className="mt-1 text-[11px] text-pend">否認の理由: {s.reason}</p>
+                )}
               </div>
             ))}
 

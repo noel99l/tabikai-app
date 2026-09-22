@@ -97,3 +97,9 @@ export function fmtEventSpan(start: Date, end: Date, allDay = false) {
     ? `${fmtDateLabel(start)} ${fmtTime(start)}–${fmtTime(end)}`
     : `${fmtDateTime(start)}–${fmtDateTime(end)}`;
 }
+
+// イベントの予算の目安の表示(例: "¥3,000 / 1人", "全体 ¥20,000")
+export function fmtBudget(amount: number | null | undefined, per: string | null | undefined) {
+  if (!amount) return null;
+  return per === "total" ? `全体 ${yen(amount)}` : `${yen(amount)} / 1人`;
+}
