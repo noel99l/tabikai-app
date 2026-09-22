@@ -263,6 +263,8 @@ export async function resolveShare(formData: FormData) {
 // 費用の編集(内容・金額・立替者・割り勘対象・領収書)。作成者・立替者・管理者のみ。
 // 金額または対象が変わったら割り勘額を再計算する。承認済みの分は再承認不要でそのまま確定、
 // 追加したメンバーだけが承認待ちになる。対象から外したメンバーは excluded にして通知する。
+// ただし「全員で割り勘」(登録時に自動承認)から個別の割り勘へ変えた場合は、すでに全員承認済みの
+// 費用の対象を絞る操作なので、追加・復帰したメンバーの分も承認を飛ばして確定扱いにする。
 export async function updateExpense(formData: FormData) {
   const { user, trip, db, isAdmin } = await requireTripContext();
   const expenseId = String(formData.get("expenseId"));
@@ -334,6 +336,9 @@ export async function updateExpense(formData: FormData) {
 
   // 対象の差分(追加・除外)を反映する
   let targetsChanged = splitAll !== expense.splitAll;
+  // 全員割り勘(自動承認済み)→個別への変更は承認を飛ばす
+  const skipApproval = expense.splitAll && !splitAll;
+  const addedStatus = skipApproval ? ("approved" as const) : ("pending" as const);
   if (targetIds) {
     const current = new Set(
       shares.filter((s) => s.status !== "excluded").map((s) => s.userId),
@@ -364,7 +369,7 @@ export async function updateExpense(formData: FormData) {
       ops.push(
         db
           .update(schema.expenseShares)
-          .set({ status: "pending", resolvedBy: null, resolvedAt: null })
+          .set({ status: addedStatus, resolvedBy: null, resolvedAt: null })
           .where(
             and(
               eq(schema.expenseShares.expenseId, expenseId),
@@ -377,7 +382,7 @@ export async function updateExpense(formData: FormData) {
     if (brandNew.length > 0) {
       ops.push(
         db.insert(schema.expenseShares).values(
-          brandNew.map((userId) => ({ expenseId, userId, amount: 0, status: "pending" as const })),
+          brandNew.map((userId) => ({ expenseId, userId, amount: 0, status: addedStatus })),
         ),
       );
     }
