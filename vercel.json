@@ -1,6 +1,15 @@
 {
+  "regions": [
+    "sin1"
+  ],
   "crons": [
-    { "path": "/api/cron/reminders", "schedule": "* * * * *" },
-    { "path": "/api/cron/nudges", "schedule": "0 * * * *" }
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/nudges",
+      "schedule": "0 * * * *"
+    }
   ]
 }
