@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { schema } from "@/db";
 import { redistributeShares, splitAmount } from "@/lib/expense-shares";
@@ -263,8 +263,9 @@ export async function resolveShare(formData: FormData) {
 // 費用の編集(内容・金額・立替者・割り勘対象・領収書)。作成者・立替者・管理者のみ。
 // 金額または対象が変わったら割り勘額を再計算する。承認済みの分は再承認不要でそのまま確定、
 // 追加したメンバーだけが承認待ちになる。対象から外したメンバーは excluded にして通知する。
-// ただし「全員で割り勘」(登録時に自動承認)から個別の割り勘へ変えた場合は、すでに全員承認済みの
-// 費用の対象を絞る操作なので、追加・復帰したメンバーの分も承認を飛ばして確定扱いにする。
+// ただし「全員で割り勘」(登録時に自動承認)から個別の割り勘へ変えた場合は、対象が絞られて
+// 1人あたりの金額が上がるため、残る対象メンバー全員(立替者本人を除く)を承認待ちに戻し、
+// 通常の個別割り勘と同じ承認フローを通す。
 export async function updateExpense(formData: FormData) {
   const { user, trip, db, isAdmin } = await requireTripContext();
   const expenseId = String(formData.get("expenseId"));
@@ -336,9 +337,9 @@ export async function updateExpense(formData: FormData) {
 
   // 対象の差分(追加・除外)を反映する
   let targetsChanged = splitAll !== expense.splitAll;
-  // 全員割り勘(自動承認済み)→個別への変更は承認を飛ばす
-  const skipApproval = expense.splitAll && !splitAll;
-  const addedStatus = skipApproval ? ("approved" as const) : ("pending" as const);
+  // 全員割り勘(自動承認済み)→個別への変更は、金額が上がるので全員あらためて承認を求める
+  const requireReapproval = expense.splitAll && !splitAll;
+  const addedStatus = "pending" as const;
   if (targetIds) {
     const current = new Set(
       shares.filter((s) => s.status !== "excluded").map((s) => s.userId),
@@ -403,6 +404,20 @@ export async function updateExpense(formData: FormData) {
       );
     }
     await Promise.all(ops);
+  }
+  if (requireReapproval) {
+    // 自動承認されていた分を承認待ちに戻す(立替者本人は承認不要のまま)。金額は後段の割り直しで確定
+    await db
+      .update(schema.expenseShares)
+      .set({ status: "pending", resolvedBy: null, resolvedAt: null, rejectReason: null })
+      .where(
+        and(
+          eq(schema.expenseShares.expenseId, expenseId),
+          inArray(schema.expenseShares.status, ["approved", "forced"]),
+          ne(schema.expenseShares.userId, newPaidBy),
+        ),
+      );
+    targetsChanged = true;
   }
 
   if (amountChanged || targetsChanged || paidByChanged) {
