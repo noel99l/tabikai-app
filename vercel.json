@@ -4,12 +4,8 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/reminders",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/cron/nudges",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
